@@ -62,32 +62,28 @@ builder.Services.AddScoped<IIdentityService, IdentityService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(opt =>
+builder.Services.AddSwaggerGen(options =>
 {
-    opt.SwaggerDoc("v1", new OpenApiInfo { Title = "MyAPI", Version = "v1" });
-    opt.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.Http,
-        Scheme = "Bearer",
-        BearerFormat = "JWT"
-    });
-
-    opt.AddSecurityRequirement(doc => new OpenApiSecurityRequirement
-    {
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "KnowledgeOS API", Version = "v1" });
+    options.AddSecurityDefinition(
+        "Bearer",
+        new OpenApiSecurityScheme
         {
-            new OpenApiSecuritySchemeReference("Bearer"),
-            new List<string>()
+            In = ParameterLocation.Header,
+            Description = "Please enter a valid token.",
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            BearerFormat = "JWT",
+            Scheme = "Bearer",
         }
-    });
-});
+    );
 
+    options.AddSecurityRequirement(document => new() { [new OpenApiSecuritySchemeReference("Bearer", document)] = [] });
+});
 var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
+    app.UseSwagger(options => { options.OpenApiVersion = OpenApiSpecVersion.OpenApi3_1; });
     app.UseSwaggerUI();
 }
 
