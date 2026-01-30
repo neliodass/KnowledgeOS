@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using KnowledgeOS.Backend.Entities.Tagging;
 
 namespace KnowledgeOS.Backend.Entities.Resources;
 
@@ -28,9 +29,10 @@ public abstract class Resource
     public string? AiSummary { get; set; }
     
     public string? UserNote { get; set; }
-    [MaxLength(100)]
-    public string? Category { get; set; }
-
+    public Guid? CategoryId { get; set; }
+    public Category? Category { get; set; }
+    public ICollection<Tag> Tags { get; set; } = new List<Tag>();
+    
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? PromotedToVaultAt { get; set; }
 }
