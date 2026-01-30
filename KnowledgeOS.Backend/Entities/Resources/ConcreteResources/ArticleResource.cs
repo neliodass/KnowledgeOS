@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace KnowledgeOS.Backend.Entities.Resources.ConcreteResources;
 
-public class ArticleResource
+public class ArticleResource:Resource
 {
     [MaxLength(200)]
     public string Author { get; set; } = string.Empty;
