@@ -23,7 +23,6 @@
       <Folder Include="Controllers\" />
       <Folder Include="DTOs\" />
       <Folder Include="Jobs\" />
-      <Folder Include="Services\" />
     </ItemGroup>
 
 </Project>

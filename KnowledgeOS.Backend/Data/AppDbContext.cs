@@ -2,6 +2,7 @@ using KnowledgeOS.Backend.Entities.Resources;
 using KnowledgeOS.Backend.Entities.Resources.ConcreteResources;
 using KnowledgeOS.Backend.Entities.Tagging;
 using KnowledgeOS.Backend.Entities.Users;
+using KnowledgeOS.Backend.Services.Abstractions;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
