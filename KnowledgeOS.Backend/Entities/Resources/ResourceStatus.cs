@@ -3,7 +3,8 @@ namespace KnowledgeOS.Backend.Entities.Resources;
 public enum ResourceStatus
 {
     New,            
-    Processing,     
+    Processing,
+    AiAnalysing,
     Inbox,          
     Vault,          
     Archived,       

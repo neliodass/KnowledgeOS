@@ -3,6 +3,7 @@ using Hangfire;
 using Hangfire.PostgreSql;
 using KnowledgeOS.Backend.Data;
 using KnowledgeOS.Backend.Entities.Users;
+using KnowledgeOS.Backend.Jobs;
 using KnowledgeOS.Backend.Services;
 using KnowledgeOS.Backend.Services.Abstractions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -61,6 +62,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IIdentityService, IdentityService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IResourceService, ResourceService>();
+builder.Services.AddScoped<IUrlIngestionJob, UrlIngestionJob>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
