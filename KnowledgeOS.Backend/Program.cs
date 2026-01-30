@@ -57,6 +57,7 @@ builder.Services.AddHangfire(config =>
 
 builder.Services.AddHangfireServer();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IIdentityService, IdentityService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
