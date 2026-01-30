@@ -3,7 +3,7 @@ using KnowledgeOS.Backend.Services.Abstractions;
 
 namespace KnowledgeOS.Backend.Services;
 
-public class CurrentUserService :ICurrentUserService
+public class CurrentUserService : ICurrentUserService
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -12,5 +12,6 @@ public class CurrentUserService :ICurrentUserService
         _httpContextAccessor = httpContextAccessor;
     }
 
-    public string? UserId => _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+    public string? UserId => _httpContextAccessor.HttpContext?.
+        User?.FindFirstValue(ClaimTypes.NameIdentifier);
 }
