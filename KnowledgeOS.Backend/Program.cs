@@ -11,6 +11,7 @@ using KnowledgeOS.Backend.Services;
 using KnowledgeOS.Backend.Services.Abstractions;
 using KnowledgeOS.Backend.Services.Ai;
 using KnowledgeOS.Backend.Services.Ai.Abstractions;
+using KnowledgeOS.Backend.Services.Content;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -100,6 +101,7 @@ foreach (var model in aiModels.GetChildren())
 }
 builder.Services.AddScoped<IAiService, AiService>();
 builder.Services.AddScoped<IAiAnalysisJob, AiAnalysisJob>();
+builder.Services.AddScoped<IContentFetcher, YouTubeContentFetcher>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>

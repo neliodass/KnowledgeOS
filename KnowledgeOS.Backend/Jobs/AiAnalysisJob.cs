@@ -2,6 +2,7 @@ using KnowledgeOS.Backend.Data;
 using KnowledgeOS.Backend.Entities.Resources;
 using KnowledgeOS.Backend.Entities.Tagging;
 using KnowledgeOS.Backend.Jobs.Abstractions;
+using KnowledgeOS.Backend.Services.Abstractions;
 using KnowledgeOS.Backend.Services.Ai.Abstractions;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,15 +12,18 @@ public class AiAnalysisJob : IAiAnalysisJob
 {
     private readonly AppDbContext _context;
     private readonly IAiService _aiService;
+    private readonly IEnumerable<IContentFetcher> _contentFetchers;
     private readonly ILogger<AiAnalysisJob> _logger;
 
     public AiAnalysisJob(
         AppDbContext context,
         IAiService aiService,
+        IEnumerable<IContentFetcher> contentFetchers,
         ILogger<AiAnalysisJob> logger)
     {
         _context = context;
         _aiService = aiService;
+        _contentFetchers = contentFetchers;
         _logger = logger;
     }
 
@@ -49,8 +53,17 @@ public class AiAnalysisJob : IAiAnalysisJob
 
             var userContext = preferences?.ToAiPromptContext()
                               ?? "Role: General Learner. Interests: General Knowledge. Avoid: Nothing specific.";
+            
+            string? extraContent = null;
+            var fetcher = _contentFetchers.FirstOrDefault(f => f.CanHandle(resource));
+            if (fetcher != null)
+            {
+                _logger.LogInformation($"Fetching content using {fetcher.GetType().Name}");
+                extraContent = await fetcher.FetchContentAsync(resource);
+            }
+            
 
-            var analysisResult = await _aiService.AnalyzeResourceAsync(resource, userContext);
+            var analysisResult = await _aiService.AnalyzeResourceAsync(resource, userContext,extraContent);
 
             resource.AiScore = analysisResult.Score;
             resource.AiVerdict = analysisResult.Verdict;

@@ -15,7 +15,7 @@ public class AiService : IAiService
         _logger = logger;
     }
 
-    public async Task<AiAnalysisResult> AnalyzeResourceAsync(Resource resource, string userPreferences)
+    public async Task<AiAnalysisResult> AnalyzeResourceAsync(Resource resource, string userPreferences, string? extraContext = null)
     {
         var exceptions = new List<Exception>();
         foreach (var provider in _providers)
@@ -23,7 +23,7 @@ public class AiService : IAiService
             try
             {
                 _logger.LogInformation($"Attempting AI analysis using: {provider.Name}");
-                return await provider.AnalyzeAsync(resource, userPreferences);
+                return await provider.AnalyzeAsync(resource, userPreferences, extraContext);
             }
             catch (Exception ex)
             {

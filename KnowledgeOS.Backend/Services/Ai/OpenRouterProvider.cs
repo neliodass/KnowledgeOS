@@ -22,18 +22,21 @@ public class OpenRouterProvider : IAiProvider
         _logger = logger;
     }
 
-   public async Task<AiAnalysisResult> AnalyzeAsync(Resource resource, string userPreferences)
+    public async Task<AiAnalysisResult> AnalyzeAsync(Resource resource, string userPreferences,
+        string? extraContext = null)
     {
         var chatClient = _openAiClient.GetChatClient(_modelId);
 
-        var prompt = BuildPrompt(resource, userPreferences);
-        
+        var prompt = BuildPrompt(resource, userPreferences, extraContext);
+
         var messages = new List<ChatMessage>
         {
-            new SystemChatMessage("You are a personal knowledge curator assistant."),
+            new SystemChatMessage(
+                "You are a personal knowledge curator assistant. You are a strict JSON API. You output ONLY valid JSON. No markdown, no intro, no explanation."),
             new UserChatMessage(prompt)
         };
-var options = new ChatCompletionOptions
+        
+        var options = new ChatCompletionOptions
         {
             ResponseFormat = ChatResponseFormat.CreateJsonSchemaFormat(
                 jsonSchemaFormatName: "resource_analysis",
@@ -42,23 +45,23 @@ var options = new ChatCompletionOptions
                     type = "object",
                     properties = new
                     {
-                        score = new 
-                        { 
+                        score = new
+                        {
                             type = "integer",
                             description = "Relevance score from 0 to 100 based on user preferences."
                         },
-                        verdict = new 
-                        { 
+                        verdict = new
+                        {
                             type = "string",
                             description = "Short explanation of the score."
                         },
-                        summary = new 
-                        { 
+                        summary = new
+                        {
                             type = "string",
                             description = "Concise summary of the content (max 3 sentences)."
                         },
-                        suggestedTags = new 
-                        { 
+                        suggestedTags = new
+                        {
                             type = "array",
                             items = new { type = "string" },
                             description = "List of 3-5 relevant tags for categorization."
@@ -67,7 +70,7 @@ var options = new ChatCompletionOptions
                     required = new[] { "score", "verdict", "summary", "suggestedTags" },
                     additionalProperties = false
                 }),
-                jsonSchemaIsStrict: true 
+                jsonSchemaIsStrict: true
             )
         };
 
@@ -81,11 +84,12 @@ var options = new ChatCompletionOptions
                 return new AiAnalysisResult(0, "Error", "No content", Array.Empty<string>());
             }
 
-            var result = JsonSerializer.Deserialize<AiJsonResult>(content, new JsonSerializerOptions 
-            { 
-                PropertyNameCaseInsensitive = true 
+            _logger.LogInformation($"Analyzing {resource.Id}: {content}");
+            var result = JsonSerializer.Deserialize<AiJsonResult>(content, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
             });
-            
+
             return new AiAnalysisResult(
                 result?.Score ?? 0,
                 result?.Verdict ?? "No verdict",
@@ -100,23 +104,25 @@ var options = new ChatCompletionOptions
         }
     }
 
-    private string BuildPrompt(Resource resource, string userPreferences)
+    private string BuildPrompt(Resource resource, string userPreferences, string? extraContext)
     {
         return $"""
                 Analyze the following content:
-                
+
                 Metadata:
                 Title: {resource.Title}
                 URL: {resource.Url}
                 Description: {resource.Description ?? "N/A"}
-                
+                Content: {extraContext ?? "N/A"}
+
                 User Preferences:
                 {userPreferences}
-                
+
                 Task:
-                Evaluate relevance, provide a verdict, summarize, and tag according to the schema.
+                Evaluate relevance, provide a verdict (1-100), summarize, and tag according to the schema.
                 """;
     }
+
     private class AiJsonResult
     {
         public int Score { get; set; }
