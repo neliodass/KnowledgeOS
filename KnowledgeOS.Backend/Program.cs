@@ -1,4 +1,6 @@
+using System.ClientModel;
 using System.Text;
+using DotNetEnv;
 using Hangfire;
 using Hangfire.PostgreSql;
 using KnowledgeOS.Backend.Data;
@@ -6,13 +8,18 @@ using KnowledgeOS.Backend.Entities.Users;
 using KnowledgeOS.Backend.Jobs;
 using KnowledgeOS.Backend.Services;
 using KnowledgeOS.Backend.Services.Abstractions;
+using KnowledgeOS.Backend.Services.Ai;
+using KnowledgeOS.Backend.Services.Ai.Abstractions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using OpenAI;
 
 var builder = WebApplication.CreateBuilder(args);
+Env.Load();
+builder.Configuration.AddEnvironmentVariables();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
                        ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
@@ -63,6 +70,34 @@ builder.Services.AddScoped<IIdentityService, IdentityService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IResourceService, ResourceService>();
 builder.Services.AddScoped<IUrlIngestionJob, UrlIngestionJob>();
+builder.Services.AddScoped<IResourceService, ResourceService>();
+builder.Services.AddScoped<IUrlIngestionJob, UrlIngestionJob>();
+builder.Services.AddScoped<OpenAIClient>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var apiKey = config["Ai:OpenRouterKey"]!;
+    if (string.IsNullOrEmpty(apiKey))
+    {
+        throw new InvalidOperationException("OpenRouter API key is not configured.");
+    }
+
+    var openRouterOptions = new OpenAIClientOptions
+    {
+        Endpoint = new Uri("https://openrouter.ai/api/v1")
+    };
+    return new OpenAIClient(new ApiKeyCredential(apiKey), openRouterOptions);
+});
+var aiModels = builder.Configuration.GetSection("Ai");
+foreach (var model in aiModels.GetChildren())
+{
+    builder.Services.AddScoped<IAiProvider>(sp =>
+    {
+        var client = sp.GetRequiredService<OpenAIClient>();
+        var logger = sp.GetRequiredService<ILogger<OpenRouterProvider>>();
+        return new OpenRouterProvider(client, model.Value!, logger);
+    });
+}
+builder.Services.AddScoped<IAiService, AiService>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
