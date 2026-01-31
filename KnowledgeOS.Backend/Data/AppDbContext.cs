@@ -32,6 +32,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Tag> Tags { get; set; }
     public DbSet<Category> Categories { get; set; }
 
+    //Users stuff
+    public DbSet<UserPreference> UserPreferences { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -59,6 +62,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 
         modelBuilder.Entity<Tag>()
             .HasIndex(t => new { t.Name, t.UserId })
+            .IsUnique();
+
+        modelBuilder.Entity<UserPreference>()
+            .HasIndex(up => up.UserId)
             .IsUnique();
     }
 }
