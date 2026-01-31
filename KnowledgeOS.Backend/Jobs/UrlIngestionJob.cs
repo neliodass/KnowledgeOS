@@ -64,9 +64,14 @@ public class UrlIngestionJob : IUrlIngestionJob
     {
         var metadata = await _youtubeClient.Videos.GetAsync(video.Url);
 
-        video.Title = metadata.Title;
-        video.Description = metadata.Description;
-        video.ChannelName = metadata.Author.ChannelTitle;
+        video.Title = metadata.Title.Length > 500 
+            ? metadata.Title[..497] + "..." 
+            : metadata.Title;
+        var description = metadata.Description ?? "";
+        video.Description = description.Length > 2000 
+            ? description[..1997] + "..." 
+            : description;
+        video.ChannelName = metadata.Author.ChannelTitle ?? "Unknown";
         video.Duration = metadata.Duration;
         video.ViewCount = metadata.Engagement.ViewCount;
         var thumbnail = metadata.Thumbnails.GetWithHighestResolution();
