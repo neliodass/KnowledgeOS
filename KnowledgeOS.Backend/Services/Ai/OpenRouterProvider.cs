@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using KnowledgeOS.Backend.Entities.Resources;
 using KnowledgeOS.Backend.Services.Abstractions;
@@ -29,13 +30,16 @@ public class OpenRouterProvider : IAiProvider
 
         var prompt = BuildPrompt(resource, userPreferences, extraContext);
 
+        const int MaxRetries = 2;
+        var delay = TimeSpan.FromSeconds(1);
+
         var messages = new List<ChatMessage>
         {
             new SystemChatMessage(
                 "You are a personal knowledge curator assistant. You are a strict JSON API. You output ONLY valid JSON. No markdown, no intro, no explanation."),
             new UserChatMessage(prompt)
         };
-        
+
         var options = new ChatCompletionOptions
         {
             ResponseFormat = ChatResponseFormat.CreateJsonSchemaFormat(
@@ -45,6 +49,11 @@ public class OpenRouterProvider : IAiProvider
                     type = "object",
                     properties = new
                     {
+                        correctedTitle = new
+                        {
+                            type = "string",
+                            description = "Improved title for the resource."
+                        },
                         score = new
                         {
                             type = "integer",
@@ -73,55 +82,78 @@ public class OpenRouterProvider : IAiProvider
                 jsonSchemaIsStrict: true
             )
         };
-
-        try
+        for (int attempt = 1; attempt <= MaxRetries; attempt++)
         {
-            ChatCompletion completion = await chatClient.CompleteChatAsync(messages, options);
-            var content = completion.Content[0].Text;
-
-            if (string.IsNullOrEmpty(content))
+            try
             {
-                return new AiAnalysisResult("No title",0, "Error", "No content", Array.Empty<string>());
+                ChatCompletion completion = await chatClient.CompleteChatAsync(messages, options);
+                var content = completion.Content[0].Text;
+
+                if (string.IsNullOrEmpty(content))
+                {
+                    _logger.LogWarning(
+                        $"Model {_modelId} returned empty content on attempt {attempt}. Skipping internal retries.");
+                    throw new InvalidOperationException("AI returned empty content.");
+                }
+
+                _logger.LogInformation($"Analyzing {resource.Id}: {content}");
+                var result = JsonSerializer.Deserialize<AiJsonResult>(content, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                return new AiAnalysisResult(
+                    result?.CorrectedTitle ?? "No corrected title",
+                    result?.Score ?? 0,
+                    result?.Verdict ?? "No verdict",
+                    result?.Summary ?? "No summary",
+                    result?.SuggestedTags ?? Array.Empty<string>()
+                );
             }
-
-            _logger.LogInformation($"Analyzing {resource.Id}: {content}");
-            var result = JsonSerializer.Deserialize<AiJsonResult>(content, new JsonSerializerOptions
+            catch (JsonException jsonEx)
             {
-                PropertyNameCaseInsensitive = true
-            });
+                _logger.LogWarning($"JSON Parse Error (Attempt {attempt}) for {_modelId}: {jsonEx.Message}");
 
-            return new AiAnalysisResult(
-                result?.CorrectedTitle ?? "No corrected title",
-                result?.Score ?? 0,
-                result?.Verdict ?? "No verdict",
-                result?.Summary ?? "No summary",
-                result?.SuggestedTags ?? Array.Empty<string>()
-            );
+                if (attempt == MaxRetries) throw;
+                await Task.Delay(delay);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error using AI model {_modelId}");
+                throw;
+            }
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"Error using AI model {_modelId}");
-            throw;
-        }
+
+        throw new UnreachableException();
     }
 
     private string BuildPrompt(Resource resource, string userPreferences, string? extraContext)
     {
-        return $"""
-                Analyze the following content:
+        return $$$"""
+                  Analyze the following content:
 
-                Metadata:
-                Title: {resource.Title}
-                URL: {resource.Url}
-                Description: {resource.Description ?? "N/A"}
-                Content: {extraContext ?? "N/A"}
+                  Metadata:
+                  Title: {{{resource.Title}}}
+                  URL: {{{resource.Url}}}
+                  Description: {{{resource.Description ?? "N/A"}}}
+                  Content: {{{extraContext ?? "N/A"}}}
 
-                User Preferences:
-                {userPreferences}
+                  User Preferences:
+                  {{{userPreferences}}}
 
-                Task:
-                Evaluate relevance, provide a verdict (1-100),provide corrected title, summarize, and tag according to the schema.
-                """;
+                  Task:
+                  Evaluate according to User preferences. Give relevance, provide a verdict (number 1-100), provide corrected title, summarize, and tag according to the schema.
+                  
+                  
+                  REQUIRED JSON OUTPUT:
+                  {{
+                    "correctedTitle": "Better Title",
+                    "score": 85,
+                    "verdict": "Why relevant or not in short...",
+                    "summary": "What is it...",
+                    "suggestedTags": ["tag1", "tag2"]
+                  }}
+                  """;
     }
 
     private class AiJsonResult
