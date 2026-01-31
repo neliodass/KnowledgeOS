@@ -88,5 +88,68 @@ public class ResourceService:IResourceService
 
         return dto;
     }
+    public async Task UpdateResourceStatusAsync(Guid id, string userId, ResourceStatus newStatus)
+    {
+        var resource = await _context.Resources
+            .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
+
+        if (resource == null)
+        {
+            throw new KeyNotFoundException("Resource not found");
+        }
+        
+        resource.Status = newStatus;
+
+        if (newStatus == ResourceStatus.Vault && resource.PromotedToVaultAt == null)
+        {
+            resource.PromotedToVaultAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<List<ResourceDto>> GetSmartMixAsync(string userId)
+    {
+      
+        var baseQuery = _context.Resources
+            .Include(r => r.Tags)
+            .Where(r => r.UserId == userId && r.Status == ResourceStatus.Inbox);
+        
+        // 3 items with high, mid, low relevancy
+        
+        var high = await baseQuery
+            .Where(r => r.AiScore >= 75)
+            .OrderBy(r => Guid.NewGuid()) 
+            .Take(1)
+            .ToListAsync();
+        
+        var mid = await baseQuery
+            .Where(r => r.AiScore >= 40 && r.AiScore < 75)
+            .OrderBy(r => Guid.NewGuid())
+            .Take(1)
+            .ToListAsync();
+        
+        var low = await baseQuery
+            .Where(r => r.AiScore < 40 || r.AiScore == null)
+            .OrderBy(r => Guid.NewGuid())
+            .Take(1)
+            .ToListAsync();
+        
+        var mixedList = high.Concat(mid).Concat(low).ToList();
+
+        // Fallback if cant find 3 items with diffrent relevancy
+        if (mixedList.Count < 3)
+        {
+            var existingIds = mixedList.Select(x => x.Id).ToList();
+            var filler = await baseQuery
+                .Where(r => !existingIds.Contains(r.Id))
+                .OrderBy(r => Guid.NewGuid())
+                .Take(3 - mixedList.Count)
+                .ToListAsync();
+            mixedList.AddRange(filler);
+        }
+
+        return mixedList.Select(MapToDto).ToList();
+    }
     
 }

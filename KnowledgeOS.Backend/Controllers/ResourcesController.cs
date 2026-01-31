@@ -40,4 +40,30 @@ public class ResourcesController : ControllerBase
         var resources = await _resourceService.GetUserResourcesAsync(userId, status);
         return Ok(resources);
     }
+    [HttpGet("mix")]
+    public async Task<ActionResult<List<ResourceDto>>> GetSmartMix()
+    {
+        var userId = _currentUserService.UserId;
+        if (userId == null) return Unauthorized();
+
+        var mix = await _resourceService.GetSmartMixAsync(userId);
+        return Ok(mix);
+    }
+
+    [HttpPatch("{id}/status")]
+    public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateResourceStatusDto dto)
+    {
+        var userId = _currentUserService.UserId;
+        if (userId == null) return Unauthorized();
+
+        try
+        {
+            await _resourceService.UpdateResourceStatusAsync(id, userId, dto.Status);
+            return NoContent();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
 }
