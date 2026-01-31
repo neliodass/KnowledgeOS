@@ -47,14 +47,13 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .WithMany(c => c.Resources)
             .HasForeignKey(r => r.CategoryId)
             .OnDelete(DeleteBehavior.SetNull);
-
-        var currentUserId = _currentUserService.UserId;
+        
         modelBuilder.Entity<Resource>()
-            .HasQueryFilter(r => r.UserId == currentUserId);
+            .HasQueryFilter(r => r.UserId ==  _currentUserService.UserId);
         modelBuilder.Entity<Category>()
-            .HasQueryFilter(c => c.UserId == currentUserId);
+            .HasQueryFilter(c => c.UserId ==  _currentUserService.UserId);
         modelBuilder.Entity<Tag>()
-            .HasQueryFilter(t => t.Resources.Any(r => r.UserId == currentUserId));
+            .HasQueryFilter(t => t.Resources.Any(r => r.UserId ==  _currentUserService.UserId));
 
         modelBuilder.Entity<Category>()
             .HasIndex(c => new { c.Name, c.UserId })
