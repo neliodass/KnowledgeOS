@@ -81,7 +81,7 @@ public class OpenRouterProvider : IAiProvider
 
             if (string.IsNullOrEmpty(content))
             {
-                return new AiAnalysisResult(0, "Error", "No content", Array.Empty<string>());
+                return new AiAnalysisResult("No title",0, "Error", "No content", Array.Empty<string>());
             }
 
             _logger.LogInformation($"Analyzing {resource.Id}: {content}");
@@ -91,6 +91,7 @@ public class OpenRouterProvider : IAiProvider
             });
 
             return new AiAnalysisResult(
+                result?.CorrectedTitle ?? "No corrected title",
                 result?.Score ?? 0,
                 result?.Verdict ?? "No verdict",
                 result?.Summary ?? "No summary",
@@ -119,12 +120,13 @@ public class OpenRouterProvider : IAiProvider
                 {userPreferences}
 
                 Task:
-                Evaluate relevance, provide a verdict (1-100), summarize, and tag according to the schema.
+                Evaluate relevance, provide a verdict (1-100),provide corrected title, summarize, and tag according to the schema.
                 """;
     }
 
     private class AiJsonResult
     {
+        public string? CorrectedTitle { get; set; } = string.Empty;
         public int Score { get; set; }
         public string? Verdict { get; set; }
         public string? Summary { get; set; }

@@ -64,7 +64,7 @@ public class AiAnalysisJob : IAiAnalysisJob
             
 
             var analysisResult = await _aiService.AnalyzeResourceAsync(resource, userContext,extraContent);
-
+            resource.CorrectedTitle = analysisResult.CorrectedTitle;
             resource.AiScore = analysisResult.Score;
             resource.AiVerdict = analysisResult.Verdict;
             resource.AiSummary = analysisResult.Summary;

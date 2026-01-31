@@ -8,6 +8,7 @@ public interface IAiService
 }
 
 public record AiAnalysisResult(
+    string CorrectedTitle,
     int Score,
     string Verdict,
     string Summary,
