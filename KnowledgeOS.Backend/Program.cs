@@ -100,6 +100,7 @@ foreach (var model in aiModels.GetChildren())
         return new OpenRouterProvider(client, model.Value!, logger);
     });
 }
+
 builder.Services.AddScoped<IAiService, AiService>();
 builder.Services.AddScoped<IAiAnalysisJob, AiAnalysisJob>();
 builder.Services.AddScoped<IContentFetcher, YouTubeContentFetcher>();

@@ -32,9 +32,10 @@ public class ResourcesController : ControllerBase
 
         return Ok(new { id });
     }
+
     [HttpGet]
     public async Task<ActionResult<PagedResult<ResourceDto>>> GetAll(
-        [FromQuery] PaginationQuery pagination, 
+        [FromQuery] PaginationQuery pagination,
         [FromQuery] ResourceStatus? status)
     {
         var userId = _currentUserService.UserId;
@@ -43,6 +44,7 @@ public class ResourcesController : ControllerBase
         var resources = await _resourceService.GetUserResourcesAsync(userId, pagination, status);
         return Ok(resources);
     }
+
     [HttpGet("mix")]
     public async Task<ActionResult<List<ResourceDto>>> GetSmartMix()
     {

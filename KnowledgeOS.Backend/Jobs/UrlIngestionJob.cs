@@ -17,7 +17,8 @@ public class UrlIngestionJob : IUrlIngestionJob
     private readonly IBackgroundJobClient _backgroundJobClient;
     private readonly YoutubeClient _youtubeClient;
 
-    public UrlIngestionJob(AppDbContext context, ILogger<UrlIngestionJob> logger, IBackgroundJobClient backgroundJobClient)
+    public UrlIngestionJob(AppDbContext context, ILogger<UrlIngestionJob> logger,
+        IBackgroundJobClient backgroundJobClient)
     {
         _context = context;
         _logger = logger;
@@ -28,12 +29,13 @@ public class UrlIngestionJob : IUrlIngestionJob
     public async Task ProcessAsync(Guid resourceId)
     {
         _logger.LogInformation($"Starting to process resource: {resourceId}");
-        var resource = await _context.Resources.IgnoreQueryFilters().FirstOrDefaultAsync(r=>r.Id ==resourceId);
+        var resource = await _context.Resources.IgnoreQueryFilters().FirstOrDefaultAsync(r => r.Id == resourceId);
         if (resource == null)
         {
             _logger.LogError($"Can't find resrouce: {resourceId}");
             return;
         }
+
         try
         {
             resource.Status = ResourceStatus.Processing;
@@ -50,7 +52,7 @@ public class UrlIngestionJob : IUrlIngestionJob
 
             await _context.SaveChangesAsync();
             _logger.LogInformation($"Finished with sucess: {resource.Title}");
-            
+
             _backgroundJobClient.Enqueue<IAiAnalysisJob>(job => job.ProcessAsync(resource.Id));
         }
         catch (Exception ex)
@@ -60,16 +62,17 @@ public class UrlIngestionJob : IUrlIngestionJob
             await _context.SaveChangesAsync();
         }
     }
+
     private async Task ProcessVideoAsync(VideoResource video)
     {
         var metadata = await _youtubeClient.Videos.GetAsync(video.Url);
 
-        video.Title = metadata.Title.Length > 500 
-            ? metadata.Title[..497] + "..." 
+        video.Title = metadata.Title.Length > 500
+            ? metadata.Title[..497] + "..."
             : metadata.Title;
         var description = metadata.Description ?? "";
-        video.Description = description.Length > 2000 
-            ? description[..1997] + "..." 
+        video.Description = description.Length > 2000
+            ? description[..1997] + "..."
             : description;
         video.ChannelName = metadata.Author.ChannelTitle ?? "Unknown";
         video.Duration = metadata.Duration;

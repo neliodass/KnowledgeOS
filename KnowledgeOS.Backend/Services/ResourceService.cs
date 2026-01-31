@@ -9,12 +9,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KnowledgeOS.Backend.Services;
 
-public class ResourceService:IResourceService
+public class ResourceService : IResourceService
 {
     private readonly AppDbContext _context;
     private readonly IBackgroundJobClient _backgroundJobClient;
 
-    public ResourceService(AppDbContext context,IBackgroundJobClient backgroundJobClient)
+    public ResourceService(AppDbContext context, IBackgroundJobClient backgroundJobClient)
     {
         _context = context;
         _backgroundJobClient = backgroundJobClient;
@@ -28,10 +28,12 @@ public class ResourceService:IResourceService
         _backgroundJobClient.Enqueue<IUrlIngestionJob>(job => job.ProcessAsync(resource.Id));
         return resource.Id;
     }
-    public async Task<PagedResult<ResourceDto>> GetUserResourcesAsync(string userId,PaginationQuery pagination, ResourceStatus? status = null)
+
+    public async Task<PagedResult<ResourceDto>> GetUserResourcesAsync(string userId, PaginationQuery pagination,
+        ResourceStatus? status = null)
     {
         var query = _context.Resources
-            .Include(r => r.Tags) 
+            .Include(r => r.Tags)
             .Where(r => r.UserId == userId);
 
         if (status.HasValue)
@@ -42,6 +44,7 @@ public class ResourceService:IResourceService
         {
             query = query.Where(r => r.Status != ResourceStatus.Trash && r.Status != ResourceStatus.Archived);
         }
+
         var totalItems = await query.CountAsync();
 
         var resources = await query
@@ -50,7 +53,7 @@ public class ResourceService:IResourceService
             .Take(pagination.PageSize)
             .ToListAsync();
 
-        var dtos =  resources.Select(MapToDto).ToList();
+        var dtos = resources.Select(MapToDto).ToList();
         return new PagedResult<ResourceDto>(dtos, totalItems, pagination.PageNumber, pagination.PageSize);
     }
 
@@ -65,19 +68,19 @@ public class ResourceService:IResourceService
             ImageUrl = r.ImageUrl,
             Status = r.Status.ToString(),
             CreatedAt = r.CreatedAt,
-            
+
             AiScore = r.AiScore,
             AiVerdict = r.AiVerdict,
             AiSummary = r.AiSummary,
-            
+
             Tags = r.Tags.Select(t => t.Name).ToList()
         };
-        
+
         if (r is VideoResource v)
         {
             dto.ResourceType = "Video";
             dto.ChannelName = v.ChannelName;
-            dto.Duration = v.Duration?.ToString(@"hh\:mm\:ss"); 
+            dto.Duration = v.Duration?.ToString(@"hh\:mm\:ss");
             dto.ViewCount = v.ViewCount;
         }
         else if (r is ArticleResource a)
@@ -93,6 +96,7 @@ public class ResourceService:IResourceService
 
         return dto;
     }
+
     public async Task UpdateResourceStatusAsync(Guid id, string userId, ResourceStatus newStatus)
     {
         var resource = await _context.Resources
@@ -102,7 +106,7 @@ public class ResourceService:IResourceService
         {
             throw new KeyNotFoundException("Resource not found");
         }
-        
+
         resource.Status = newStatus;
 
         if (newStatus == ResourceStatus.Vault && resource.PromotedToVaultAt == null)
@@ -115,31 +119,30 @@ public class ResourceService:IResourceService
 
     public async Task<List<ResourceDto>> GetSmartMixAsync(string userId)
     {
-      
         var baseQuery = _context.Resources
             .Include(r => r.Tags)
             .Where(r => r.UserId == userId && r.Status == ResourceStatus.Inbox);
-        
+
         // 3 items with high, mid, low relevancy
-        
+
         var high = await baseQuery
             .Where(r => r.AiScore >= 75)
-            .OrderBy(r => Guid.NewGuid()) 
+            .OrderBy(r => Guid.NewGuid())
             .Take(1)
             .ToListAsync();
-        
+
         var mid = await baseQuery
             .Where(r => r.AiScore >= 40 && r.AiScore < 75)
             .OrderBy(r => Guid.NewGuid())
             .Take(1)
             .ToListAsync();
-        
+
         var low = await baseQuery
             .Where(r => r.AiScore < 40 || r.AiScore == null)
             .OrderBy(r => Guid.NewGuid())
             .Take(1)
             .ToListAsync();
-        
+
         var mixedList = high.Concat(mid).Concat(low).ToList();
 
         // Fallback if cant find 3 items with diffrent relevancy
@@ -156,5 +159,4 @@ public class ResourceService:IResourceService
 
         return mixedList.Select(MapToDto).ToList();
     }
-    
 }

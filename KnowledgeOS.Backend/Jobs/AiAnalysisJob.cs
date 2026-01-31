@@ -53,7 +53,7 @@ public class AiAnalysisJob : IAiAnalysisJob
 
             var userContext = preferences?.ToAiPromptContext()
                               ?? "Role: General Learner. Interests: General Knowledge. Avoid: Nothing specific.";
-            
+
             string? extraContent = null;
             var fetcher = _contentFetchers.FirstOrDefault(f => f.CanHandle(resource));
             if (fetcher != null)
@@ -61,9 +61,9 @@ public class AiAnalysisJob : IAiAnalysisJob
                 _logger.LogInformation($"Fetching content using {fetcher.GetType().Name}");
                 extraContent = await fetcher.FetchContentAsync(resource);
             }
-            
 
-            var analysisResult = await _aiService.AnalyzeResourceAsync(resource, userContext,extraContent);
+
+            var analysisResult = await _aiService.AnalyzeResourceAsync(resource, userContext, extraContent);
             resource.CorrectedTitle = analysisResult.CorrectedTitle;
             resource.AiScore = analysisResult.Score;
             resource.AiVerdict = analysisResult.Verdict;

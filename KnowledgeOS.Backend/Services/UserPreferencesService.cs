@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KnowledgeOS.Backend.Services;
 
-public class UserPreferencesService: IUserPreferencesService
+public class UserPreferencesService : IUserPreferencesService
 {
     private readonly AppDbContext _context;
 

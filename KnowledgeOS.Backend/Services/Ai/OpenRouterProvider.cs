@@ -143,8 +143,8 @@ public class OpenRouterProvider : IAiProvider
 
                   Task:
                   Evaluate according to User preferences. Give relevance, provide a verdict (number 1-100), provide corrected title, summarize, and tag according to the schema.
-                  
-                  
+
+
                   REQUIRED JSON OUTPUT:
                   {{
                     "correctedTitle": "Better Title",

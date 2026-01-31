@@ -28,7 +28,7 @@ public class IdentityService : IIdentityService
             Email = dto.Email,
             DisplayName = dto.DisplayName
         };
-        
+
         return await _userManager.CreateAsync(user, dto.Password);
     }
 
@@ -43,7 +43,7 @@ public class IdentityService : IIdentityService
 
         return GenerateJwtToken(user);
     }
-    
+
     private string GenerateJwtToken(ApplicationUser user)
     {
         var jwtSettings = _configuration.GetSection("Jwt");

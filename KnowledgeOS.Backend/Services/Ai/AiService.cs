@@ -15,7 +15,8 @@ public class AiService : IAiService
         _logger = logger;
     }
 
-    public async Task<AiAnalysisResult> AnalyzeResourceAsync(Resource resource, string userPreferences, string? extraContext = null)
+    public async Task<AiAnalysisResult> AnalyzeResourceAsync(Resource resource, string userPreferences,
+        string? extraContext = null)
     {
         var exceptions = new List<Exception>();
         foreach (var provider in _providers)

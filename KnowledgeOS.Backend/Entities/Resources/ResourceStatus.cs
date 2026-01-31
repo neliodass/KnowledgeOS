@@ -2,12 +2,12 @@ namespace KnowledgeOS.Backend.Entities.Resources;
 
 public enum ResourceStatus
 {
-    New,            
+    New,
     Processing,
     AiAnalysing,
-    Inbox,          
-    Vault,          
-    Archived,       
-    Trash,          
+    Inbox,
+    Vault,
+    Archived,
+    Trash,
     Error
 }
