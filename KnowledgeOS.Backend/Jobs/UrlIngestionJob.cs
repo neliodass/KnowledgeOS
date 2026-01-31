@@ -1,7 +1,10 @@
+using Hangfire;
 using KnowledgeOS.Backend.Data;
 using KnowledgeOS.Backend.Entities.Resources;
 using KnowledgeOS.Backend.Entities.Resources.ConcreteResources;
+using KnowledgeOS.Backend.Jobs.Abstractions;
 using KnowledgeOS.Backend.Services.Abstractions;
+using Microsoft.EntityFrameworkCore;
 using YoutubeExplode;
 using YoutubeExplode.Common;
 
@@ -11,19 +14,21 @@ public class UrlIngestionJob : IUrlIngestionJob
 {
     private readonly AppDbContext _context;
     private readonly ILogger<UrlIngestionJob> _logger;
+    private readonly IBackgroundJobClient _backgroundJobClient;
     private readonly YoutubeClient _youtubeClient;
 
-    public UrlIngestionJob(AppDbContext context, ILogger<UrlIngestionJob> logger)
+    public UrlIngestionJob(AppDbContext context, ILogger<UrlIngestionJob> logger, IBackgroundJobClient backgroundJobClient)
     {
         _context = context;
         _logger = logger;
+        _backgroundJobClient = backgroundJobClient;
         _youtubeClient = new YoutubeClient();
     }
 
     public async Task ProcessAsync(Guid resourceId)
     {
         _logger.LogInformation($"Starting to process resource: {resourceId}");
-        var resource = await _context.Resources.FindAsync(resourceId);
+        var resource = await _context.Resources.IgnoreQueryFilters().FirstOrDefaultAsync(r=>r.Id ==resourceId);
         if (resource == null)
         {
             _logger.LogError($"Can't find resrouce: {resourceId}");
@@ -43,8 +48,10 @@ public class UrlIngestionJob : IUrlIngestionJob
                 articleResource.Title = "TODO: Pobrać tytuł strony";
             }
 
-            _logger.LogInformation($"Finished with sucess: {resource.Title}");
             await _context.SaveChangesAsync();
+            _logger.LogInformation($"Finished with sucess: {resource.Title}");
+            
+            _backgroundJobClient.Enqueue<IAiAnalysisJob>(job => job.ProcessAsync(resource.Id));
         }
         catch (Exception ex)
         {

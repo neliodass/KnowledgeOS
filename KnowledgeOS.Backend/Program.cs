@@ -6,6 +6,7 @@ using Hangfire.PostgreSql;
 using KnowledgeOS.Backend.Data;
 using KnowledgeOS.Backend.Entities.Users;
 using KnowledgeOS.Backend.Jobs;
+using KnowledgeOS.Backend.Jobs.Abstractions;
 using KnowledgeOS.Backend.Services;
 using KnowledgeOS.Backend.Services.Abstractions;
 using KnowledgeOS.Backend.Services.Ai;
@@ -98,6 +99,7 @@ foreach (var model in aiModels.GetChildren())
     });
 }
 builder.Services.AddScoped<IAiService, AiService>();
+builder.Services.AddScoped<IAiAnalysisJob, AiAnalysisJob>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
