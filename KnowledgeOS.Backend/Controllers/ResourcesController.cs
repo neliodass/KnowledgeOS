@@ -31,4 +31,13 @@ public class ResourcesController : ControllerBase
 
         return Ok(new { id });
     }
+    [HttpGet]
+    public async Task<ActionResult<List<ResourceDto>>> GetAll([FromQuery] ResourceStatus? status)
+    {
+        var userId = _currentUserService.UserId;
+        if (userId == null) return Unauthorized();
+
+        var resources = await _resourceService.GetUserResourcesAsync(userId, status);
+        return Ok(resources);
+    }
 }

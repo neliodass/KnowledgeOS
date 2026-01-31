@@ -14,6 +14,7 @@ public class ResourceDto
     public string? AiVerdict { get; set; }
     public string? AiSummary { get; set; }
     public List<string> Tags { get; set; } = new();
+    public string? CorrectedTitle { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
