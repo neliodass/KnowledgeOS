@@ -74,6 +74,7 @@ builder.Services.AddScoped<IResourceService, ResourceService>();
 builder.Services.AddScoped<IUrlIngestionJob, UrlIngestionJob>();
 builder.Services.AddScoped<IResourceService, ResourceService>();
 builder.Services.AddScoped<IUrlIngestionJob, UrlIngestionJob>();
+
 builder.Services.AddScoped<OpenAIClient>(sp =>
 {
     var config = sp.GetRequiredService<IConfiguration>();
@@ -102,6 +103,7 @@ foreach (var model in aiModels.GetChildren())
 builder.Services.AddScoped<IAiService, AiService>();
 builder.Services.AddScoped<IAiAnalysisJob, AiAnalysisJob>();
 builder.Services.AddScoped<IContentFetcher, YouTubeContentFetcher>();
+builder.Services.AddScoped<IUserPreferencesService, UserPreferencesService>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
