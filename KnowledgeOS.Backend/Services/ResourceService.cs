@@ -1,5 +1,6 @@
 using Hangfire;
 using KnowledgeOS.Backend.Data;
+using KnowledgeOS.Backend.DTOs.Common;
 using KnowledgeOS.Backend.DTOs.Resources;
 using KnowledgeOS.Backend.Entities.Resources;
 using KnowledgeOS.Backend.Entities.Resources.ConcreteResources;
@@ -27,7 +28,7 @@ public class ResourceService:IResourceService
         _backgroundJobClient.Enqueue<IUrlIngestionJob>(job => job.ProcessAsync(resource.Id));
         return resource.Id;
     }
-    public async Task<List<ResourceDto>> GetUserResourcesAsync(string userId, ResourceStatus? status = null)
+    public async Task<PagedResult<ResourceDto>> GetUserResourcesAsync(string userId,PaginationQuery pagination, ResourceStatus? status = null)
     {
         var query = _context.Resources
             .Include(r => r.Tags) 
@@ -41,12 +42,16 @@ public class ResourceService:IResourceService
         {
             query = query.Where(r => r.Status != ResourceStatus.Trash && r.Status != ResourceStatus.Archived);
         }
+        var totalItems = await query.CountAsync();
 
         var resources = await query
             .OrderByDescending(r => r.CreatedAt)
+            .Skip((pagination.PageNumber - 1) * pagination.PageSize)
+            .Take(pagination.PageSize)
             .ToListAsync();
 
-        return resources.Select(MapToDto).ToList();
+        var dtos =  resources.Select(MapToDto).ToList();
+        return new PagedResult<ResourceDto>(dtos, totalItems, pagination.PageNumber, pagination.PageSize);
     }
 
     private ResourceDto MapToDto(Resource r)

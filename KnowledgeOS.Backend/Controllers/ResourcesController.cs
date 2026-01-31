@@ -1,5 +1,6 @@
 using Hangfire;
 using KnowledgeOS.Backend.Data;
+using KnowledgeOS.Backend.DTOs.Common;
 using KnowledgeOS.Backend.DTOs.Resources;
 using KnowledgeOS.Backend.Entities.Resources;
 using KnowledgeOS.Backend.Entities.Resources.ConcreteResources;
@@ -32,12 +33,14 @@ public class ResourcesController : ControllerBase
         return Ok(new { id });
     }
     [HttpGet]
-    public async Task<ActionResult<List<ResourceDto>>> GetAll([FromQuery] ResourceStatus? status)
+    public async Task<ActionResult<PagedResult<ResourceDto>>> GetAll(
+        [FromQuery] PaginationQuery pagination, 
+        [FromQuery] ResourceStatus? status)
     {
         var userId = _currentUserService.UserId;
         if (userId == null) return Unauthorized();
 
-        var resources = await _resourceService.GetUserResourcesAsync(userId, status);
+        var resources = await _resourceService.GetUserResourcesAsync(userId, pagination, status);
         return Ok(resources);
     }
     [HttpGet("mix")]
