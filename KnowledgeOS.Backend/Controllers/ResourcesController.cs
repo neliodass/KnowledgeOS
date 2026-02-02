@@ -35,18 +35,23 @@ public class ResourcesController : ControllerBase
 
     [HttpGet("inbox")]
     public async Task<ActionResult<PagedResult<InboxResourceDto>>> GetInbox(
-        [FromQuery] PaginationQuery pagination)
+        [FromQuery] PaginationQuery pagination, [FromQuery] SearchQuery search)
     {
         var userId = _currentUserService.UserId;
-        var result = await _resourceService.GetInboxResourcesAsync(userId, pagination);
+        if (userId == null) return Unauthorized();
+        var result = await _resourceService.GetInboxResourcesAsync(userId, pagination, search);
         return Ok(result);
     }
+
     [HttpGet("vault")]
     public async Task<ActionResult<PagedResult<VaultResourceDto>>> GetVault(
-        [FromQuery] PaginationQuery pagination)
+        [FromQuery] PaginationQuery pagination,
+        [FromQuery] SearchQuery search,
+        [FromQuery] VaultFilter filter)
     {
         var userId = _currentUserService.UserId;
-        var result = await _resourceService.GetVaultResourcesAsync(userId, pagination);
+        if (userId == null) return Unauthorized();
+        var result = await _resourceService.GetVaultResourcesAsync(userId, pagination, search, filter);
         return Ok(result);
     }
 
@@ -59,6 +64,7 @@ public class ResourcesController : ControllerBase
         var mix = await _resourceService.GetSmartMixAsync(userId);
         return Ok(mix);
     }
+
     [HttpGet("vault/mix")]
     public async Task<ActionResult<List<VaultResourceDto>>> GetVaultMix()
     {
@@ -91,7 +97,7 @@ public class ResourcesController : ControllerBase
         if (userId == null) return Unauthorized();
 
         var resource = await _resourceService.GetInboxResourceByIdAsync(id, userId);
-        
+
         if (resource == null) return NotFound();
 
         return Ok(resource);
@@ -104,7 +110,7 @@ public class ResourcesController : ControllerBase
         if (userId == null) return Unauthorized();
 
         var resource = await _resourceService.GetVaultResourceByIdAsync(id, userId);
-        
+
         if (resource == null) return NotFound();
 
         return Ok(resource);

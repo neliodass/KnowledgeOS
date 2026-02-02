@@ -8,8 +8,8 @@ public interface IResourceService
 {
     Task<Guid> CreateResourceAsync(CreateResourceDto dto, string userId); 
     
-    Task<PagedResult<InboxResourceDto>> GetInboxResourcesAsync(string userId, PaginationQuery pagination, ResourceStatus? status = null);
-    Task<PagedResult<VaultResourceDto>> GetVaultResourcesAsync(string userId, PaginationQuery pagination);
+    Task<PagedResult<InboxResourceDto>> GetInboxResourcesAsync(string userId, PaginationQuery pagination, SearchQuery search);
+    Task<PagedResult<VaultResourceDto>> GetVaultResourcesAsync(string userId, PaginationQuery pagination, SearchQuery search, VaultFilter filter);
     Task<List<VaultResourceDto>> GetVaultMixAsync(string userId);
     Task<List<InboxResourceDto>> GetSmartMixAsync(string userId);
 
