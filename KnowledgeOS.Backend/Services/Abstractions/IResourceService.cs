@@ -16,4 +16,5 @@ public interface IResourceService
     Task<ResourceDto?> GetResourceByIdAsync(Guid id, string userId);
     Task DeleteResourceAsync(Guid id, string userId);
     Task RetryProcessingAsync(Guid id, string userId);
+    Task AssignCategoryAsync(Guid resourceId, string userId, Guid? categoryId);
 }

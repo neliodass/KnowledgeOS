@@ -71,6 +71,7 @@ public class ResourcesController : ControllerBase
             return NotFound();
         }
     }
+
     [HttpGet("{id}")]
     public async Task<ActionResult<ResourceDto>> GetSingle(Guid id)
     {
@@ -78,7 +79,7 @@ public class ResourcesController : ControllerBase
         if (userId == null) return Unauthorized();
 
         var resource = await _resourceService.GetResourceByIdAsync(id, userId);
-        
+
         if (resource == null) return NotFound();
 
         return Ok(resource);
@@ -91,9 +92,10 @@ public class ResourcesController : ControllerBase
         if (userId == null) return Unauthorized();
 
         await _resourceService.DeleteResourceAsync(id, userId);
-        
-        return NoContent(); 
+
+        return NoContent();
     }
+
     [HttpPost("{id}/retry")]
     public async Task<IActionResult> Retry(Guid id)
     {
@@ -108,6 +110,23 @@ public class ResourcesController : ControllerBase
         catch (KeyNotFoundException)
         {
             return NotFound();
+        }
+    }
+
+    [HttpPatch("{id}/category")]
+    public async Task<IActionResult> UpdateCategory(Guid id, [FromBody] UpdateResourceCategoryDto dto)
+    {
+        var userId = _currentUserService.UserId;
+        if (userId == null) return Unauthorized();
+
+        try
+        {
+            await _resourceService.AssignCategoryAsync(id, userId, dto.CategoryId);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
         }
     }
 }

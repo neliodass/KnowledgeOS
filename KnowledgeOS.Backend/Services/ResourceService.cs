@@ -206,4 +206,28 @@ public class ResourceService : IResourceService
 
         _backgroundJobClient.Enqueue<IUrlIngestionJob>(job => job.ProcessAsync(resource.Id));
     }
+    public async Task AssignCategoryAsync(Guid resourceId, string userId, Guid? categoryId)
+    {
+        var resource = await _context.Resources
+            .FirstOrDefaultAsync(r => r.Id == resourceId && r.UserId == userId);
+
+        if (resource == null)
+        {
+            throw new KeyNotFoundException("Resource not found");
+        }
+
+        if (categoryId.HasValue)
+        {
+            var categoryExists = await _context.Categories
+                .AnyAsync(c => c.Id == categoryId.Value && c.UserId == userId);
+            
+            if (!categoryExists)
+            {
+                throw new KeyNotFoundException("Category not found");
+            }
+        }
+
+        resource.CategoryId = categoryId;
+        await _context.SaveChangesAsync();
+    }
 }
