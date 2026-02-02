@@ -14,17 +14,20 @@ public class AiAnalysisJob : IAiAnalysisJob
     private readonly AppDbContext _context;
     private readonly IAiService _aiService;
     private readonly IEnumerable<IContentFetcher> _contentFetchers;
+    private readonly ICategoryService _categoryService;
     private readonly ILogger<AiAnalysisJob> _logger;
 
     public AiAnalysisJob(
         AppDbContext context,
         IAiService aiService,
         IEnumerable<IContentFetcher> contentFetchers,
+        ICategoryService categoryService,
         ILogger<AiAnalysisJob> logger)
     {
         _context = context;
         _aiService = aiService;
         _contentFetchers = contentFetchers;
+        _categoryService = categoryService;
         _logger = logger;
     }
 
@@ -32,8 +35,6 @@ public class AiAnalysisJob : IAiAnalysisJob
     public async Task ProcessAsync(Guid resourceId)
     {
         _logger.LogInformation($"Starting AI Analysis for resource: {resourceId}");
-
-        // Get the resource
         var resource = await _context.Resources
             .IgnoreQueryFilters()
             .Include(r => r.Tags)
@@ -64,55 +65,53 @@ public class AiAnalysisJob : IAiAnalysisJob
                 extraContent = await fetcher.FetchContentAsync(resource);
             }
 
-
-            var analysisResult = await _aiService.AnalyzeResourceAsync(resource, userContext, extraContent);
-            resource.CorrectedTitle = analysisResult.CorrectedTitle;
-            resource.AiScore = analysisResult.Score;
-            resource.AiVerdict = analysisResult.Verdict;
-            resource.AiSummary = analysisResult.Summary;
-
-            resource.Tags.Clear();
-
-            foreach (var tagName in analysisResult.SuggestedTags)
-            {
-                //normalilze tag name
-                var normalizedTagName = tagName.Trim().ToLowerInvariant();
-                if (string.IsNullOrWhiteSpace(normalizedTagName)) continue;
-
-                // check existance for this user
-                var existingTag = await _context.Tags
-                    .IgnoreQueryFilters()
-                    .FirstOrDefaultAsync(t => t.UserId == resource.UserId && t.Name == normalizedTagName);
-
-                if (existingTag != null)
-                {
-                    if (!resource.Tags.Contains(existingTag))
-                    {
-                        resource.Tags.Add(existingTag);
-                    }
-                }
-                else
-                {
-                    var newTag = new Tag
-                    {
-                        Name = normalizedTagName,
-                        UserId = resource.UserId
-                    };
-                    resource.Tags.Add(newTag);
-                }
-            }
+            string[] tagsToProcess;
 
             if (resource.IsVaultTarget)
             {
+                var existingCategories = await _categoryService.GetUserCategoryNamesAsync(resource.UserId);
+
+                var result =
+                    await _aiService.AnalyzeForVaultAsync(resource, userContext, existingCategories, extraContent);
+
+                resource.CorrectedTitle = result.CorrectedTitle;
+                resource.AiSummary = result.Summary;
+                tagsToProcess = result.SuggestedTags;
+
+                if (!string.IsNullOrWhiteSpace(result.SuggestedCategoryName))
+                {
+                    var matchedCategoryId =
+                        await _categoryService.GetIdByNameAsync(resource.UserId, result.SuggestedCategoryName);
+
+                    if (matchedCategoryId.HasValue)
+                    {
+                        resource.CategoryId = matchedCategoryId.Value;
+                    }
+                    else
+                    {
+                        //TODO : ewentualnie dodać pole SuggestedNewCategoryName 
+                    }
+                }
+
                 resource.Status = ResourceStatus.Vault;
             }
             else
             {
+                var result = await _aiService.AnalyzeForInboxAsync(resource, userContext, extraContent);
+
+                resource.CorrectedTitle = result.CorrectedTitle;
+                resource.AiScore = result.Score;
+                resource.AiVerdict = result.Verdict;
+                resource.AiSummary = result.Summary;
+                tagsToProcess = result.SuggestedTags;
+
                 resource.Status = ResourceStatus.Inbox;
             }
 
+            await UpdateTagsAsync(resource, tagsToProcess);
+
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"AI Analysis completed for {resource.Title}. Score: {resource.AiScore}");
+            _logger.LogInformation($"AI Analysis completed for {resource.Title}. Status: {resource.Status}");
         }
         catch (Exception ex)
         {
@@ -127,6 +126,38 @@ public class AiAnalysisJob : IAiAnalysisJob
             }
 
             throw;
+        }
+    }
+
+    private async Task UpdateTagsAsync(Resource resource, string[] tags)
+    {
+        resource.Tags.Clear();
+
+        foreach (var tagName in tags)
+        {
+            var normalizedTagName = tagName.Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(normalizedTagName)) continue;
+
+            var existingTag = await _context.Tags
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(t => t.UserId == resource.UserId && t.Name == normalizedTagName);
+
+            if (existingTag != null)
+            {
+                if (!resource.Tags.Contains(existingTag))
+                {
+                    resource.Tags.Add(existingTag);
+                }
+            }
+            else
+            {
+                var newTag = new Tag
+                {
+                    Name = normalizedTagName,
+                    UserId = resource.UserId
+                };
+                resource.Tags.Add(newTag);
+            }
         }
     }
 }

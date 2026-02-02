@@ -6,5 +6,10 @@ public interface IAiProvider
 {
     string Name { get; }
 
-    Task<AiAnalysisResult> AnalyzeAsync(Resource resource, string userPreferences, string? extraContext = null);
+    Task<InboxAnalysisResult> AnalyzeForInboxAsync(Resource resource, string userPreferences,
+        string? extraContext = null);
+
+    Task<VaultAnalysisResult> AnalyzeForVaultAsync(Resource resource, string userPreferences,
+        List<string> existingCategories,
+        string? extraContext = null);
 }

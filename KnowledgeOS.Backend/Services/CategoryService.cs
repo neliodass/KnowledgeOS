@@ -66,4 +66,21 @@ public class CategoryService : ICategoryService
         _context.Categories.Remove(category);
         await _context.SaveChangesAsync();
     }
+    public async Task<List<string>> GetUserCategoryNamesAsync(string userId)
+    {
+        return await _context.Categories
+            .Where(c => c.UserId == userId)
+            .Select(c => c.Name)
+            .ToListAsync();
+    }
+
+    public async Task<Guid?> GetIdByNameAsync(string userId, string categoryName)
+    {
+        var category = await _context.Categories
+            .Where(c => c.UserId == userId && c.Name.ToLower() == categoryName.ToLower())
+            .Select(c => c.Id)
+            .FirstOrDefaultAsync();
+
+        return category == Guid.Empty ? null : category;
+    }
 }

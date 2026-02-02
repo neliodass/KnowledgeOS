@@ -23,145 +23,163 @@ public class OpenRouterProvider : IAiProvider
         _logger = logger;
     }
 
-    public async Task<AiAnalysisResult> AnalyzeAsync(Resource resource, string userPreferences,
-        string? extraContext = null)
+   public async Task<InboxAnalysisResult> AnalyzeForInboxAsync(Resource resource, string userPreferences,  string? extraContext = null)
+    {
+        var options = BuildInboxOptions();
+        var prompt = BuildInboxPrompt(resource, userPreferences, extraContext);
+        
+        var content = await CallAiWithRetryAsync(prompt, options);
+        var result = JsonSerializer.Deserialize<InboxJsonResult>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+        return new InboxAnalysisResult(
+            result?.CorrectedTitle ?? resource.Title,
+            result?.Score ?? 0,
+            result?.Verdict ?? "No verdict.",
+            result?.Summary ?? "No summary.",
+            result?.SuggestedTags ?? Array.Empty<string>()
+        );
+    }
+
+    public async Task<VaultAnalysisResult> AnalyzeForVaultAsync(Resource resource, string userPreferences,List<string> existingCategories, string? extraContext = null)
+    {
+        var options = BuildVaultOptions();
+        var prompt = BuildVaultPrompt(resource, userPreferences,existingCategories, extraContext);
+        
+        var content = await CallAiWithRetryAsync(prompt, options);
+        var result = JsonSerializer.Deserialize<VaultJsonResult>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+        return new VaultAnalysisResult(
+            result?.CorrectedTitle ?? resource.Title,
+            result?.Summary ?? "No summary.",
+            result?.SuggestedTags ?? Array.Empty<string>(),
+            result?.SuggestedCategoryName ?? "General"
+        );
+    }
+
+    private async Task<string> CallAiWithRetryAsync(string prompt, ChatCompletionOptions options)
     {
         var chatClient = _openAiClient.GetChatClient(_modelId);
-
-        var prompt = BuildPrompt(resource, userPreferences, extraContext);
-
-        const int MaxRetries = 2;
-        var delay = TimeSpan.FromSeconds(1);
-
         var messages = new List<ChatMessage>
         {
-            new SystemChatMessage(
-                "You are a personal knowledge curator assistant. You are a strict JSON API. You output ONLY valid JSON. No markdown, no intro, no explanation."),
+            new SystemChatMessage("You are a professional knowledge curator assistant. You are a strict JSON API. You output ONLY valid JSON. No markdown, no conversational filler."),
             new UserChatMessage(prompt)
         };
 
-        var options = new ChatCompletionOptions
-        {
-            ResponseFormat = ChatResponseFormat.CreateJsonSchemaFormat(
-                jsonSchemaFormatName: "resource_analysis",
-                jsonSchema: BinaryData.FromObjectAsJson(new
-                {
-                    type = "object",
-                    properties = new
-                    {
-                        correctedTitle = new
-                        {
-                            type = "string",
-                            description = "Improved title for the resource."
-                        },
-                        score = new
-                        {
-                            type = "integer",
-                            description = "Relevance score from 0 to 100 based on user preferences."
-                        },
-                        verdict = new
-                        {
-                            type = "string",
-                            description = "Short explanation of the score."
-                        },
-                        summary = new
-                        {
-                            type = "string",
-                            description = "Concise summary of the content (max 3 sentences)."
-                        },
-                        suggestedTags = new
-                        {
-                            type = "array",
-                            items = new { type = "string" },
-                            description = "List of 3-5 relevant tags for categorization."
-                        }
-                    },
-                    required = new[] { "score", "verdict", "summary", "suggestedTags" },
-                    additionalProperties = false
-                }),
-                jsonSchemaIsStrict: true
-            )
-        };
-        for (int attempt = 1; attempt <= MaxRetries; attempt++)
+        for (int attempt = 1; attempt <= 2; attempt++)
         {
             try
             {
                 ChatCompletion completion = await chatClient.CompleteChatAsync(messages, options);
-                var content = completion.Content[0].Text;
-
-                if (string.IsNullOrEmpty(content))
-                {
-                    _logger.LogWarning(
-                        $"Model {_modelId} returned empty content on attempt {attempt}. Skipping internal retries.");
-                    throw new InvalidOperationException("AI returned empty content.");
-                }
-
-                _logger.LogInformation($"Analyzing {resource.Id}: {content}");
-                var result = JsonSerializer.Deserialize<AiJsonResult>(content, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-
-                return new AiAnalysisResult(
-                    result?.CorrectedTitle ?? "No corrected title",
-                    result?.Score ?? 0,
-                    result?.Verdict ?? "No verdict",
-                    result?.Summary ?? "No summary",
-                    result?.SuggestedTags ?? Array.Empty<string>()
-                );
-            }
-            catch (JsonException jsonEx)
-            {
-                _logger.LogWarning($"JSON Parse Error (Attempt {attempt}) for {_modelId}: {jsonEx.Message}");
-
-                if (attempt == MaxRetries) throw;
-                await Task.Delay(delay);
+                var text = completion.Content[0].Text;
+                if (string.IsNullOrWhiteSpace(text)) throw new InvalidOperationException("AI returned empty response.");
+                return text;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error using AI model {_modelId}");
-                throw;
+                _logger.LogWarning($"Attempt {attempt} failed for model {_modelId}: {ex.Message}");
+                if (attempt == 2) throw;
+                await Task.Delay(1000);
             }
         }
-
         throw new UnreachableException();
     }
-
-    private string BuildPrompt(Resource resource, string userPreferences, string? extraContext)
+    private ChatCompletionOptions BuildInboxOptions()
     {
-        return $$$"""
-                  Analyze the following content:
-
-                  Metadata:
-                  Title: {{{resource.Title}}}
-                  URL: {{{resource.Url}}}
-                  Description: {{{resource.Description ?? "N/A"}}}
-                  Content: {{{extraContext ?? "N/A"}}}
-
-                  User Preferences:
-                  {{{userPreferences}}}
-
-                  Task:
-                  Evaluate according to User preferences. Give relevance, provide a verdict (number 1-100), provide corrected title, summarize, and tag according to the schema.
-
-
-                  REQUIRED JSON OUTPUT:
-                  {{
-                    "correctedTitle": "Better Title",
-                    "score": 85,
-                    "verdict": "Why relevant or not in short...",
-                    "summary": "What is it...",
-                    "suggestedTags": ["tag1", "tag2"]
-                  }}
-                  """;
+        return new ChatCompletionOptions
+        {
+            ResponseFormat = ChatResponseFormat.CreateJsonSchemaFormat(
+                "inbox_analysis",
+                BinaryData.FromObjectAsJson(new {
+                    type = "object",
+                    properties = new {
+                        correctedTitle = new { type = "string", description = "A better, more descriptive title." },
+                        score = new { type = "integer", description = "Relevance 0-100 based on user context." },
+                        verdict = new { type = "string", description = "One sentence explaining the score." },
+                        summary = new { type = "string", description = "Max 3 sentences summary." },
+                        suggestedTags = new { type = "array", items = new { type = "string" } }
+                    },
+                    required = new[] { "correctedTitle", "score", "verdict", "summary", "suggestedTags" },
+                    additionalProperties = false
+                }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }),
+                jsonSchemaIsStrict: true)
+        };
     }
-
-    private class AiJsonResult
+    private ChatCompletionOptions BuildVaultOptions()
     {
-        public string? CorrectedTitle { get; set; } = string.Empty;
+        return new ChatCompletionOptions
+        {
+            ResponseFormat = ChatResponseFormat.CreateJsonSchemaFormat(
+                "vault_analysis",
+                BinaryData.FromObjectAsJson(new {
+                    type = "object",
+                    properties = new {
+                        correctedTitle = new { type = "string", description = "Final polished title for the vault." },
+                        summary = new { type = "string", description = "Detailed essence of the content." },
+                        suggestedTags = new { type = "array", items = new { type = "string" } },
+                        suggestedCategoryName = new { type = "string", description = "The best matching category name from the provided list, or a new one if none fit." }
+                    },
+                    required = new[] { "correctedTitle", "summary", "suggestedTags", "suggestedCategoryName" },
+                    additionalProperties = false
+                }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }),
+                jsonSchemaIsStrict: true)
+        };
+    }
+    private string BuildInboxPrompt(Resource resource, string prefs, string? content) =>
+        $"""
+         TASK: SCREENING
+         Evaluate the following content for suitability in the user's Inbox.
+
+         USER PREFERENCES:
+         {prefs}
+
+         METADATA:
+         Title: {resource.Title}
+         Url: {resource.Url}
+         Content Snippet: {content ?? "N/A"}
+
+         INSTRUCTIONS:
+         1. Compare content with user interests and 'topics to avoid'.
+         2. Assign a score (0-100).
+         3. Provide a brief verdict.
+         """;
+    private string BuildVaultPrompt(Resource resource, string prefs, List<string> categories, string? content)
+    {
+        var cats = categories.Any() ? string.Join(", ", categories) : "None (Propose a new one)";
+
+        return $"""
+                TASK: VAULT ARCHIVING
+                Organize this resource for the Knowledge Vault.
+
+                USER CONTEXT:
+                {prefs}
+
+                EXISTING CATEGORIES:
+                [{cats}]
+
+                RESOURCE DATA:
+                Title: {resource.Title}
+                Url: {resource.Url}
+                Content: {content ?? "N/A"}
+
+                INSTRUCTIONS:
+                1. CATEGORY: Check "EXISTING CATEGORIES". If the content fits well, use that name EXACTLY. If not, suggest a new, concise name.
+                2. TITLE: Create a searchable Corrected Title.
+                3. SUMMARY: Detailed insights.
+                4. TAGS: 3-5 tags.
+                """;
+    }
+    private class InboxJsonResult {
+        public string? CorrectedTitle { get; set; }
         public int Score { get; set; }
         public string? Verdict { get; set; }
         public string? Summary { get; set; }
         public string[]? SuggestedTags { get; set; }
+    }
+
+    private class VaultJsonResult {
+        public string? CorrectedTitle { get; set; }
+        public string? Summary { get; set; }
+        public string[]? SuggestedTags { get; set; }
+        public string? SuggestedCategoryName { get; set; }
     }
 }
