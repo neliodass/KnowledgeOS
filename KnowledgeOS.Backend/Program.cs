@@ -105,6 +105,7 @@ builder.Services.AddScoped<IAiService, AiService>();
 builder.Services.AddScoped<IAiAnalysisJob, AiAnalysisJob>();
 builder.Services.AddScoped<IContentFetcher, YouTubeContentFetcher>();
 builder.Services.AddScoped<IUserPreferencesService, UserPreferencesService>();
+builder.Services.AddScoped<IErrorRecoveryJob, ErrorRecoveryJob>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -137,4 +138,14 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.UseHangfireDashboard();
+using (var scope = app.Services.CreateScope())
+{
+    var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+    recurringJobManager.AddOrUpdate<IErrorRecoveryJob>(
+        "system-error-recovery",
+        job => job.RecoverAsync(),
+        Cron.Hourly
+    );
+}
+
 app.Run();

@@ -1,3 +1,4 @@
+using Hangfire;
 using KnowledgeOS.Backend.Data;
 using KnowledgeOS.Backend.Entities.Resources;
 using KnowledgeOS.Backend.Entities.Tagging;
@@ -27,6 +28,7 @@ public class AiAnalysisJob : IAiAnalysisJob
         _logger = logger;
     }
 
+    [AutomaticRetry(Attempts = 3, OnAttemptsExceeded = AttemptsExceededAction.Fail)]
     public async Task ProcessAsync(Guid resourceId)
     {
         _logger.LogInformation($"Starting AI Analysis for resource: {resourceId}");
@@ -69,6 +71,8 @@ public class AiAnalysisJob : IAiAnalysisJob
             resource.AiVerdict = analysisResult.Verdict;
             resource.AiSummary = analysisResult.Summary;
 
+            resource.Tags.Clear();
+
             foreach (var tagName in analysisResult.SuggestedTags)
             {
                 //normalilze tag name
@@ -77,6 +81,7 @@ public class AiAnalysisJob : IAiAnalysisJob
 
                 // check existance for this user
                 var existingTag = await _context.Tags
+                    .IgnoreQueryFilters()
                     .FirstOrDefaultAsync(t => t.UserId == resource.UserId && t.Name == normalizedTagName);
 
                 if (existingTag != null)
@@ -105,10 +110,16 @@ public class AiAnalysisJob : IAiAnalysisJob
         catch (Exception ex)
         {
             _logger.LogError(ex, $"AI Analysis failed for resource {resourceId}");
+            resource.Status = ResourceStatus.Error;
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch
+            {
+            }
 
-            //TODO: retry logic can be added here - or set error status
-            resource.Status = ResourceStatus.Inbox;
-            await _context.SaveChangesAsync();
+            throw;
         }
     }
 }
