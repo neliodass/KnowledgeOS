@@ -6,14 +6,16 @@ namespace KnowledgeOS.Backend.Services.Abstractions;
 
 public interface IResourceService
 {
-    Task<Guid> CreateResourceAsync(string url, string userId);
-
-    Task<PagedResult<ResourceDto>> GetUserResourcesAsync(string userId, PaginationQuery pagination,
-        ResourceStatus? status = null);
+    Task<Guid> CreateResourceAsync(CreateResourceDto dto, string userId); 
+    
+    Task<PagedResult<InboxResourceDto>> GetInboxResourcesAsync(string userId, PaginationQuery pagination, ResourceStatus? status = null);
+    Task<PagedResult<VaultResourceDto>> GetVaultResourcesAsync(string userId, PaginationQuery pagination);
+    Task<List<VaultResourceDto>> GetVaultMixAsync(string userId);
+    Task<List<InboxResourceDto>> GetSmartMixAsync(string userId);
 
     Task UpdateResourceStatusAsync(Guid id, string userId, ResourceStatus newStatus);
-    Task<List<ResourceDto>> GetSmartMixAsync(string userId);
-    Task<ResourceDto?> GetResourceByIdAsync(Guid id, string userId);
+    Task<InboxResourceDto?> GetInboxResourceByIdAsync(Guid id, string userId);
+    Task<VaultResourceDto?> GetVaultResourceByIdAsync(Guid id, string userId);
     Task DeleteResourceAsync(Guid id, string userId);
     Task RetryProcessingAsync(Guid id, string userId);
     Task AssignCategoryAsync(Guid resourceId, string userId, Guid? categoryId);

@@ -102,7 +102,14 @@ public class AiAnalysisJob : IAiAnalysisJob
                 }
             }
 
-            resource.Status = ResourceStatus.Inbox;
+            if (resource.IsVaultTarget)
+            {
+                resource.Status = ResourceStatus.Vault;
+            }
+            else
+            {
+                resource.Status = ResourceStatus.Inbox;
+            }
 
             await _context.SaveChangesAsync();
             _logger.LogInformation($"AI Analysis completed for {resource.Title}. Score: {resource.AiScore}");

@@ -20,31 +20,32 @@ public class ResourceService : IResourceService
         _backgroundJobClient = backgroundJobClient;
     }
 
-    public async Task<Guid> CreateResourceAsync(string url, string userId)
+    public async Task<Guid> CreateResourceAsync(CreateResourceDto dto, string userId)
     {
-        var resource = ResourceFactory.Create(url, userId);
+        var resource = ResourceFactory.Create(dto.Url, userId);
+        if (dto.AddToVault)
+        {
+            resource.IsVaultTarget = true;
+            resource.CategoryId = dto.CategoryId;
+            resource.PromotedToVaultAt = DateTime.UtcNow;
+        }
+
         _context.Resources.Add(resource);
         await _context.SaveChangesAsync();
         _backgroundJobClient.Enqueue<IUrlIngestionJob>(job => job.ProcessAsync(resource.Id));
         return resource.Id;
     }
 
-    public async Task<PagedResult<ResourceDto>> GetUserResourcesAsync(string userId, PaginationQuery pagination,
+    public async Task<PagedResult<InboxResourceDto>> GetInboxResourcesAsync(string userId, PaginationQuery pagination,
         ResourceStatus? status = null)
     {
         var query = _context.Resources
             .Include(r => r.Tags)
-            .Where(r => r.UserId == userId);
-
-        if (status.HasValue)
-        {
-            query = query.Where(r => r.Status == status.Value);
-        }
-        else
-        {
-            query = query.Where(r => r.Status != ResourceStatus.Trash && r.Status != ResourceStatus.Archived);
-        }
-
+            .Where(r => r.UserId == userId &&
+                        (r.Status == ResourceStatus.Inbox || 
+                         r.Status == ResourceStatus.Processing || 
+                         r.Status == ResourceStatus.AiAnalysing));
+        
         var totalItems = await query.CountAsync();
 
         var resources = await query
@@ -53,35 +54,44 @@ public class ResourceService : IResourceService
             .Take(pagination.PageSize)
             .ToListAsync();
 
-        var dtos = resources.Select(MapToDto).ToList();
-        return new PagedResult<ResourceDto>(dtos, totalItems, pagination.PageNumber, pagination.PageSize);
+        var dtos = resources.Select(MapToInboxDto).ToList();
+        return new PagedResult<InboxResourceDto>(dtos, totalItems, pagination.PageNumber, pagination.PageSize);
     }
-
-    private ResourceDto MapToDto(Resource r)
+    public async Task<PagedResult<VaultResourceDto>> GetVaultResourcesAsync(string userId, PaginationQuery pagination)
     {
-        var dto = new ResourceDto
-        {
-            Id = r.Id,
-            Url = r.Url,
-            Title = r.Title,
-            CorrectedTitle = r.CorrectedTitle ?? "",
-            ImageUrl = r.ImageUrl,
-            Status = r.Status.ToString(),
-            CreatedAt = r.CreatedAt,
+        var query = _context.Resources
+            .Include(r => r.Tags)
+            .Include(r => r.Category) 
+            .Where(r => r.UserId == userId && r.Status == ResourceStatus.Vault);
+        
 
-            AiScore = r.AiScore,
-            AiVerdict = r.AiVerdict,
-            AiSummary = r.AiSummary,
+        var totalItems = await query.CountAsync();
+        var resources = await query
+            .OrderByDescending(r => r.PromotedToVaultAt) 
+            .Skip((pagination.PageNumber - 1) * pagination.PageSize)
+            .Take(pagination.PageSize)
+            .ToListAsync();
 
-            Tags = r.Tags.Select(t => t.Name).ToList()
-        };
+        var dtos = resources.Select(MapToVaultDto).ToList();
+
+        return new PagedResult<VaultResourceDto>(dtos, totalItems, pagination.PageNumber, pagination.PageSize);
+    }
+    
+    private void PopulateBaseDto(Resource r, ResourceBaseDto dto)
+    {
+        dto.Id = r.Id;
+        dto.Url = r.Url;
+        dto.Title = r.Title;
+        dto.ImageUrl = r.ImageUrl;
+        dto.CreatedAt = r.CreatedAt;
+        dto.AiSummary = r.AiSummary;
+        dto.Tags = r.Tags.Select(t => t.Name).ToList();
 
         if (r is VideoResource v)
         {
             dto.ResourceType = "Video";
             dto.ChannelName = v.ChannelName;
             dto.Duration = v.Duration?.ToString(@"hh\:mm\:ss");
-            dto.ViewCount = v.ViewCount;
         }
         else if (r is ArticleResource a)
         {
@@ -93,9 +103,48 @@ public class ResourceService : IResourceService
         {
             dto.ResourceType = "Unknown";
         }
+    }
+
+    private VaultResourceDto MapToVaultDto(Resource r)
+    {
+        var dto = new VaultResourceDto(); 
+        PopulateBaseDto(r, dto);         
+
+        dto.CategoryId = r.CategoryId;
+        dto.CategoryName = r.Category?.Name;
+        dto.UserNote = r.UserNote;
+        dto.PromotedToVaultAt = r.PromotedToVaultAt;
 
         return dto;
     }
+    
+    private InboxResourceDto MapToInboxDto(Resource r)
+    {
+        var dto = new InboxResourceDto(); 
+        PopulateBaseDto(r, dto);
+
+        dto.CorrectedTitle = r.CorrectedTitle;
+        dto.AiScore = r.AiScore;
+        dto.AiVerdict = r.AiVerdict;
+        // dto.SuggestedCategoryName = 
+        
+        return dto;
+    }
+    
+    public async Task<List<VaultResourceDto>> GetVaultMixAsync(string userId)
+    {
+        //random for now TODO - better algorithm
+        var resources = await _context.Resources
+            .Include(r => r.Category)
+            .Include(r => r.Tags)
+            .Where(r => r.UserId == userId && r.Status == ResourceStatus.Vault)
+            .OrderBy(r => Guid.NewGuid())
+            .Take(3)
+            .ToListAsync();
+
+        return resources.Select(MapToVaultDto).ToList();
+    }
+    
 
     public async Task UpdateResourceStatusAsync(Guid id, string userId, ResourceStatus newStatus)
     {
@@ -117,7 +166,7 @@ public class ResourceService : IResourceService
         await _context.SaveChangesAsync();
     }
 
-    public async Task<List<ResourceDto>> GetSmartMixAsync(string userId)
+    public async Task<List<InboxResourceDto>> GetSmartMixAsync(string userId)
     {
         var baseQuery = _context.Resources
             .Include(r => r.Tags)
@@ -157,20 +206,34 @@ public class ResourceService : IResourceService
             mixedList.AddRange(filler);
         }
 
-        return mixedList.Select(MapToDto).ToList();
+        return mixedList.Select(MapToInboxDto).ToList();
     }
-
-    public async Task<ResourceDto?> GetResourceByIdAsync(Guid id, string userId)
+    public async Task<InboxResourceDto?> GetInboxResourceByIdAsync(Guid id, string userId)
     {
         var resource = await _context.Resources
             .Include(r => r.Tags)
+            //TODO - include category?
             .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
 
         if (resource == null) return null;
 
-        return MapToDto(resource);
+         if (resource.Status == ResourceStatus.Vault) return null; 
+
+        return MapToInboxDto(resource);
     }
 
+    public async Task<VaultResourceDto?> GetVaultResourceByIdAsync(Guid id, string userId)
+    {
+        var resource = await _context.Resources
+            .Include(r => r.Tags)
+            .Include(r => r.Category) 
+            .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
+
+        if (resource == null) return null;
+
+        return MapToVaultDto(resource);
+    }
+    
     public async Task DeleteResourceAsync(Guid id, string userId)
     {
         var resource = await _context.Resources
@@ -190,6 +253,7 @@ public class ResourceService : IResourceService
 
         await _context.SaveChangesAsync();
     }
+
     public async Task RetryProcessingAsync(Guid id, string userId)
     {
         var resource = await _context.Resources
@@ -201,11 +265,12 @@ public class ResourceService : IResourceService
 
         resource.AiVerdict = null;
         resource.AiScore = null;
-        
+
         await _context.SaveChangesAsync();
 
         _backgroundJobClient.Enqueue<IUrlIngestionJob>(job => job.ProcessAsync(resource.Id));
     }
+
     public async Task AssignCategoryAsync(Guid resourceId, string userId, Guid? categoryId)
     {
         var resource = await _context.Resources
@@ -220,7 +285,7 @@ public class ResourceService : IResourceService
         {
             var categoryExists = await _context.Categories
                 .AnyAsync(c => c.Id == categoryId.Value && c.UserId == userId);
-            
+
             if (!categoryExists)
             {
                 throw new KeyNotFoundException("Category not found");

@@ -28,30 +28,42 @@ public class ResourcesController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateResourceDto dto)
     {
         var userId = _currentUserService.UserId;
-        var id = await _resourceService.CreateResourceAsync(dto.Url, userId!);
+        var id = await _resourceService.CreateResourceAsync(dto, userId!);
 
         return Ok(new { id });
     }
 
-    [HttpGet]
-    public async Task<ActionResult<PagedResult<ResourceDto>>> GetAll(
-        [FromQuery] PaginationQuery pagination,
-        [FromQuery] ResourceStatus? status)
+    [HttpGet("inbox")]
+    public async Task<ActionResult<PagedResult<InboxResourceDto>>> GetInbox(
+        [FromQuery] PaginationQuery pagination)
     {
         var userId = _currentUserService.UserId;
-        if (userId == null) return Unauthorized();
-
-        var resources = await _resourceService.GetUserResourcesAsync(userId, pagination, status);
-        return Ok(resources);
+        var result = await _resourceService.GetInboxResourcesAsync(userId, pagination);
+        return Ok(result);
+    }
+    [HttpGet("vault")]
+    public async Task<ActionResult<PagedResult<VaultResourceDto>>> GetVault(
+        [FromQuery] PaginationQuery pagination)
+    {
+        var userId = _currentUserService.UserId;
+        var result = await _resourceService.GetVaultResourcesAsync(userId, pagination);
+        return Ok(result);
     }
 
     [HttpGet("mix")]
-    public async Task<ActionResult<List<ResourceDto>>> GetSmartMix()
+    public async Task<ActionResult<List<InboxResourceDto>>> GetSmartMix()
     {
         var userId = _currentUserService.UserId;
         if (userId == null) return Unauthorized();
 
         var mix = await _resourceService.GetSmartMixAsync(userId);
+        return Ok(mix);
+    }
+    [HttpGet("vault/mix")]
+    public async Task<ActionResult<List<VaultResourceDto>>> GetVaultMix()
+    {
+        var userId = _currentUserService.UserId;
+        var mix = await _resourceService.GetVaultMixAsync(userId);
         return Ok(mix);
     }
 
@@ -72,14 +84,27 @@ public class ResourcesController : ControllerBase
         }
     }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<ResourceDto>> GetSingle(Guid id)
+    [HttpGet("inbox/{id}")]
+    public async Task<ActionResult<InboxResourceDto>> GetInboxSingle(Guid id)
     {
         var userId = _currentUserService.UserId;
         if (userId == null) return Unauthorized();
 
-        var resource = await _resourceService.GetResourceByIdAsync(id, userId);
+        var resource = await _resourceService.GetInboxResourceByIdAsync(id, userId);
+        
+        if (resource == null) return NotFound();
 
+        return Ok(resource);
+    }
+
+    [HttpGet("vault/{id}")]
+    public async Task<ActionResult<VaultResourceDto>> GetVaultSingle(Guid id)
+    {
+        var userId = _currentUserService.UserId;
+        if (userId == null) return Unauthorized();
+
+        var resource = await _resourceService.GetVaultResourceByIdAsync(id, userId);
+        
         if (resource == null) return NotFound();
 
         return Ok(resource);

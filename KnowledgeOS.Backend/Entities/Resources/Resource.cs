@@ -29,6 +29,7 @@ public abstract class Resource : IUserOwnedResource
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? PromotedToVaultAt { get; set; }
+    public bool IsVaultTarget { get; set; } = false;
 
     [Required] public string UserId { get; set; } = string.Empty;
     public ApplicationUser? User { get; set; }
