@@ -26,8 +26,11 @@ public class ResourceService : IResourceService
         if (dto.AddToVault)
         {
             resource.IsVaultTarget = true;
-            resource.CategoryId = dto.CategoryId;
-            resource.PromotedToVaultAt = DateTime.UtcNow;
+            resource.VaultMeta = new VaultMetadata
+            {
+                CategoryId = dto.CategoryId,
+                PromotedToVaultAt = DateTime.UtcNow
+            };
         }
 
         _context.Resources.Add(resource);
@@ -41,6 +44,7 @@ public class ResourceService : IResourceService
     {
         var query = _context.Resources
             .Include(r => r.Tags)
+            .Include(r => r.InboxMeta)
             .Where(r => r.UserId == userId &&
                         (r.Status == ResourceStatus.Inbox ||
                          r.Status == ResourceStatus.Processing ||
@@ -69,10 +73,11 @@ public class ResourceService : IResourceService
     {
         var query = _context.Resources
             .Include(r => r.Tags)
-            .Include(r => r.Category)
+            .Include(r => r.VaultMeta)
+                .ThenInclude(v => v!.Category)
             .Where(r => r.UserId == userId && r.Status == ResourceStatus.Vault);
 
-        if (filter.CategoryId.HasValue) query = query.Where(r => r.CategoryId == filter.CategoryId.Value);
+        if (filter.CategoryId.HasValue) query = query.Where(r => r.VaultMeta != null && r.VaultMeta.CategoryId == filter.CategoryId.Value);
 
         if (!string.IsNullOrWhiteSpace(search.SearchTerm))
         {
@@ -83,7 +88,7 @@ public class ResourceService : IResourceService
 
         var totalItems = await query.CountAsync();
         var resources = await query
-            .OrderByDescending(r => r.PromotedToVaultAt)
+            .OrderByDescending(r => r.VaultMeta != null ? r.VaultMeta.PromotedToVaultAt : r.CreatedAt)
             .Skip((pagination.PageNumber - 1) * pagination.PageSize)
             .Take(pagination.PageSize)
             .ToListAsync();
@@ -100,7 +105,6 @@ public class ResourceService : IResourceService
         dto.Title = r.Title;
         dto.ImageUrl = r.ImageUrl;
         dto.CreatedAt = r.CreatedAt;
-        dto.AiSummary = r.AiSummary;
         dto.Tags = r.Tags.Select(t => t.Name).ToList();
 
         if (r is VideoResource v)
@@ -108,12 +112,14 @@ public class ResourceService : IResourceService
             dto.ResourceType = "Video";
             dto.ChannelName = v.ChannelName;
             dto.Duration = v.Duration?.ToString(@"hh\:mm\:ss");
+            dto.ViewCount = v.ViewCount;
         }
         else if (r is ArticleResource a)
         {
             dto.ResourceType = "Article";
             dto.SiteName = a.SiteName;
             dto.Author = a.Author;
+            dto.EstimatedReadingTimeMinutes = a.EstimatedReadingTimeMinutes;
         }
         else
         {
@@ -126,10 +132,12 @@ public class ResourceService : IResourceService
         var dto = new VaultResourceDto();
         PopulateBaseDto(r, dto);
 
-        dto.CategoryId = r.CategoryId;
-        dto.CategoryName = r.Category?.Name;
-        dto.UserNote = r.UserNote;
-        dto.PromotedToVaultAt = r.PromotedToVaultAt;
+        dto.AiSummary = r.VaultMeta?.AiSummary;
+        dto.CategoryId = r.VaultMeta?.CategoryId;
+        dto.CategoryName = r.VaultMeta?.Category?.Name;
+        dto.SuggestedCategoryName = r.VaultMeta?.SuggestedCategoryName;
+        dto.UserNote = r.VaultMeta?.UserNote;
+        dto.PromotedToVaultAt = r.VaultMeta?.PromotedToVaultAt;
 
         return dto;
     }
@@ -140,8 +148,9 @@ public class ResourceService : IResourceService
         PopulateBaseDto(r, dto);
 
         dto.CorrectedTitle = r.CorrectedTitle;
-        dto.AiScore = r.AiScore;
-        dto.AiVerdict = r.AiVerdict;
+        dto.AiSummary = r.InboxMeta?.AiSummary;
+        dto.AiScore = r.InboxMeta?.AiScore;
+        dto.AiVerdict = r.InboxMeta?.AiVerdict;
 
         return dto;
     }
@@ -150,7 +159,8 @@ public class ResourceService : IResourceService
     {
         //random for now TODO - better algorithm
         var resources = await _context.Resources
-            .Include(r => r.Category)
+            .Include(r => r.VaultMeta)
+                .ThenInclude(v => v!.Category)
             .Include(r => r.Tags)
             .Where(r => r.UserId == userId && r.Status == ResourceStatus.Vault)
             .OrderBy(r => Guid.NewGuid())
@@ -164,14 +174,27 @@ public class ResourceService : IResourceService
     public async Task UpdateResourceStatusAsync(Guid id, string userId, ResourceStatus newStatus)
     {
         var resource = await _context.Resources
+            .Include(r => r.VaultMeta)
             .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
 
         if (resource == null) throw new KeyNotFoundException("Resource not found");
 
         resource.Status = newStatus;
 
-        if (newStatus == ResourceStatus.Vault && resource.PromotedToVaultAt == null)
-            resource.PromotedToVaultAt = DateTime.UtcNow;
+        if (newStatus == ResourceStatus.Vault)
+        {
+            if (resource.VaultMeta == null)
+            {
+                resource.VaultMeta = new VaultMetadata
+                {
+                    PromotedToVaultAt = DateTime.UtcNow
+                };
+            }
+            else if (resource.VaultMeta.PromotedToVaultAt == null)
+            {
+                resource.VaultMeta.PromotedToVaultAt = DateTime.UtcNow;
+            }
+        }
 
         await _context.SaveChangesAsync();
     }
@@ -180,24 +203,25 @@ public class ResourceService : IResourceService
     {
         var baseQuery = _context.Resources
             .Include(r => r.Tags)
+            .Include(r => r.InboxMeta)
             .Where(r => r.UserId == userId && r.Status == ResourceStatus.Inbox);
 
         // 3 items with high, mid, low relevancy
 
         var high = await baseQuery
-            .Where(r => r.AiScore >= 75)
+            .Where(r => r.InboxMeta != null && r.InboxMeta.AiScore >= 75)
             .OrderBy(r => Guid.NewGuid())
             .Take(1)
             .ToListAsync();
 
         var mid = await baseQuery
-            .Where(r => r.AiScore >= 40 && r.AiScore < 75)
+            .Where(r => r.InboxMeta != null && r.InboxMeta.AiScore >= 40 && r.InboxMeta.AiScore < 75)
             .OrderBy(r => Guid.NewGuid())
             .Take(1)
             .ToListAsync();
 
         var low = await baseQuery
-            .Where(r => r.AiScore < 40 || r.AiScore == null)
+            .Where(r => r.InboxMeta == null || r.InboxMeta.AiScore < 40)
             .OrderBy(r => Guid.NewGuid())
             .Take(1)
             .ToListAsync();
@@ -223,6 +247,7 @@ public class ResourceService : IResourceService
     {
         var resource = await _context.Resources
             .Include(r => r.Tags)
+            .Include(r => r.InboxMeta)
             .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
 
         if (resource == null) return null;
@@ -236,7 +261,8 @@ public class ResourceService : IResourceService
     {
         var resource = await _context.Resources
             .Include(r => r.Tags)
-            .Include(r => r.Category)
+            .Include(r => r.VaultMeta)
+                .ThenInclude(v => v!.Category)
             .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
 
         if (resource == null) return null;
@@ -265,14 +291,18 @@ public class ResourceService : IResourceService
     public async Task RetryProcessingAsync(Guid id, string userId)
     {
         var resource = await _context.Resources
+            .Include(r => r.InboxMeta)
             .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
 
         if (resource == null) throw new KeyNotFoundException();
 
         resource.Status = ResourceStatus.Processing;
 
-        resource.AiVerdict = null;
-        resource.AiScore = null;
+        if (resource.InboxMeta != null)
+        {
+            _context.InboxMetadata.Remove(resource.InboxMeta);
+            resource.InboxMeta = null;
+        }
 
         await _context.SaveChangesAsync();
 
@@ -282,6 +312,7 @@ public class ResourceService : IResourceService
     public async Task AssignCategoryAsync(Guid resourceId, string userId, Guid? categoryId)
     {
         var resource = await _context.Resources
+            .Include(r => r.VaultMeta)
             .FirstOrDefaultAsync(r => r.Id == resourceId && r.UserId == userId);
 
         if (resource == null) throw new KeyNotFoundException("Resource not found");
@@ -294,7 +325,20 @@ public class ResourceService : IResourceService
             if (!categoryExists) throw new KeyNotFoundException("Category not found");
         }
 
-        resource.CategoryId = categoryId;
+        if (resource.VaultMeta == null)
+        {
+            resource.VaultMeta = new VaultMetadata
+            {
+                ResourceId = resource.Id,
+                CategoryId = categoryId
+            };
+        }
+        else
+        {
+            resource.VaultMeta.CategoryId = categoryId;
+            resource.VaultMeta.SuggestedCategoryName = null;
+        }
+
         await _context.SaveChangesAsync();
     }
 }

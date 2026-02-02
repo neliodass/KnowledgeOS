@@ -28,6 +28,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<ArticleResource> Articles { get; set; }
 
+    // Resource Metadata
+    public DbSet<InboxMetadata> InboxMetadata { get; set; }
+    public DbSet<VaultMetadata> VaultMetadata { get; set; }
+
     // Tags and Categories
     public DbSet<Tag> Tags { get; set; }
     public DbSet<Category> Categories { get; set; }
@@ -42,11 +46,28 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<Resource>()
             .HasMany(r => r.Tags)
             .WithMany(t => t.Resources);
+
         modelBuilder.Entity<Resource>()
-            .HasOne(r => r.Category)
+            .HasOne(r => r.InboxMeta)
+            .WithOne(m => m.Resource)
+            .HasForeignKey<InboxMetadata>(m => m.ResourceId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<InboxMetadata>().ToTable("ResourceInboxDetails");
+
+        modelBuilder.Entity<Resource>()
+            .HasOne(r => r.VaultMeta)
+            .WithOne(m => m.Resource)
+            .HasForeignKey<VaultMetadata>(m => m.ResourceId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<VaultMetadata>()
+            .HasOne(v => v.Category)
             .WithMany(c => c.Resources)
-            .HasForeignKey(r => r.CategoryId)
+            .HasForeignKey(v => v.CategoryId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<VaultMetadata>().ToTable("ResourceVaultDetails");
 
         modelBuilder.Entity<Resource>()
             .HasQueryFilter(r => r.UserId == _currentUserService.UserId);

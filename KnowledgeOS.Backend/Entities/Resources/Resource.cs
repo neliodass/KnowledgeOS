@@ -17,20 +17,14 @@ public abstract class Resource : IUserOwnedResource
 
     public ResourceStatus Status { get; set; } = ResourceStatus.New;
 
-
-    public int? AiScore { get; set; }
-    [MaxLength(500)] public string? AiVerdict { get; set; }
-    public string? AiSummary { get; set; }
-
-    public string? UserNote { get; set; }
-    public Guid? CategoryId { get; set; }
-    public Category? Category { get; set; }
     public ICollection<Tag> Tags { get; set; } = new List<Tag>();
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? PromotedToVaultAt { get; set; }
     public bool IsVaultTarget { get; set; } = false;
 
     [Required] public string UserId { get; set; } = string.Empty;
     public ApplicationUser? User { get; set; }
+
+    public InboxMetadata? InboxMeta { get; set; }
+    public VaultMetadata? VaultMeta { get; set; }
 }

@@ -16,6 +16,8 @@ public abstract class ResourceBaseDto
     // TODO - exclude from base dto?
     public string? ChannelName { get; set; } // Video
     public string? Duration { get; set; } // Video
+    public long? ViewCount { get; set; } // Video
     public string? SiteName { get; set; } // Article
     public string? Author { get; set; } // Article
+    public int? EstimatedReadingTimeMinutes { get; set; } // Article
 }

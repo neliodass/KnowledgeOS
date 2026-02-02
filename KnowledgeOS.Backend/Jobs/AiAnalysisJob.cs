@@ -38,6 +38,8 @@ public class AiAnalysisJob : IAiAnalysisJob
         var resource = await _context.Resources
             .IgnoreQueryFilters()
             .Include(r => r.Tags)
+            .Include(r => r.InboxMeta)
+            .Include(r => r.VaultMeta)
             .FirstOrDefaultAsync(r => r.Id == resourceId);
 
         if (resource == null)
@@ -75,8 +77,33 @@ public class AiAnalysisJob : IAiAnalysisJob
                     await _aiService.AnalyzeForVaultAsync(resource, userContext, existingCategories, extraContent);
 
                 resource.CorrectedTitle = result.CorrectedTitle;
-                resource.AiSummary = result.Summary;
                 tagsToProcess = result.SuggestedTags;
+
+                if (resource.VaultMeta == null)
+                {
+                    resource.VaultMeta = new VaultMetadata
+                    {
+                        ResourceId = resource.Id,
+                        AiSummary = result.Summary,
+                        SuggestedCategoryName = result.SuggestedCategoryName,
+                        PromotedToVaultAt = DateTime.UtcNow
+                    };
+                }
+                else
+                {
+                    resource.VaultMeta.AiSummary = result.Summary;
+                    resource.VaultMeta.SuggestedCategoryName = result.SuggestedCategoryName;
+                    if (resource.VaultMeta.PromotedToVaultAt == null)
+                    {
+                        resource.VaultMeta.PromotedToVaultAt = DateTime.UtcNow;
+                    }
+                }
+
+                if (resource.InboxMeta != null)
+                {
+                    _context.InboxMetadata.Remove(resource.InboxMeta);
+                    resource.InboxMeta = null;
+                }
 
                 if (!string.IsNullOrWhiteSpace(result.SuggestedCategoryName))
                 {
@@ -85,11 +112,8 @@ public class AiAnalysisJob : IAiAnalysisJob
 
                     if (matchedCategoryId.HasValue)
                     {
-                        resource.CategoryId = matchedCategoryId.Value;
-                    }
-                    else
-                    {
-                        //TODO : ewentualnie dodać pole SuggestedNewCategoryName 
+                        resource.VaultMeta.CategoryId = matchedCategoryId.Value;
+                        resource.VaultMeta.SuggestedCategoryName = null;
                     }
                 }
 
@@ -100,10 +124,24 @@ public class AiAnalysisJob : IAiAnalysisJob
                 var result = await _aiService.AnalyzeForInboxAsync(resource, userContext, extraContent);
 
                 resource.CorrectedTitle = result.CorrectedTitle;
-                resource.AiScore = result.Score;
-                resource.AiVerdict = result.Verdict;
-                resource.AiSummary = result.Summary;
                 tagsToProcess = result.SuggestedTags;
+
+                if (resource.InboxMeta == null)
+                {
+                    resource.InboxMeta = new InboxMetadata
+                    {
+                        ResourceId = resource.Id,
+                        AiScore = result.Score,
+                        AiVerdict = result.Verdict,
+                        AiSummary = result.Summary
+                    };
+                }
+                else
+                {
+                    resource.InboxMeta.AiScore = result.Score;
+                    resource.InboxMeta.AiVerdict = result.Verdict;
+                    resource.InboxMeta.AiSummary = result.Summary;
+                }
 
                 resource.Status = ResourceStatus.Inbox;
             }

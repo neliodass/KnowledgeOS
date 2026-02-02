@@ -14,5 +14,5 @@ public class Category : IUserOwnedResource
 
     [Required] [MaxLength(100)] public string Name { get; set; } = string.Empty; // np. "Programming"
 
-    [JsonIgnore] public ICollection<Resource> Resources { get; set; } = new List<Resource>();
+    [JsonIgnore] public ICollection<VaultMetadata> Resources { get; set; } = new List<VaultMetadata>();
 }
