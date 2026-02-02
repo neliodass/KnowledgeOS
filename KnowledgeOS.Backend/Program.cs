@@ -79,10 +79,7 @@ builder.Services.AddScoped<OpenAIClient>(sp =>
 {
     var config = sp.GetRequiredService<IConfiguration>();
     var apiKey = config["Ai:OpenRouterKey"]!;
-    if (string.IsNullOrEmpty(apiKey))
-    {
-        throw new InvalidOperationException("OpenRouter API key is not configured.");
-    }
+    if (string.IsNullOrEmpty(apiKey)) throw new InvalidOperationException("OpenRouter API key is not configured.");
 
     var openRouterOptions = new OpenAIClientOptions
     {
@@ -92,14 +89,12 @@ builder.Services.AddScoped<OpenAIClient>(sp =>
 });
 var aiModels = builder.Configuration.GetSection("Ai");
 foreach (var model in aiModels.GetChildren())
-{
     builder.Services.AddScoped<IAiProvider>(sp =>
     {
         var client = sp.GetRequiredService<OpenAIClient>();
         var logger = sp.GetRequiredService<ILogger<OpenRouterProvider>>();
         return new OpenRouterProvider(client, model.Value!, logger);
     });
-}
 
 builder.Services.AddScoped<IAiService, AiService>();
 builder.Services.AddScoped<IAiAnalysisJob, AiAnalysisJob>();
@@ -122,11 +117,12 @@ builder.Services.AddSwaggerGen(options =>
             Name = "Authorization",
             Type = SecuritySchemeType.Http,
             BearerFormat = "JWT",
-            Scheme = "Bearer",
+            Scheme = "Bearer"
         }
     );
 
-    options.AddSecurityRequirement(document => new() { [new OpenApiSecuritySchemeReference("Bearer", document)] = [] });
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+        { [new OpenApiSecuritySchemeReference("Bearer", document)] = [] });
 });
 var app = builder.Build();
 if (app.Environment.IsDevelopment())

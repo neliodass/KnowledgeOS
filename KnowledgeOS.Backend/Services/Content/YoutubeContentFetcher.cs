@@ -37,7 +37,7 @@ public class YouTubeContentFetcher : IContentFetcher
             var track = await _youtubeClient.Videos.ClosedCaptions.GetAsync(trackInfo);
 
             var sb = new StringBuilder();
-            int charCount = 0;
+            var charCount = 0;
             const int maxChars = 100000;
 
             foreach (var caption in track.Captions)

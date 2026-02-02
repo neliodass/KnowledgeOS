@@ -8,7 +8,6 @@ public class ResourceFactory
     public static Resource Create(string url, string userId)
     {
         if (url.Contains("youtube.com") || url.Contains("youtu.be"))
-        {
             return new VideoResource
             {
                 Url = url,
@@ -16,7 +15,6 @@ public class ResourceFactory
                 Title = "New Video",
                 Status = ResourceStatus.New
             };
-        }
 
         return new ArticleResource
         {

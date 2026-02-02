@@ -37,9 +37,7 @@ public class WebsiteContentFetcher : IContentFetcher
 
             foreach (var node in doc.DocumentNode.SelectNodes("//script|//style|//header|//footer|//nav") ??
                                  new HtmlNodeCollection(null))
-            {
                 node.Remove();
-            }
 
             var sb = new StringBuilder();
 
@@ -50,14 +48,12 @@ public class WebsiteContentFetcher : IContentFetcher
                     "//article | //p | //li | //h1 | //h2 | //h3 | //h4 | //h5 | //h6 | //blockquote");
 
             if (contentNodes != null && contentNodes.Count > 0)
-            {
                 foreach (var node in contentNodes)
                 {
                     var text = CleanText(node.InnerText);
                     if (IsUsefulContent(text)) sb.AppendLine(text);
                 }
-            }
-            
+
             if (sb.Length < 200)
             {
                 var bodyText = doc.DocumentNode.SelectSingleNode("//body")?.InnerText;
@@ -81,6 +77,7 @@ public class WebsiteContentFetcher : IContentFetcher
             return null;
         }
     }
+
     private string CleanText(string input)
     {
         if (string.IsNullOrWhiteSpace(input)) return string.Empty;
@@ -90,6 +87,6 @@ public class WebsiteContentFetcher : IContentFetcher
 
     private bool IsUsefulContent(string text)
     {
-        return text.Length > 20 || (text.Length > 5 && text.Contains(" ")); 
+        return text.Length > 20 || (text.Length > 5 && text.Contains(" "));
     }
 }

@@ -48,8 +48,10 @@ public class ResourceService : IResourceService
         if (!string.IsNullOrWhiteSpace(search.SearchTerm))
         {
             var term = search.SearchTerm.ToLower();
-            query = query.Where(r => r.Title.ToLower().Contains(term) || r.Tags.Any(t => t.Name.ToLower().Contains(term)));
+            query = query.Where(r =>
+                r.Title.ToLower().Contains(term) || r.Tags.Any(t => t.Name.ToLower().Contains(term)));
         }
+
         var totalItems = await query.CountAsync();
 
         var resources = await query
@@ -62,23 +64,23 @@ public class ResourceService : IResourceService
         return new PagedResult<InboxResourceDto>(dtos, totalItems, pagination.PageNumber, pagination.PageSize);
     }
 
-    public async Task<PagedResult<VaultResourceDto>> GetVaultResourcesAsync(string userId, PaginationQuery pagination,SearchQuery search, VaultFilter filter)
+    public async Task<PagedResult<VaultResourceDto>> GetVaultResourcesAsync(string userId, PaginationQuery pagination,
+        SearchQuery search, VaultFilter filter)
     {
         var query = _context.Resources
             .Include(r => r.Tags)
             .Include(r => r.Category)
             .Where(r => r.UserId == userId && r.Status == ResourceStatus.Vault);
 
-        if (filter.CategoryId.HasValue)
-        {
-            query = query.Where(r => r.CategoryId == filter.CategoryId.Value);
-        }
+        if (filter.CategoryId.HasValue) query = query.Where(r => r.CategoryId == filter.CategoryId.Value);
 
         if (!string.IsNullOrWhiteSpace(search.SearchTerm))
         {
             var term = search.SearchTerm.ToLower();
-            query = query.Where(r => r.Title.ToLower().Contains(term) || r.Tags.Any(t => t.Name.ToLower().Contains(term)));
+            query = query.Where(r =>
+                r.Title.ToLower().Contains(term) || r.Tags.Any(t => t.Name.ToLower().Contains(term)));
         }
+
         var totalItems = await query.CountAsync();
         var resources = await query
             .OrderByDescending(r => r.PromotedToVaultAt)
@@ -164,17 +166,12 @@ public class ResourceService : IResourceService
         var resource = await _context.Resources
             .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
 
-        if (resource == null)
-        {
-            throw new KeyNotFoundException("Resource not found");
-        }
+        if (resource == null) throw new KeyNotFoundException("Resource not found");
 
         resource.Status = newStatus;
 
         if (newStatus == ResourceStatus.Vault && resource.PromotedToVaultAt == null)
-        {
             resource.PromotedToVaultAt = DateTime.UtcNow;
-        }
 
         await _context.SaveChangesAsync();
     }
@@ -243,7 +240,7 @@ public class ResourceService : IResourceService
             .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
 
         if (resource == null) return null;
-        
+
         if (resource.Status == ResourceStatus.Inbox) return null;
 
         return MapToVaultDto(resource);
@@ -258,13 +255,9 @@ public class ResourceService : IResourceService
         //Two step deletion: first move to trash, then delete permanently
 
         if (resource.Status != ResourceStatus.Trash)
-        {
             resource.Status = ResourceStatus.Trash;
-        }
         else
-        {
             _context.Resources.Remove(resource);
-        }
 
         await _context.SaveChangesAsync();
     }
@@ -291,20 +284,14 @@ public class ResourceService : IResourceService
         var resource = await _context.Resources
             .FirstOrDefaultAsync(r => r.Id == resourceId && r.UserId == userId);
 
-        if (resource == null)
-        {
-            throw new KeyNotFoundException("Resource not found");
-        }
+        if (resource == null) throw new KeyNotFoundException("Resource not found");
 
         if (categoryId.HasValue)
         {
             var categoryExists = await _context.Categories
                 .AnyAsync(c => c.Id == categoryId.Value && c.UserId == userId);
 
-            if (!categoryExists)
-            {
-                throw new KeyNotFoundException("Category not found");
-            }
+            if (!categoryExists) throw new KeyNotFoundException("Category not found");
         }
 
         resource.CategoryId = categoryId;

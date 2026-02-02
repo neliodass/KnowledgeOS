@@ -23,7 +23,7 @@ public class CategoryService : ICategoryService
             {
                 Id = c.Id,
                 Name = c.Name,
-                ResourceCount = c.Resources.Count 
+                ResourceCount = c.Resources.Count
             })
             .OrderBy(c => c.Name)
             .ToListAsync();
@@ -31,14 +31,10 @@ public class CategoryService : ICategoryService
 
     public async Task<CategoryDto> CreateAsync(string userId, CreateCategoryDto dto)
     {
-
         var exists = await _context.Categories
             .AnyAsync(c => c.UserId == userId && c.Name == dto.Name);
 
-        if (exists)
-        {
-            throw new InvalidOperationException("Category with this name already exists.");
-        }
+        if (exists) throw new InvalidOperationException("Category with this name already exists.");
 
         var category = new Category
         {
@@ -66,6 +62,7 @@ public class CategoryService : ICategoryService
         _context.Categories.Remove(category);
         await _context.SaveChangesAsync();
     }
+
     public async Task<List<string>> GetUserCategoryNamesAsync(string userId)
     {
         return await _context.Categories

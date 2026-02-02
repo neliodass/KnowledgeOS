@@ -14,7 +14,7 @@ public class ErrorRecoveryJob : IErrorRecoveryJob
     private readonly ILogger<ErrorRecoveryJob> _logger;
 
     public ErrorRecoveryJob(
-        AppDbContext context, 
+        AppDbContext context,
         IBackgroundJobClient backgroundJobClient,
         ILogger<ErrorRecoveryJob> logger)
     {
@@ -36,7 +36,7 @@ public class ErrorRecoveryJob : IErrorRecoveryJob
         foreach (var resource in failedResources)
         {
             resource.Status = ResourceStatus.Processing;
-            
+
             _backgroundJobClient.Enqueue<IUrlIngestionJob>(job => job.ProcessAsync(resource.Id));
         }
 

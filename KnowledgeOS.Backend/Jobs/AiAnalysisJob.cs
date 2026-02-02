@@ -144,10 +144,7 @@ public class AiAnalysisJob : IAiAnalysisJob
 
             if (existingTag != null)
             {
-                if (!resource.Tags.Contains(existingTag))
-                {
-                    resource.Tags.Add(existingTag);
-                }
+                if (!resource.Tags.Contains(existingTag)) resource.Tags.Add(existingTag);
             }
             else
             {

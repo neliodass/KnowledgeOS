@@ -27,10 +27,7 @@ public class AuthController : ControllerBase
     {
         var result = await _identityService.RegisterAsync(dto);
 
-        if (!result.Succeeded)
-        {
-            return BadRequest(result.Errors);
-        }
+        if (!result.Succeeded) return BadRequest(result.Errors);
 
         return Ok(new { message = "User registered successfully" });
     }
@@ -40,10 +37,7 @@ public class AuthController : ControllerBase
     {
         var token = await _identityService.LoginAsync(dto);
 
-        if (token == null)
-        {
-            return Unauthorized("Invalid credentials");
-        }
+        if (token == null) return Unauthorized("Invalid credentials");
 
         return Ok(new { token });
     }

@@ -36,10 +36,7 @@ public class IdentityService : IIdentityService
     {
         var user = await _userManager.FindByEmailAsync(dto.Email);
 
-        if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
-        {
-            return null;
-        }
+        if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password)) return null;
 
         return GenerateJwtToken(user);
     }
