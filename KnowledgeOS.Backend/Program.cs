@@ -107,6 +107,7 @@ builder.Services.AddScoped<IContentFetcher, YouTubeContentFetcher>();
 builder.Services.AddScoped<IContentFetcher, WebsiteContentFetcher>();
 builder.Services.AddScoped<IUserPreferencesService, UserPreferencesService>();
 builder.Services.AddScoped<IErrorRecoveryJob, ErrorRecoveryJob>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
