@@ -159,4 +159,35 @@ public class ResourceService : IResourceService
 
         return mixedList.Select(MapToDto).ToList();
     }
+
+    public async Task<ResourceDto?> GetResourceByIdAsync(Guid id, string userId)
+    {
+        var resource = await _context.Resources
+            .Include(r => r.Tags)
+            .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
+
+        if (resource == null) return null;
+
+        return MapToDto(resource);
+    }
+
+    public async Task DeleteResourceAsync(Guid id, string userId)
+    {
+        var resource = await _context.Resources
+            .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
+
+        if (resource == null) return;
+        //Two step deletion: first move to trash, then delete permanently
+
+        if (resource.Status != ResourceStatus.Trash)
+        {
+            resource.Status = ResourceStatus.Trash;
+        }
+        else
+        {
+            _context.Resources.Remove(resource);
+        }
+
+        await _context.SaveChangesAsync();
+    }
 }

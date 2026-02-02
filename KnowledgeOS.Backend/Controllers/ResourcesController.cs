@@ -71,4 +71,27 @@ public class ResourcesController : ControllerBase
             return NotFound();
         }
     }
+    [HttpGet("{id}")]
+    public async Task<ActionResult<ResourceDto>> GetSingle(Guid id)
+    {
+        var userId = _currentUserService.UserId;
+        if (userId == null) return Unauthorized();
+
+        var resource = await _resourceService.GetResourceByIdAsync(id, userId);
+        
+        if (resource == null) return NotFound();
+
+        return Ok(resource);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var userId = _currentUserService.UserId;
+        if (userId == null) return Unauthorized();
+
+        await _resourceService.DeleteResourceAsync(id, userId);
+        
+        return NoContent(); 
+    }
 }

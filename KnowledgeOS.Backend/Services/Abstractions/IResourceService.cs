@@ -13,4 +13,6 @@ public interface IResourceService
 
     Task UpdateResourceStatusAsync(Guid id, string userId, ResourceStatus newStatus);
     Task<List<ResourceDto>> GetSmartMixAsync(string userId);
+    Task<ResourceDto?> GetResourceByIdAsync(Guid id, string userId);
+    Task DeleteResourceAsync(Guid id, string userId);
 }
