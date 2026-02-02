@@ -15,4 +15,5 @@ public interface IResourceService
     Task<List<ResourceDto>> GetSmartMixAsync(string userId);
     Task<ResourceDto?> GetResourceByIdAsync(Guid id, string userId);
     Task DeleteResourceAsync(Guid id, string userId);
+    Task RetryProcessingAsync(Guid id, string userId);
 }

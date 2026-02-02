@@ -190,4 +190,20 @@ public class ResourceService : IResourceService
 
         await _context.SaveChangesAsync();
     }
+    public async Task RetryProcessingAsync(Guid id, string userId)
+    {
+        var resource = await _context.Resources
+            .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
+
+        if (resource == null) throw new KeyNotFoundException();
+
+        resource.Status = ResourceStatus.Processing;
+
+        resource.AiVerdict = null;
+        resource.AiScore = null;
+        
+        await _context.SaveChangesAsync();
+
+        _backgroundJobClient.Enqueue<IUrlIngestionJob>(job => job.ProcessAsync(resource.Id));
+    }
 }

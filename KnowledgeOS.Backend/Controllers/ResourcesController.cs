@@ -94,4 +94,20 @@ public class ResourcesController : ControllerBase
         
         return NoContent(); 
     }
+    [HttpPost("{id}/retry")]
+    public async Task<IActionResult> Retry(Guid id)
+    {
+        var userId = _currentUserService.UserId;
+        if (userId == null) return Unauthorized();
+
+        try
+        {
+            await _resourceService.RetryProcessingAsync(id, userId);
+            return Accepted();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
 }
