@@ -104,6 +104,7 @@ foreach (var model in aiModels.GetChildren())
 builder.Services.AddScoped<IAiService, AiService>();
 builder.Services.AddScoped<IAiAnalysisJob, AiAnalysisJob>();
 builder.Services.AddScoped<IContentFetcher, YouTubeContentFetcher>();
+builder.Services.AddScoped<IContentFetcher, WebsiteContentFetcher>();
 builder.Services.AddScoped<IUserPreferencesService, UserPreferencesService>();
 builder.Services.AddScoped<IErrorRecoveryJob, ErrorRecoveryJob>();
 builder.Services.AddControllers();
