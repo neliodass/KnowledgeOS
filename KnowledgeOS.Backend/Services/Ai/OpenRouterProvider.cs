@@ -47,11 +47,9 @@ public class OpenRouterProvider : IAiProvider
     {
         var options = BuildVaultOptions();
         var prompt = BuildVaultPrompt(resource, userPreferences, existingCategories, extraContext);
-
         var content = await CallAiWithRetryAsync(prompt, options);
         var result = JsonSerializer.Deserialize<VaultJsonResult>(content,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
         return new VaultAnalysisResult(
             result?.CorrectedTitle ?? resource.Title,
             result?.Summary ?? "No summary.",
@@ -181,7 +179,7 @@ public class OpenRouterProvider : IAiProvider
                 Content: {content ?? "N/A"}
 
                 INSTRUCTIONS:
-                1. CATEGORY: Check "EXISTING CATEGORIES". If the content fits well, use that name EXACTLY. If not, suggest a new, concise name.
+                1. CATEGORY: Check "EXISTING CATEGORIES". If the content fits quite well, use that name EXACTLY. If totally not, suggest a new, concise name.
                 2. TITLE: Create a searchable Corrected Title.
                 3. SUMMARY: Detailed insights.
                 4. TAGS: 3-5 tags.

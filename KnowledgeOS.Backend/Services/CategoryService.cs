@@ -66,6 +66,7 @@ public class CategoryService : ICategoryService
     public async Task<List<string>> GetUserCategoryNamesAsync(string userId)
     {
         return await _context.Categories
+            .IgnoreQueryFilters()
             .Where(c => c.UserId == userId)
             .Select(c => c.Name)
             .ToListAsync();
@@ -74,6 +75,7 @@ public class CategoryService : ICategoryService
     public async Task<Guid?> GetIdByNameAsync(string userId, string categoryName)
     {
         var category = await _context.Categories
+            .IgnoreQueryFilters()
             .Where(c => c.UserId == userId && c.Name.ToLower() == categoryName.ToLower())
             .Select(c => c.Id)
             .FirstOrDefaultAsync();
