@@ -67,6 +67,20 @@ builder.Services.AddHangfire(config =>
             options.UseNpgsqlConnection(connectionString)));
 
 builder.Services.AddHangfireServer();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowNextJs",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:3000") 
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials(); 
+        });
+});
+
+
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IIdentityService, IdentityService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
@@ -132,6 +146,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("AllowNextJs");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
