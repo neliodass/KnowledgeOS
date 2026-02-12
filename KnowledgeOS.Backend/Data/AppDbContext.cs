@@ -71,6 +71,13 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 
         modelBuilder.Entity<Resource>()
             .HasQueryFilter(r => r.UserId == _currentUserService.UserId);
+        
+        modelBuilder.Entity<InboxMetadata>()
+            .HasQueryFilter(m => m.Resource.UserId == _currentUserService.UserId);
+
+        modelBuilder.Entity<VaultMetadata>()
+            .HasQueryFilter(m => m.Resource.UserId == _currentUserService.UserId);
+        
         modelBuilder.Entity<Category>()
             .HasQueryFilter(c => c.UserId == _currentUserService.UserId);
         modelBuilder.Entity<Tag>()
