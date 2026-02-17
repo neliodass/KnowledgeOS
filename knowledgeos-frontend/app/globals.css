@@ -2,7 +2,8 @@
 
 @theme {
     --color-tech-bg: #050505;
-    --color-tech-surface: #0f0f0f;
+    --color-tech-surface: #111111;
+    --color-tech-surface-hover: #1a1a1a;
     --color-tech-primary: #a3ffbf;
     --color-tech-primary-dim: rgba(163, 255, 191, 0.1);
     --color-tech-border: #333333;
@@ -23,7 +24,19 @@
             linear-gradient(to right, #1a1a1a 1px, transparent 1px),
             linear-gradient(to bottom, #1a1a1a 1px, transparent 1px);
 }
-
+::-webkit-scrollbar {
+    width: 4px;
+}
+::-webkit-scrollbar-track {
+    background: #0a0a0a;
+    border-left: 1px solid #333;
+}
+::-webkit-scrollbar-thumb {
+    background-color: #333;
+}
+::-webkit-scrollbar-thumb:hover {
+    background-color: #a3ffbf;
+}
 .scanline {
     position: fixed;
     top: 0;
@@ -41,14 +54,4 @@
     pointer-events: none;
     z-index: 50;
     opacity: 0.15;
-}
-
-/* Fix do autouzupełniania w Chrome */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px #000 inset !important;
-    -webkit-text-fill-color: #a3ffbf !important;
-    caret-color: #a3ffbf;
 }
