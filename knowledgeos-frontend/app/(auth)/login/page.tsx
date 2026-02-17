@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { api } from '@/lib/api';
-import { useRouter, useSearchParams } from 'next/navigation';
+import {useState, useEffect} from 'react';
+import {api} from '@/lib/api';
+import {useRouter, useSearchParams} from 'next/navigation';
 import Link from 'next/link';
-import { Fingerprint, Key, LockOpen, RefreshCw, UserPlus } from 'lucide-react';
+import {Fingerprint, Key, LockOpen, RefreshCw, UserPlus} from 'lucide-react';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -29,7 +29,7 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            const res = await api.login({ email, password });
+            const res = await api.login({email, password});
 
             if (!res.ok) {
                 throw new Error('ACCESS_DENIED: INVALID_CREDENTIALS');
@@ -39,7 +39,7 @@ export default function LoginPage() {
             localStorage.setItem('token', data.token);
             router.push('/dashboard');
 
-        }  catch (err) {
+        } catch (err) {
             if (err instanceof Error) {
                 setError(err.message)
             } else {
@@ -51,12 +51,15 @@ export default function LoginPage() {
     };
 
     return (
-        <main className="min-h-screen flex items-center justify-center p-4 bg-grid relative overflow-hidden">
+        <main
+            className="min-h-screen bg-tech-bg text-gray-300 flex items-center justify-center p-4 bg-grid relative overflow-hidden">
 
             {/* Tło i dekoracje systemowe */}
             <div className="fixed top-6 left-6 flex flex-col gap-1 z-10 hidden sm:flex">
                 <div className="text-[10px] font-bold tracking-[0.2em] text-tech-primary/60">ENCRYPTION: ACTIVE</div>
-                <div className="text-[10px] font-bold tracking-[0.2em] text-tech-primary/40">SECURE_TUNNEL: ESTABLISHED</div>
+                <div className="text-[10px] font-bold tracking-[0.2em] text-tech-primary/40">SECURE_TUNNEL:
+                    ESTABLISHED
+                </div>
             </div>
 
             <div className="fixed bottom-6 right-6 flex flex-col items-end gap-1 z-10 hidden sm:flex">
@@ -65,12 +68,15 @@ export default function LoginPage() {
             </div>
 
             {/* Wielki napis w tle */}
-            <div className="fixed inset-0 pointer-events-none opacity-[0.02] flex items-center justify-center overflow-hidden">
-                <span className="text-[20vw] font-bold text-tech-primary select-none whitespace-nowrap">KNOWLEDGE_OS</span>
+            <div
+                className="fixed inset-0 pointer-events-none opacity-[0.02] flex items-center justify-center overflow-hidden">
+                <span
+                    className="text-[20vw] font-bold text-tech-primary select-none whitespace-nowrap">KNOWLEDGE_OS</span>
             </div>
 
             {/* Main card */}
-            <div className="relative w-full max-w-md bg-tech-bg border border-tech-primary p-8 md:p-12 z-20 shadow-[0_0_50px_-12px_rgba(163,255,191,0.1)]">
+            <div
+                className="relative w-full max-w-md bg-tech-bg border border-tech-primary p-8 md:p-12 z-20 shadow-[0_0_50px_-12px_rgba(163,255,191,0.1)]">
 
                 {/* Corners */}
                 <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-tech-primary"></div>
@@ -79,23 +85,33 @@ export default function LoginPage() {
                 <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-tech-primary"></div>
 
                 {/* Header */}
-                <div className="mb-10 text-center">
-                    <h1 className="text-xl font-bold tracking-[0.3em] uppercase text-tech-primary">
+                <div className="mb-10 text-center justify-center">
+                    <h1 className="text-3xl font-bold tracking-widest uppercase text-tech-primary">
                         KNOWLEDGE_OS
                         <span className="inline-block w-2.5 h-5 bg-tech-primary ml-1 align-middle animate-blink"></span>
                     </h1>
-                    <p className="text-[10px] text-tech-muted mt-2 uppercase tracking-widest italic">Authorization Required for Neural Uplink</p>
+                    <p className="text-[10px] text-tech-muted mt-2 uppercase tracking-widest italic">
+                      Second brain link hub</p>
                 </div>
+                <div className="text-left">
+                    <header
+                        className="text-l font-bold text-white uppercase tracking-[0.2em] mb-2 mt-2">Authenticate_Identity
+                    </header>
+                    <div className="h-0.5 w-30 mb-8 bg-tech-primary"></div>
+                </div>
+
 
                 {/* errors */}
                 {error && (
-                    <div className="mb-6 p-3 bg-red-900/20 border border-red-500/50 text-red-400 text-xs font-mono text-center uppercase tracking-wider">
+                    <div
+                        className="mb-6 p-3 bg-red-900/20 border border-red-500/50 text-red-400 text-xs font-mono text-center uppercase tracking-wider">
                         &gt; {error}
                     </div>
                 )}
 
                 {successMessage && (
-                    <div className="mb-6 p-3 bg-tech-primary/10 border border-tech-primary/50 text-tech-primary text-xs font-mono text-center uppercase tracking-wider">
+                    <div
+                        className="mb-6 p-3 bg-tech-primary/10 border border-tech-primary/50 text-tech-primary text-xs font-mono text-center uppercase tracking-wider">
                         &gt; {successMessage}
                     </div>
                 )}
@@ -103,8 +119,9 @@ export default function LoginPage() {
                 <form onSubmit={handleSubmit} className="space-y-8">
 
                     <div className="space-y-2">
-                        <label className="block text-[10px] font-bold text-tech-primary/80 uppercase tracking-widest ml-1">
-                            &gt; IDENTIFIER (EMAIL)
+                        <label
+                            className="block text-[10px] font-bold text-tech-primary/80 uppercase tracking-widest ml-1">
+                            &gt; Email_Address
                         </label>
                         <div className="relative group">
                             <input
@@ -116,14 +133,15 @@ export default function LoginPage() {
                                 placeholder="Enter credentials..."
                             />
                             <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                                <Fingerprint className="w-4 h-4 text-tech-primary/40" />
+                                <Fingerprint className="w-4 h-4 text-tech-primary/40"/>
                             </div>
                         </div>
                     </div>
 
                     <div className="space-y-2">
-                        <label className="block text-[10px] font-bold text-tech-primary/80 uppercase tracking-widest ml-1">
-                            &gt; SECURITY_KEY
+                        <label
+                            className="block text-[10px] font-bold text-tech-primary/80 uppercase tracking-widest ml-1">
+                            &gt; Access_Key
                         </label>
                         <div className="relative group">
                             <input
@@ -135,7 +153,7 @@ export default function LoginPage() {
                                 placeholder="••••••••"
                             />
                             <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                                <Key className="w-4 h-4 text-tech-primary/40" />
+                                <Key className="w-4 h-4 text-tech-primary/40"/>
                             </div>
                         </div>
                     </div>
@@ -149,30 +167,29 @@ export default function LoginPage() {
                             <span className="animate-pulse">PROCESSING...</span>
                         ) : (
                             <>
-                                <LockOpen className="w-4 h-4 font-bold group-hover:translate-x-1 transition-transform" />
+                                <LockOpen className="w-4 h-4 font-bold group-hover:translate-x-1 transition-transform"/>
                                 AUTHENTICATE
                             </>
                         )}
                     </button>
                 </form>
 
-                <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-tech-border pt-6">
-                    <button type="button" className="text-[10px] text-tech-muted hover:text-tech-primary transition-colors uppercase tracking-widest flex items-center gap-1 group">
-                        <RefreshCw className="w-3 h-3 group-hover:rotate-180 transition-transform duration-500" />
+                <div
+                    className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-tech-border pt-6">
+                    <button type="button"
+                            className="text-[10px] text-tech-muted hover:text-tech-primary transition-colors uppercase tracking-widest flex items-center gap-1 group">
+                        <RefreshCw className="w-3 h-3 group-hover:rotate-180 transition-transform duration-500"/>
                         Reset Key
                     </button>
 
-                    <Link href="/register" className="text-[10px] text-tech-muted hover:text-tech-primary transition-colors uppercase tracking-widest flex items-center gap-1 group">
-                        <UserPlus className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                    <Link href="/register"
+                          className="text-[10px] text-tech-muted hover:text-tech-primary transition-colors uppercase tracking-widest flex items-center gap-1 group">
+                        <UserPlus className="w-3 h-3 group-hover:scale-110 transition-transform"/>
                         Initialize User
                     </Link>
                 </div>
 
-                <div className="mt-8 overflow-hidden h-6 flex items-end opacity-50">
-                    <p className="text-[9px] text-tech-primary/30 font-mono whitespace-nowrap overflow-hidden animate-pulse">
-                        &gt; REMOTE_ADDR: 127.0.0.1 // HANDSHAKE_COMPLETE // WAITING_FOR_INPUT...
-                    </p>
-                </div>
+
             </div>
         </main>
     );
