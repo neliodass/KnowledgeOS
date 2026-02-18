@@ -1,9 +1,12 @@
 import {InboxResource} from '@/lib/types';
 import {PlayCircle, Archive, FileText, Mic, Hash, LucideIcon} from 'lucide-react';
 import Image from "next/image";
+import {api} from "@/lib/api";
+import {useState} from "react";
 
 interface InboxCardProps {
     resource: InboxResource;
+    onArchive: () => void;
 }
 
 // settings for different types of resource
@@ -46,11 +49,23 @@ const RESOURCE_CONFIG: Record<string, ResourceTypeConfig> = {
     }
 };
 
-export function InboxCard({resource}: InboxCardProps) {
+export function InboxCard({resource,onArchive}: InboxCardProps) {
+    const [isArchiving, setIsArchiving] = useState(false);
     // get config based on type, fallback to default
     const config = RESOURCE_CONFIG[resource.resourceType] || RESOURCE_CONFIG.Default;
     const TypeIcon = config.icon;
-
+    const handleArchiveClick = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsArchiving(true);
+        try {
+            await api.archiveInboxResource(resource.id);
+            onArchive();
+        } catch (e) {
+            console.error("Błąd archiwizacji:", e);
+        } finally {
+            setIsArchiving(false);
+        }
+    }
     return (
         <div
             className={`border ${config.borderColor} bg-tech-surface relative group transition-all hover:border-tech-green/50`}>
@@ -129,6 +144,7 @@ export function InboxCard({resource}: InboxCardProps) {
                     </div>
 
                     <button
+                        onClick={handleArchiveClick}
                         className="p-2 border border-tech-border text-gray-500 hover:text-white hover:border-white transition-all">
                         <Archive className="w-4 h-4"/>
                     </button>

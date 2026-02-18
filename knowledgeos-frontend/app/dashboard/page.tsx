@@ -42,9 +42,11 @@ export default function Dashboard() {
         }
     };
 
+
     useEffect(() => {
         fetchInbox();
         fetchVault();
+
     }, []);
 
     return (
@@ -73,8 +75,8 @@ export default function Dashboard() {
                         No pending items in stream.
                     </div>
                 ) : (
-                    inboxItems.slice(0, 5).map(item => (
-                        <InboxCard key={item.id} resource={item} />
+                    inboxItems.slice(0, 3).map(item => (
+                        <InboxCard key={item.id} resource={item} onArchive={fetchInbox} />
                     ))
                 )}
             </section>

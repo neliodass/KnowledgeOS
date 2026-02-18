@@ -153,9 +153,10 @@ public class OpenRouterProvider : IAiProvider
                 Content Snippet: {content ?? "N/A"}
 
                 INSTRUCTIONS:
-                1. Compare content with user interests and 'topics to avoid'.
-                2. Assign a score (0-100).
-                3. Provide a brief verdict.
+                1. Compare content with user interests, hobbies and 'topics to avoid'.
+                2. Promote mainly topics to learn, but respect hobbies. Dispraise content that matches 'topics to avoid'.
+                3. Assign a score (0-100).
+                4. Provide a brief verdict.
                 """;
     }
 

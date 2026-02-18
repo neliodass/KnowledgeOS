@@ -33,6 +33,8 @@ export const api = {
     // Resources
     getInboxMix: () => fetchWithAuth('/inbox/mix'),
     getVaultMix: () => fetchWithAuth('/vault/mix'),
+    archiveInboxResource: (id: string) =>
+        fetchWithAuth(`/resources/${id}/status`, { method: 'PATCH',body : JSON.stringify({ status: 5 }) }),
     createResource: (url: string) =>
         fetchWithAuth('/resources', { method: 'POST', body: JSON.stringify({ url, addToVault: false }) }),
 
