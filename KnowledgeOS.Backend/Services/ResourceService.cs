@@ -22,6 +22,37 @@ public class ResourceService : IResourceService
 
     public async Task<Guid> CreateResourceAsync(CreateResourceDto dto, string userId)
     {
+        var existingResource = await _context.Resources
+            .Include(r => r.VaultMeta)
+            .FirstOrDefaultAsync(r => r.Url == dto.Url && r.UserId == userId);
+
+        if (existingResource != null)
+        {
+            if (existingResource.Status == ResourceStatus.Trash)
+            {
+                existingResource.Status = ResourceStatus.Processing;
+            }
+
+            await RetryProcessingAsync(existingResource.Id, userId);
+            if (dto.AddToVault)
+            {
+                if (!existingResource.IsVaultTarget)
+                {
+                    existingResource.IsVaultTarget = true;
+                }
+                if (existingResource.VaultMeta == null)
+                {
+                    existingResource.VaultMeta = new VaultMetadata
+                    {
+                        CategoryId = dto.CategoryId,
+                        PromotedToVaultAt = DateTime.UtcNow
+                    };
+                    await _context.SaveChangesAsync(); 
+                }
+            }
+
+            return existingResource.Id;
+        }
         var resource = ResourceFactory.Create(dto.Url, userId);
         if (dto.AddToVault)
         {
