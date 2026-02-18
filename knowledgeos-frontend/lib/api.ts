@@ -36,6 +36,15 @@ export const api = {
     createResource: (url: string) =>
         fetchWithAuth('/resources', { method: 'POST', body: JSON.stringify({ url, addToVault: false }) }),
 
-    // Preferences
+    // Categories
+    getCategories: () => fetchWithAuth('/categories'),
+    createCategory: (name: string) =>
+        fetchWithAuth('/categories', { method: 'POST', body: JSON.stringify({ name }) }),
+    deleteCategory: (id: string) =>
+        fetchWithAuth(`/categories/${id}`, { method: 'DELETE' }),
+
+    // User Preferences
     getPreferences: () => fetchWithAuth('/preferences'),
+    updatePreferences: (body: any) =>
+        fetchWithAuth('/preferences', { method: 'PUT', body: JSON.stringify(body) }),
 };
