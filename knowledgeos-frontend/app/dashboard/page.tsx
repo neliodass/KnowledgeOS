@@ -6,13 +6,14 @@ import {InboxResource, VaultResource} from '@/lib/types';
 import {InboxCard} from '@/components/InboxCard';
 import {VaultCard} from '@/components/VaultCard';
 import {RefreshCw, Database, Inbox} from 'lucide-react';
+import {InboxDetailModal} from "@/components/InboxDetailModal";
 
 export default function Dashboard() {
     const [inboxItems, setInboxItems] = useState<InboxResource[]>([]);
     const [vaultItems, setVaultItems] = useState<VaultResource[]>([]);
     const [loadingInbox, setLoadingInbox] = useState(true);
     const [loadingVault, setLoadingVault] = useState(true);
-
+    const [selectedResource, setSelectedResource] = useState<InboxResource | null>(null);
     const fetchInbox = async () => {
         setLoadingInbox(true);
         try {
@@ -41,7 +42,15 @@ export default function Dashboard() {
             setLoadingVault(false);
         }
     };
-
+    const handleArchiveFromModal = async (id: string) => {
+        try {
+            await api.archiveInboxResource(id);
+            setSelectedResource(null);
+            await fetchInbox();
+        } catch (e) {
+            console.error(e);
+        }
+    };
 
     useEffect(() => {
         fetchInbox();
@@ -79,8 +88,12 @@ export default function Dashboard() {
                     inboxItems.slice(0, 3)
                         .sort((a, b) => (b.aiScore ?? 0) - (a.aiScore ?? 0))
                         .map(item => (
-                        <InboxCard key={item.id} resource={item} onArchive={fetchInbox}/>
-                    ))
+                            <InboxCard
+                                key={item.id}
+                                resource={item}
+                                onArchive={fetchInbox}
+                                onClick={() => setSelectedResource(item)}/>
+                        ))
                 )}
             </section>
             <section className="flex flex-col gap-6">
@@ -111,6 +124,16 @@ export default function Dashboard() {
                 )}
             </section>
 
+            {selectedResource && (
+                <InboxDetailModal
+                    resource={selectedResource}
+                    onClose={() => setSelectedResource(null)}
+                    onArchive={handleArchiveFromModal}
+                    // ... inne propsy ...
+
+                    // Przekazujemy funkcję odświeżającą listę Inboxa
+                    onRetry={fetchInbox}
+                />)}
         </div>
     );
 }

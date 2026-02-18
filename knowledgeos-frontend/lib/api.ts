@@ -35,6 +35,8 @@ export const api = {
     getVaultMix: () => fetchWithAuth('/vault/mix'),
     archiveInboxResource: (id: string) =>
         fetchWithAuth(`/resources/${id}/status`, { method: 'PATCH',body : JSON.stringify({ status: 5 }) }),
+    retryResource: (id: string) =>
+        fetchWithAuth(`/resources/${id}/retry`, { method: 'POST' }),
     createResource: (url: string) =>
         fetchWithAuth('/resources', { method: 'POST', body: JSON.stringify({ url, addToVault: false }) }),
 
