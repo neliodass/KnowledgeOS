@@ -155,8 +155,9 @@ public class OpenRouterProvider : IAiProvider
                 INSTRUCTIONS:
                 1. Compare content with user interests, hobbies and 'topics to avoid'.
                 2. Promote mainly topics to learn, but respect hobbies. Dispraise content that matches 'topics to avoid'.
+                2.a If the content is outside of the user's interests but discovers a new interesting topic, and it's valuable, give a decent score but mention in the verdict that it's outside of current interests.
                 3. Assign a score (0-100).
-                4. Provide a brief verdict.
+                4. Provide a brief verdict - two short sentences.
                 """;
     }
 
