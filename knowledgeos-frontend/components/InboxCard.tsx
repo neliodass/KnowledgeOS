@@ -137,8 +137,9 @@ export function InboxCard({ resource, onArchive, onClick }: InboxCardProps) {
 
                         <div className="flex items-center gap-3">
                             <span className={`text-[11px] font-bold px-2 py-0.5 border ${
-                                (resource.aiScore ?? 0) > 80 ? 'text-tech-primary border-tech-primary bg-tech-primary-dim' :
-                                    (resource.aiScore ?? 0) > 50 ? 'text-orange-400 border-orange-900/50 bg-orange-900/10' :
+                                (resource.aiScore ?? 0) > 74 ? 'text-tech-primary border-tech-primary bg-tech-primary-dim' :
+                                    (resource.aiScore ?? 0) > 49 ? 'text-orange-400 border-orange-900/50 bg-orange-900/10' :
+                                        (resource.aiScore ?? 0) > 19 ? 'text-yellow-400 border-yellow-900/50 bg-yellow-900/10' :
                                         'text-red-400 border-red-900/50 bg-red-900/10'
                             }`}>
                                 SCORE: {resource.aiScore ?? 'N/A'}

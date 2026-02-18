@@ -28,6 +28,7 @@ public class YouTubeContentFetcher : IContentFetcher
 
         try
         {
+            var description = video.Description??"";
             var trackManifest = await _youtubeClient.Videos.ClosedCaptions.GetManifestAsync(video.Url);
             var trackInfo = trackManifest.Tracks.FirstOrDefault(lang => lang.Language.Code == "en")
                             ?? trackManifest.Tracks.FirstOrDefault(lang => lang.Language.Code == "pl") ??
@@ -38,8 +39,8 @@ public class YouTubeContentFetcher : IContentFetcher
 
             var sb = new StringBuilder();
             var charCount = 0;
-            const int maxChars = 100000;
-
+            const int maxChars = 200000;
+            sb.Append(description);
             foreach (var caption in track.Captions)
             {
                 if (charCount > maxChars) break;

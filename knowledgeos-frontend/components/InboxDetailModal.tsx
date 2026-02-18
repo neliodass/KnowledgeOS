@@ -16,15 +16,6 @@ interface InboxDetailModalProps {
 
 export function InboxDetailModal({resource, onClose, onArchive, onDelete, onPromote,onRetry}: InboxDetailModalProps) {
     const [isRetrying, setIsRetrying] = useState(false);
-    const getGrade = (score: number) => {
-        if (score >= 90) return 'A+';
-        if (score >= 80) return 'A';
-        if (score >= 70) return 'B';
-        if (score >= 50) return 'C';
-        return 'D';
-    };
-
-    const grade = getGrade(resource.aiScore || 0);
     const isVideo = resource.resourceType === 'Video';
     const handleRetry = async () => {
         setIsRetrying(true);
@@ -153,22 +144,6 @@ export function InboxDetailModal({resource, onClose, onArchive, onDelete, onProm
                         </span>
                                             )) :
                                             <span className="text-[10px] text-gray-600">NO_TAGS_DETECTED</span>}
-                                    </div>
-                                </div>
-
-                                <div className="p-4 border border-tech-border bg-tech-surface">
-                                    <h4 className="text-[10px] font-bold text-tech-text-muted uppercase mb-4 tracking-widest">System
-                                        Sentiment</h4>
-                                    <div className="flex items-center gap-3">
-                                        <div
-                                            className="w-12 h-12 border border-tech-primary flex items-center justify-center bg-tech-primary-dim">
-                                            <span className="text-lg font-bold text-tech-primary">{grade}</span>
-                                        </div>
-                                        <div className="text-[10px] text-gray-400 leading-tight">
-                                            {(resource.aiScore || 0) > 70
-                                                ? "HIGH INFORMATION DENSITY DETECTED. RECOMMENDED FOR VAULT."
-                                                : "STANDARD DATA STREAM. REVIEW REQUIRED."}
-                                        </div>
                                     </div>
                                 </div>
 

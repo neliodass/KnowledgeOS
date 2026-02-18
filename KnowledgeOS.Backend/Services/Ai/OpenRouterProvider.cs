@@ -99,8 +99,8 @@ public class OpenRouterProvider : IAiProvider
                     {
                         correctedTitle = new { type = "string", description = "A better, more descriptive title." },
                         score = new { type = "integer", description = "Relevance 0-100 based on user context." },
-                        verdict = new { type = "string", description = "One sentence explaining the score." },
-                        summary = new { type = "string", description = "Max 3 sentences summary." },
+                        verdict = new { type = "string", description = "Two sentences explaining the score." },
+                        summary = new { type = "string", description = "Summarize whole content in around 6-8 sentences" },
                         suggestedTags = new { type = "array", items = new { type = "string" } }
                     },
                     required = new[] { "correctedTitle", "score", "verdict", "summary", "suggestedTags" },
@@ -138,29 +138,63 @@ public class OpenRouterProvider : IAiProvider
         };
     }
 
-    private string BuildInboxPrompt(Resource resource, string prefs, string? content)
+private string BuildInboxPrompt(Resource resource, string prefs, string? content)
     {
         return $"""
-                TASK: SCREENING
-                Evaluate the following content for suitability in the user's Inbox.
+                TASK: NUANCED CONTENT CURATION
+                You are a personal curator. Your goal is to distinguish between **SOULLESS NOISE** (Brainrot, Grifters) and **HUMAN PASSION** (Hobbies, Art, Stories, Skills).
 
-                USER PREFERENCES:
+                USER PROFILE (Context & Preferences):
                 {prefs}
 
-                METADATA:
+                RESOURCE METADATA:
                 Title: {resource.Title}
                 Url: {resource.Url}
                 Content Snippet: {content ?? "N/A"}
 
-                INSTRUCTIONS:
-                1. Compare content with user interests, hobbies and 'topics to avoid'.
-                2. Promote mainly topics to learn, but respect hobbies. Dispraise content that matches 'topics to avoid'.
-                2.a If the content is outside of the user's interests but discovers a new interesting topic, and it's valuable, give a decent score but mention in the verdict that it's outside of current interests.
-                3. Assign a score (0-100).
-                4. Provide a brief verdict - two short sentences.
+                --- CORE EVALUATION LOGIC (EXECUTE IN ORDER) ---
+
+                1. **THE "PASSION & HOBBY" WHITELIST (ABSOLUTE PRIORITY):**
+                   - **Action:** Check User Hobbies. Does this content fit a specific listed interest?
+                   - **CRITICAL OVERRIDE:** If the content matches a Hobby (e.g., RPG, History, obscure sport), you must **IGNORE** standard "quality" metrics.
+                     - **"Amateur Production"?** -> ACCEPTABLE. Indie creators are the heart of hobbies.
+                     - **"Fiction/Drama"?** -> ACCEPTABLE. Narrative is key for RPG/Lore fans.
+                     - **"Passive Listening"?** -> ACCEPTABLE. Audio dramas/sessions are valid content.
+                   - *Result:* If matches hobby -> **SCORE 90-100**. Verdict: "Core Hobby Match".
+
+                2. **THE "UNIQUE EXPERIENCE & MASTERY" CHECK (DISCOVERY):**
+                   - *Only if Step 1 failed.*
+                   - Does the content show a **Unique Human Experience**, **Skill**, or **Complex Process**?
+                   - *Examples:*
+                     - **Athletics:** Training for Olympics / Bobsleigh (High Discipline).
+                     - **Crafts:** Repairing electronics, painting, cooking.
+                     - **Analysis:** Deep dive into a niche topic (e.g., history of cement).
+                   - *Result:* If it shows effort/skill -> **SCORE 70-85**. Verdict: "High-Value Discovery".
+
+                3. **THE "BS" & BRAINROT FILTER (THE TRASH CAN):**
+                   - *Only if Step 1 & 2 failed.*
+                   - **Pseudo-Intellectualism:** Using big words to say nothing (e.g., "Quantum AI Soul"). note: Fiction/RPG is NOT pseudo-intellectualism.
+                   - **The "Reactor" Trap:** Streamers watching other videos with zero expert input (just laughing/"wow").
+                   - **Delusions:** Grandiose claims without proof.
+                   - **Result:** **SCORE 0-20**. Verdict: "Noise/Low Effort".
+
+                4. **THE "PROFESSIONAL" CHECK:**
+                   - Valid educational material for career? -> **Score 90-100**.
+
+                --- SCORING GUIDE ---
+                - **90-100:** Core Hobby (RPG/Lore/Story) OR Professional Goal.
+                - **70-89:** High-Effort Discovery (Unique Skills, Athletics, Crafts, Deep Dives).
+                - **40-69:** Standard entertainment / News.
+                - **0-39:** Grifters, Pseudo-science, Lazy Reaction Videos, Drama.
+
+                --- OUTPUT INSTRUCTIONS ---
+                - **CorrectedTitle:** Descriptive.
+                - **Verdict:**
+                  - If Hobby: "Protected Hobby Content: Matches [Interest]."
+                  - If Discovery: "High-value demonstration of [Skill/Experience]."
+                  - If Noise: "Rejected: Low-effort/Pseudo-intellectual."
                 """;
     }
-
     private string BuildVaultPrompt(Resource resource, string prefs, List<string> categories, string? content)
     {
         var cats = categories.Any() ? string.Join(", ", categories) : "None (Propose a new one)";
