@@ -10,7 +10,7 @@ import {
     Settings,
     Menu, // Hamburger
     X, // Close button
-    LogOut
+    LogOut, Plus
 } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -40,7 +40,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         <X className="w-6 h-6" />
                     </button>
                 </div>
-                <SidebarContent />
+                <SidebarContent onClose={() => setIsMobileMenuOpen(false)} />
             </aside>
 
             <div className="flex-1 flex flex-col min-w-0 relative bg-grid">
@@ -82,12 +82,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
     );
 }
-
-function SidebarContent() {
+interface SidebarContentProps {
+    onClose?: () => void;
+}
+function SidebarContent({onClose}: SidebarContentProps) {
     const pathname = usePathname();
 
     const isActive = (path: string) => pathname === path;
-
+    const handleLinkClick = () => {
+        if (onClose) onClose();
+    };
     const linkClasses = (path: string) => `
     flex items-center gap-4 px-4 py-3 border text-xs font-bold uppercase tracking-wider transition-all group
     ${isActive(path)
@@ -110,22 +114,25 @@ function SidebarContent() {
             </div>
 
             <nav className="flex-1 px-3 py-6 flex flex-col gap-1">
-                <Link href="/dashboard" className={linkClasses('/dashboard')}>
+                <Link href="/dashboard" className={linkClasses('/dashboard')} onClick={handleLinkClick} >
                     <LayoutDashboard className="w-5 h-5" />
                     Dashboard
                 </Link>
-
-                <Link href="/dashboard/inbox" className={linkClasses('/dashboard/inbox')}>
+                <Link href="/dashboard/add" className={linkClasses('/dashboard/add')} onClick={handleLinkClick}>
+                    <Plus className="w-5 h-5" />
+                    Add new link
+                </Link>
+                <Link href="/dashboard/inbox" className={linkClasses('/dashboard/inbox')} onClick={handleLinkClick}>
                     <Inbox className="w-5 h-5" />
                     Inbox
                 </Link>
 
-                <Link href="/dashboard/vault" className={linkClasses('/dashboard/vault')}>
+                <Link href="/dashboard/vault" className={linkClasses('/dashboard/vault')} onClick={handleLinkClick}>
                     <Database className="w-5 h-5" />
                     Vault
                 </Link>
 
-                <Link href="/dashboard/settings" className={linkClasses('/dashboard/settings')}>
+                <Link href="/dashboard/settings" className={linkClasses('/dashboard/settings')} onClick={handleLinkClick}>
                     <Settings className="w-5 h-5" />
                     Settings
                 </Link>

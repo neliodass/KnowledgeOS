@@ -1,5 +1,5 @@
 import {InboxResource} from '@/lib/types';
-import {X, PlayCircle, Eye, Sparkles, Archive, Trash2, Database, ExternalLink, RefreshCw} from 'lucide-react';
+import {X, PlayCircle, Eye, Sparkles, Archive, Trash2, Database, ExternalLink, RefreshCw, Loader2} from 'lucide-react';
 import Image from "next/image";
 import Link from "next/link";
 import {useState} from "react";
@@ -16,6 +16,7 @@ interface InboxDetailModalProps {
 
 export function InboxDetailModal({resource, onClose, onArchive, onDelete, onPromote,onRetry}: InboxDetailModalProps) {
     const [isRetrying, setIsRetrying] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const isVideo = resource.resourceType === 'Video';
     const handleRetry = async () => {
         setIsRetrying(true);
@@ -29,6 +30,23 @@ export function InboxDetailModal({resource, onClose, onArchive, onDelete, onProm
             console.error("Retry failed", error);
         } finally {
             setIsRetrying(false);
+        }
+    };
+    const handleDelete = async () => {
+        if (!window.confirm("Are you sure you want to move this item to trash?")) return;
+
+        setIsDeleting(true);
+        try {
+            const res = await api.deleteResource(resource.id);
+
+            if (res.ok) {
+                if (onDelete) onDelete(resource.id);
+                onClose();
+            }
+        } catch (error) {
+            console.error("Delete failed", error);
+        } finally {
+            setIsDeleting(false);
         }
     };
     return (
@@ -183,11 +201,16 @@ export function InboxDetailModal({resource, onClose, onArchive, onDelete, onProm
                         {isRetrying ? "Processing..." : "Reanalyze"}
                     </button>
                     <button
-                        onClick={() => onDelete && onDelete(resource.id)}
-                        className="flex items-center justify-center gap-3 py-3 border border-red-900 bg-red-900/10 text-red-500 hover:bg-red-500 hover:text-white transition-all font-bold text-xs uppercase tracking-widest"
+                        onClick={handleDelete}
+                        disabled={isDeleting || isRetrying}
+                        className="flex items-center justify-center gap-3 py-3 border border-red-900 bg-red-900/10 text-red-500 hover:bg-red-500 hover:text-white transition-all font-bold text-xs uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Trash2 className="w-4 h-4"/>
-                        Trash
+                        {isDeleting ? (
+                            <Loader2 className="w-4 h-4 animate-spin"/>
+                        ) : (
+                            <Trash2 className="w-4 h-4"/>
+                        )}
+                        {isDeleting ? "Deleting..." : "Trash"}
                     </button>
                 </div>
 
