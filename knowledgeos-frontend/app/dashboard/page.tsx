@@ -51,17 +51,60 @@ export default function Dashboard() {
             console.error(e);
         }
     };
+    const [hasPreferences, setHasPreferences] = useState(true);
 
+    const checkPrefs = async () => {
+        try {
+            const res = await api.getPreferences();
+            if (res.ok) {
+                const data = await res.json();
+                if (!data || (data.professionalContext=="" && data.learningGoals=="")) {
+                    setHasPreferences(false);
+                } else {
+                    setHasPreferences(true);
+                }
+            }
+        } catch (e) {
+            console.error("Failed to check preferences", e);
+        }
+    };
     useEffect(() => {
         fetchInbox();
         fetchVault();
+        checkPrefs();
 
     }, []);
 
     return (
+        <div>
+            {!hasPreferences && (
+                <div className="mb-8 border border-orange-500/50 bg-orange-500/10 p-4 flex items-center justify-between group animate-pulse hover:animate-none transition-all">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 border border-orange-500 flex items-center justify-center bg-orange-500/20">
+                            <span className="text-orange-500 font-bold">!</span>
+                        </div>
+                        <div>
+                            <h4 className="text-xs font-bold text-orange-500 uppercase tracking-tighter">
+                                Cognitive Profile Incomplete
+                            </h4>
+                            <p className="text-[10px] text-orange-300/70 uppercase">
+                                AI requires context to prioritize your stream effectively.
+                            </p>
+                        </div>
+                    </div>
+                    <a
+                        href="/dashboard/settings"
+                        className="text-[10px] font-bold border border-orange-500 px-3 py-2 text-orange-500 hover:bg-orange-500 hover:text-black transition-all"
+                    >
+                        CONFIGURE_NOW
+                    </a>
+                </div>
+            )}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
             <section className="flex flex-col gap-6">
+
                 <div className="flex items-center justify-between px-1 border-b border-tech-border pb-2">
+
                     <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
                         <Inbox className="text-tech-green w-5 h-5"/>
                         Input Stream
@@ -129,11 +172,10 @@ export default function Dashboard() {
                     resource={selectedResource}
                     onClose={() => setSelectedResource(null)}
                     onArchive={handleArchiveFromModal}
-                    // ... inne propsy ...
-
-                    // Przekazujemy funkcję odświeżającą listę Inboxa
+                    onDelete={fetchInbox}
                     onRetry={fetchInbox}
                 />)}
+        </div>
         </div>
     );
 }
