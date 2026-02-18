@@ -31,8 +31,8 @@ export const api = {
     login: (body: any) => fetchWithAuth('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
 
     // Resources
-    getInbox: () => fetchWithAuth('/inbox'),
-    getVault: () => fetchWithAuth('/vault'),
+    getInboxMix: () => fetchWithAuth('/inbox/mix'),
+    getVaultMix: () => fetchWithAuth('/vault/mix'),
     createResource: (url: string) =>
         fetchWithAuth('/resources', { method: 'POST', body: JSON.stringify({ url, addToVault: false }) }),
 

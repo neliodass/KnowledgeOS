@@ -4,14 +4,12 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-    Terminal,
     LayoutDashboard,
     Inbox,
     Database, // Vault icon
     Settings,
     Menu, // Hamburger
     X, // Close button
-    Cpu,
     LogOut
 } from 'lucide-react';
 

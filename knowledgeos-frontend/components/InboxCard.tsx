@@ -66,7 +66,7 @@ export function InboxCard({resource}: InboxCardProps) {
             {/* big preview area for videos/images */}
             {config.hasBigPreview && (
                 <div
-                    className="relative w-full aspect-video border-b border-tech-border grayscale group-hover:grayscale-0 transition-all cursor-pointer overflow-hidden bg-black/20">
+                    className="relative w-full aspect-video border-b border-tech-border grayscale-50 group-hover:grayscale-0 transition-all cursor-pointer overflow-hidden bg-black/20">
                     {/* show image if we have one */}
                     {resource.imageUrl ? (
                         <Image

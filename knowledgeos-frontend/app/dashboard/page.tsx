@@ -2,114 +2,111 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-import { InboxResource } from '@/lib/types';
-import { useRouter } from 'next/navigation';
+import { InboxResource, VaultResource } from '@/lib/types';
+import { InboxCard } from '@/components/InboxCard';
+import { VaultCard } from '@/components/VaultCard';
+import { RefreshCw, Database, Inbox } from 'lucide-react';
 
 export default function Dashboard() {
-    const [resources, setResources] = useState<InboxResource[]>([]);
-    const [loading, setLoading] = useState(true);
-    const router = useRouter();
+    const [inboxItems, setInboxItems] = useState<InboxResource[]>([]);
+    const [vaultItems, setVaultItems] = useState<VaultResource[]>([]);
+    const [loadingInbox, setLoadingInbox] = useState(true);
+    const [loadingVault, setLoadingVault] = useState(true);
 
-    useEffect(() => {
-        loadInbox();
-    }, []);
-
-    const loadInbox = async () => {
+    const fetchInbox = async () => {
+        setLoadingInbox(true);
         try {
-            const res = await api.getInbox();
-
-            if (res.status === 401) {
-                router.push('/login');
-                return;
+            const res = await api.getInboxMix();
+            if (res.ok) {
+                const data = await res.json();
+                setInboxItems(data || []);
             }
-
-            const data = await res.json();
-            setResources(data.items || []);
-        } catch (err) {
-            console.error('Błąd pobierania inboxa:', err);
+        } catch (e) {
+            console.error(e);
         } finally {
-            setLoading(false);
+            setLoadingInbox(false);
+        }
+    };
+    const fetchVault = async () => {
+        setLoadingVault(true);
+        try {
+            const res = await api.getVaultMix();
+            if (res.ok) {
+                const data = await res.json();
+                setVaultItems(data || []);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoadingVault(false);
         }
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        router.push('/login');
-    };
-
-    const getScoreColor = (score?: number) => {
-        if (score === undefined || score === null) return 'bg-gray-200 text-gray-600';
-        if (score >= 75) return 'bg-green-100 text-green-800 border-green-200';
-        if (score >= 40) return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-        return 'bg-red-100 text-red-800 border-red-200';
-    };
-
-    if (loading) {
-        return (
-            <div className="flex h-screen items-center justify-center bg-gray-50">
-                <div className="text-xl font-semibold text-gray-400">Ładowanie Inboxa...</div>
-            </div>
-        );
-    }
+    useEffect(() => {
+        fetchInbox();
+        fetchVault();
+    }, []);
 
     return (
-        <div className="min-h-screen bg-gray-100 p-8 text-gray-800">
-            <div className="max-w-7xl mx-auto">
-                <div className="flex justify-between items-center mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Inbox</h1>
-                        <p className="text-gray-500">Materiały oczekujące na Twoją decyzję</p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
+            <section className="flex flex-col gap-6">
+                <div className="flex items-center justify-between px-1 border-b border-tech-border pb-2">
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <Inbox className="text-tech-green w-5 h-5" />
+                        Input Stream
+                    </h3>
+                    <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-tech-green bg-tech-green-dim px-2 py-1 border border-tech-green">
+                {inboxItems.length} PENDING
+              </span>
+                        <button
+                            onClick={fetchInbox}
+                            className={`w-6 h-6 flex items-center justify-center text-gray-500 hover:text-tech-green transition-colors ${loadingInbox ? 'animate-spin' : ''}`}
+                        >
+                            <RefreshCw className="w-4 h-4" />
+                        </button>
                     </div>
+                </div>
+
+                {loadingInbox ? (
+                    <div className="text-xs text-tech-text-muted animate-pulse font-mono">Loading stream...</div>
+                ) : inboxItems.length === 0 ? (
+                    <div className="p-8 border border-dashed border-tech-border text-center text-xs text-tech-text-muted">
+                        No pending items in stream.
+                    </div>
+                ) : (
+                    inboxItems.slice(0, 5).map(item => (
+                        <InboxCard key={item.id} resource={item} />
+                    ))
+                )}
+            </section>
+            <section className="flex flex-col gap-6">
+                <div className="flex items-center justify-between px-1 border-b border-tech-border pb-2">
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <Database className="text-tech-green w-5 h-5" />
+                        Review from Vault
+                    </h3>
                     <button
-                        onClick={handleLogout}
-                        className="text-sm font-medium text-red-600 hover:text-red-800 hover:bg-red-50 px-4 py-2 rounded transition"
+                        onClick={fetchVault}
+                        className={`w-6 h-6 border border-tech-border flex items-center justify-center text-gray-500 hover:text-tech-green hover:border-tech-green transition-colors ${loadingVault ? 'animate-spin' : ''}`}
                     >
-                        Wyloguj
+                        <RefreshCw className="w-3 h-3" />
                     </button>
                 </div>
 
-                {resources.length === 0 ? (
-                    <div className="text-center py-20 bg-white rounded-lg shadow border border-dashed border-gray-300">
-                        <h3 className="text-lg font-medium text-gray-900">Pusto w Inboxie</h3>
-                        <p className="text-gray-500 mt-1">Dodaj nowe linki przez API, aby zobaczyć je tutaj.</p>
+                {loadingVault ? (
+                    <div className="text-xs text-tech-text-muted animate-pulse font-mono">Accessing database...</div>
+                ) : vaultItems.length === 0 ? (
+                    <div className="p-8 border border-dashed border-tech-border text-center text-xs text-tech-text-muted">
+                        Vault is empty.
                     </div>
                 ) : (
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        {resources.map(r => (
-                            <div key={r.id} className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition flex flex-col h-full">
-
-                                <div className="flex justify-between items-start mb-3">
-                    <span className={`text-xs font-bold px-2 py-1 rounded border ${getScoreColor(r.aiScore)}`}>
-                        {r.aiScore !== undefined ? `${r.aiScore}/100` : 'N/A'}
-                    </span>
-                                    <span className="text-xs text-gray-400">
-                        {new Date(r.createdAt).toLocaleDateString()}
-                    </span>
-                                </div>
-
-                                <h3 className="font-semibold text-lg leading-snug text-gray-900 mb-2 line-clamp-2">
-                                    <a href={r.url} target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 hover:underline">
-                                        {r.correctedTitle || r.title}
-                                    </a>
-                                </h3>
-
-                                <p className="text-sm text-gray-600 mb-4 line-clamp-3 flex-grow">
-                                    {r.aiVerdict || "Czeka na analizę..."}
-                                </p>
-
-                                {/* Tagi */}
-                                <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-gray-50">
-                                    {r.tags && r.tags.length > 0 ? r.tags.map(t => (
-                                        <span key={t} className="text-[10px] uppercase tracking-wider bg-slate-100 text-slate-600 px-2 py-1 rounded">
-                            {t}
-                        </span>
-                                    )) : <span className="text-xs text-gray-300 italic">Brak tagów</span>}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    vaultItems.slice(0, 5).map(item => (
+                        <VaultCard key={item.id} resource={item} />
+                    ))
                 )}
-            </div>
+            </section>
+
         </div>
     );
 }
