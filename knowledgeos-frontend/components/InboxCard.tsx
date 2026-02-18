@@ -6,7 +6,7 @@ interface InboxCardProps {
     resource: InboxResource;
 }
 
-// settings for different types of stuff (easy to add more later)
+// settings for different types of resource
 interface ResourceTypeConfig {
     icon: LucideIcon;
     label: string;
