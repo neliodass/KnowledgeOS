@@ -56,9 +56,7 @@ export default function Dashboard() {
                         Input Stream
                     </h3>
                     <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-tech-green bg-tech-green-dim px-2 py-1 border border-tech-green">
-                {inboxItems.length} PENDING
-              </span>
+
                         <button
                             onClick={fetchInbox}
                             className={`w-6 h-6 flex items-center justify-center text-gray-500 hover:text-tech-green transition-colors ${loadingInbox ? 'animate-spin' : ''}`}

@@ -73,7 +73,7 @@ export function InboxCard({resource}: InboxCardProps) {
                             src={resource.imageUrl}
                             alt={resource.title}
                             fill
-                            sizes="(max-width: 768px) 100vw, 33vw"
+                            sizes="(max-width: 384px) 100vw, 33vw"
                             className="object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                         />
                     ) : (
@@ -104,7 +104,7 @@ export function InboxCard({resource}: InboxCardProps) {
                     <div className="flex-1 min-w-0">
                         <h4 className="text-sm font-bold text-white uppercase leading-tight mb-2 truncate pr-4">
                             <a href={resource.url} target="_blank" rel="noopener noreferrer"
-                               className="hover:text-tech-green transition-colors">
+                               className="hover:text-tech-primary transition-colors">
                                 {resource.correctedTitle || resource.title}
                             </a>
                         </h4>
@@ -112,7 +112,7 @@ export function InboxCard({resource}: InboxCardProps) {
                         <div className="flex items-center gap-3">
                             {/* score color logic */}
                             <span className={`text-[11px] font-bold px-2 py-0.5 border ${
-                                (resource.aiScore ?? 0) > 80 ? 'text-tech-green border-tech-green bg-tech-green-dim' :
+                                (resource.aiScore ?? 0) > 80 ? 'text-(--color-tech-primary) border-(--color-tech-primary) bg-(--color-tech-primary-dim)' :
                                     (resource.aiScore ?? 0) > 50 ? 'text-orange-400 border-orange-900/50 bg-orange-900/10' :
                                         'text-red-400 border-red-900/50 bg-red-900/10'
                             }`}>
@@ -133,10 +133,12 @@ export function InboxCard({resource}: InboxCardProps) {
                         <Archive className="w-4 h-4"/>
                     </button>
                 </div>
-
-                <p className="text-[10px] text-gray-400 leading-relaxed font-mono mb-4 italic line-clamp-2">
-                    &gt; AI VERDICT: {resource.aiVerdict || "Analyzing content structure..."}
-                </p>
+                <div>
+                    <p className="text-[12px] text-green-700 leading-relaxed font-mono italic line-clamp-2"> &gt; AI VERDICT:</p>
+                    <p className="text-[12px] text-gray-400 leading-relaxed font-mono mb-4 italic line-clamp-2">
+                        {resource.aiVerdict || "Analyzing content structure..."}
+                    </p>
+                </div>
 
                 <div className="flex flex-wrap gap-2">
                     {/* only show first 3 tags */}
