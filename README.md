@@ -306,17 +306,13 @@ The entire stack (PostgreSQL, backend, frontend) can be run with a single comman
 
 ## 🖼️ Screenshots
 
-> *Coming soon*
-
-<!-- 
-| Inbox | Vault |
-|-------|-------|
-| ![Inbox screenshot](docs/screenshots/inbox.png) | ![Vault screenshot](docs/screenshots/vault.png) |
-
-| Resource detail | User preferences |
-|----------------|-----------------|
-| ![Detail](docs/screenshots/detail.png) | ![Preferences](docs/screenshots/preferences.png) |
--->
+![Dashboard](promo/dashboard.png)
+![Modal](promo/modal.png)
+![Add](promo/add.png)
+![Add_category](promo/add_category.png)
+![inbox](promo/inbox.png)
+![vault](promo/vault.png)
+![settings](promo/settings.png)
 
 ---
 
