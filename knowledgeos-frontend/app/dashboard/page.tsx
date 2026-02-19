@@ -7,6 +7,7 @@ import {InboxCard} from '@/components/InboxCard';
 import {VaultCard} from '@/components/VaultCard';
 import {RefreshCw, Database, Inbox} from 'lucide-react';
 import {InboxDetailModal} from "@/components/InboxDetailModal";
+import {VaultDetailModal} from "@/components/VaultDetailModal";
 
 export default function Dashboard() {
     const [inboxItems, setInboxItems] = useState<InboxResource[]>([]);
@@ -14,6 +15,7 @@ export default function Dashboard() {
     const [loadingInbox, setLoadingInbox] = useState(true);
     const [loadingVault, setLoadingVault] = useState(true);
     const [selectedResource, setSelectedResource] = useState<InboxResource | null>(null);
+    const [selectedVaultResource, setSelectedVaultResource] = useState<VaultResource | null>(null);
     const fetchInbox = async () => {
         setLoadingInbox(true);
         try {
@@ -106,14 +108,14 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between px-1 border-b border-tech-border pb-2">
 
                     <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                        <Inbox className="text-tech-green w-5 h-5"/>
+                        <Inbox className="text-tech-primary w-5 h-5"/>
                         Input Stream
                     </h3>
                     <div className="flex items-center gap-2">
 
                         <button
                             onClick={fetchInbox}
-                            className={`w-6 h-6 border border-tech-border flex items-center justify-center text-gray-500 hover:text-tech-green hover:border-tech-green transition-colors ${loadingVault ? 'animate-spin' : ''}`}
+                            className={`w-6 h-6 border border-tech-border flex items-center justify-center text-gray-500 hover:text-tech-primary hover:border-tech-primary transition-colors ${loadingVault ? 'animate-spin' : ''}`}
                         >
                             <RefreshCw className="w-3 h-3"/>
                         </button>
@@ -142,12 +144,12 @@ export default function Dashboard() {
             <section className="flex flex-col gap-6">
                 <div className="flex items-center justify-between px-1 border-b border-tech-border pb-2">
                     <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                        <Database className="text-tech-green w-5 h-5"/>
+                        <Database className="text-tech-primary w-5 h-5"/>
                         Review from Vault
                     </h3>
                     <button
                         onClick={fetchVault}
-                        className={`w-6 h-6 border border-tech-border flex items-center justify-center text-gray-500 hover:text-tech-green hover:border-tech-green transition-colors ${loadingVault ? 'animate-spin' : ''}`}
+                        className={`w-6 h-6 border border-tech-border flex items-center justify-center text-gray-500 hover:text-tech-primary hover:border-tech-primary transition-colors ${loadingVault ? 'animate-spin' : ''}`}
                     >
                         <RefreshCw className="w-3 h-3"/>
                     </button>
@@ -162,7 +164,7 @@ export default function Dashboard() {
                     </div>
                 ) : (
                     vaultItems.slice(0, 5).map(item => (
-                        <VaultCard key={item.id} resource={item}/>
+                        <VaultCard key={item.id} resource={item} onClick={() => setSelectedVaultResource(item)} />
                     ))
                 )}
             </section>
@@ -174,6 +176,13 @@ export default function Dashboard() {
                     onArchive={handleArchiveFromModal}
                     onDelete={fetchInbox}
                     onRetry={fetchInbox}
+                />)}
+
+            {selectedVaultResource && (
+                <VaultDetailModal
+                    resource={selectedVaultResource}
+                    onClose={() => setSelectedVaultResource(null)}
+                    onDelete={fetchVault}
                 />)}
         </div>
         </div>
