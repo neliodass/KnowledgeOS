@@ -188,17 +188,39 @@ public class ResourceService : IResourceService
 
     public async Task<List<VaultResourceDto>> GetVaultMixAsync(string userId)
     {
-        //random for now TODO - better algorithm
-        var resources = await _context.Resources
+        // diffrent categories for now TODO - better algorithm
+        var randomPool = await _context.Resources
             .Include(r => r.VaultMeta)
-                .ThenInclude(v => v!.Category)
+            .ThenInclude(v => v!.Category)
             .Include(r => r.Tags)
             .Where(r => r.UserId == userId && r.Status == ResourceStatus.Vault)
             .OrderBy(r => Guid.NewGuid())
-            .Take(3)
+            .Take(15)
             .ToListAsync();
 
-        return resources.Select(MapToVaultDto).ToList();
+        if (!randomPool.Any())
+        {
+            return new List<VaultResourceDto>();
+        }
+
+      //select 3 items from diffrent categories (if possible)
+        var selectedResources = randomPool
+            .GroupBy(r => r.VaultMeta?.Category?.Id) 
+            .Select(group => group.First())
+            .Take(3)
+            .ToList();
+
+        //if not possible to select 3 diffrent categories, fill the rest with random items from pool
+        if (selectedResources.Count < 3)
+        {
+            var neededItems = 3 - selectedResources.Count;
+            var fallbackItems = randomPool
+                .Except(selectedResources) //exclude already selected items
+                .Take(neededItems);
+
+            selectedResources.AddRange(fallbackItems);
+        }
+        return selectedResources.Select(MapToVaultDto).ToList();
     }
 
 

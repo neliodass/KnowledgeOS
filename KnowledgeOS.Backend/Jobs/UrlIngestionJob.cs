@@ -102,6 +102,14 @@ public class UrlIngestionJob : IUrlIngestionJob
         description = WebUtility.HtmlDecode(description).Trim();
         article.Description = description.Length > 2000 ? description[..1997] + "..." : description;
 
+        // og:image 
+        var ogImageNode = doc.DocumentNode.SelectSingleNode("//meta[@property='og:image']");
+        var ogImage = ogImageNode?.GetAttributeValue("content", "");
+        if (!string.IsNullOrWhiteSpace(ogImage))
+        {
+            article.ImageUrl = ogImage;
+        }
+
         // site name
         var siteNameNode = doc.DocumentNode.SelectSingleNode("//meta[@property='og:site_name']");
         article.SiteName = siteNameNode?.GetAttributeValue("content", "") ?? new Uri(article.Url).Host;
