@@ -48,11 +48,8 @@ export default function SettingsPage() {
     const loadData = async () => {
         try {
             // get categories from api
-            const catRes = await api.getCategories();
-            if (catRes.ok) {
-                const data = await catRes.json();
-                setCategories(data);
-            }
+            const catData = await api.getCategories();
+            setCategories(catData);
 
             // get user prefs
             const prefRes = await api.getPreferences();
@@ -76,11 +73,9 @@ export default function SettingsPage() {
         if (!newCategory.trim()) return;
         setCatLoading(true);
         try {
-            const res = await api.createCategory(newCategory);
-            if (res.ok) {
-                setNewCategory('');
-                loadData();
-            }
+            const createdCategory = await api.createCategory(newCategory);
+            setCategories([...categories, createdCategory]);
+            setNewCategory('');
         } catch(e) { console.error(e); }
         finally { setCatLoading(false); }
     };

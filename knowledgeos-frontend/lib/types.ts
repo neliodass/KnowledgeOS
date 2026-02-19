@@ -43,3 +43,16 @@ export interface UserPreferences {
     learningGoals?: string;
     topicsToAvoid?: string;
 }
+export interface Category {
+    id: string;
+    name: string;
+    description?: string;
+    icon?: string;
+    resourceCount?: number;
+}
+
+export interface CreateResourceRequest {
+    url: string;
+    addToVault: boolean;
+    categoryId?: string;
+}
