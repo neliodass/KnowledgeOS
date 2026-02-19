@@ -20,6 +20,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const saved = (localStorage.getItem('theme') as Theme) || 'cyber-green';
         setThemeState(saved);
+        document.documentElement.setAttribute('data-theme', saved);
     }, []);
 
     const setTheme = (t: Theme) => {
