@@ -67,7 +67,7 @@ export default function VaultPage() {
     return (
         <div className="space-y-8 max-w-7xl mx-auto">
 
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-tech-border pb-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-tech-border pb-4">
                 <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-tech-primary/10 border border-tech-primary flex items-center justify-center">
                         <Database className="w-6 h-6 text-tech-primary" />
@@ -142,7 +142,7 @@ export default function VaultPage() {
                         </span>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         {items.map(item => (
                             <VaultCard
                                 key={item.id}

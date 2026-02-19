@@ -56,7 +56,7 @@ export function VaultCard({ resource, onClick }: VaultCardProps) {
                 </div>
 
                 <h4 className="text-sm font-bold text-white uppercase truncate">
-                    <a href={resource.url} target="_blank" rel="noopener noreferrer" className="hover:text-tech-primary flex items-center gap-2">
+                    <a href={resource.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:text-tech-green flex items-center gap-2">
                         {faviconUrl && (
                             <img src={faviconUrl} alt="" width={14} height={14} className="flex-shrink-0" />
                         )}
@@ -77,7 +77,7 @@ export function VaultCard({ resource, onClick }: VaultCardProps) {
                             <span key={tag} className="text-[10px] text-gray-500">#{tag}</span>
                         ))}
                     </div>
-                    <a href={resource.url} target="_blank" className="text-tech-primary opacity-50 group-hover:opacity-100 flex items-center gap-1 text-[10px] font-bold uppercase transition-opacity cursor-pointer">
+                    <a href={resource.url} target="_blank" onClick={(e) => e.stopPropagation()} className="text-tech-green opacity-50 group-hover:opacity-100 flex items-center gap-1 text-[10px] font-bold uppercase transition-opacity cursor-pointer">
                         ACCESS <ArrowRight className="w-3 h-3" />
                     </a>
                 </div>
