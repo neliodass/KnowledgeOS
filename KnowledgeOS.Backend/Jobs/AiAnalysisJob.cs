@@ -56,9 +56,6 @@ public class AiAnalysisJob : IAiAnalysisJob
             var preferences = await _context.UserPreferences
                 .FirstOrDefaultAsync(p => p.UserId == resource.UserId);
 
-            var userContext = preferences?.ToAiPromptContext()
-                              ?? "Role: General Learner. Interests: General Knowledge. Avoid: Nothing specific.";
-
             string? extraContent = null;
             var fetcher = _contentFetchers.FirstOrDefault(f => f.CanHandle(resource));
             if (fetcher != null)
@@ -74,7 +71,7 @@ public class AiAnalysisJob : IAiAnalysisJob
                 var existingCategories = await _categoryService.GetUserCategoryNamesAsync(resource.UserId);
 
                 var result =
-                    await _aiService.AnalyzeForVaultAsync(resource, userContext, existingCategories, extraContent);
+                    await _aiService.AnalyzeForVaultAsync(resource, preferences, existingCategories, extraContent);
 
                 resource.CorrectedTitle = result.CorrectedTitle;
                 tagsToProcess = result.SuggestedTags;
@@ -121,7 +118,7 @@ public class AiAnalysisJob : IAiAnalysisJob
             }
             else
             {
-                var result = await _aiService.AnalyzeForInboxAsync(resource, userContext, extraContent);
+                var result = await _aiService.AnalyzeForInboxAsync(resource, preferences, extraContent);
 
                 resource.CorrectedTitle = result.CorrectedTitle;
                 tagsToProcess = result.SuggestedTags;

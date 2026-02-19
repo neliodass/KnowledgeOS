@@ -39,8 +39,14 @@ public class YouTubeContentFetcher : IContentFetcher
 
             var sb = new StringBuilder();
             var charCount = 0;
-            const int maxChars = 200000;
-            sb.Append(description);
+            const int maxChars = 6000;
+            if (!string.IsNullOrWhiteSpace(description))
+            {
+                sb.AppendLine("[VIDEO DESCRIPTION]");
+                sb.AppendLine(description);
+                sb.AppendLine("[TRANSCRIPT EXCERPT]");
+                charCount += description.Length;
+            }
             foreach (var caption in track.Captions)
             {
                 if (charCount > maxChars) break;
