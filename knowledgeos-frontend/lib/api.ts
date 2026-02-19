@@ -53,6 +53,20 @@ export const api = {
         if (!res.ok) throw new Error("Failed to create resource");
         return res.json();
     },
+    getVaultResource: async (id: string) => {
+        const res = await fetchWithAuth(`/vault/${id}`);
+        if (!res.ok) throw new Error("Failed to fetch vault resource");
+        return res.json();
+    },
+
+    updateVaultResourceCategory: async (id: string, categoryId: string | null) => {
+        const res = await fetchWithAuth(`/vault/${id}/category`, {
+            method: 'PATCH',
+            body: JSON.stringify({ categoryId })
+        });
+        if (!res.ok) throw new Error("Failed to update resource category");
+        return res;
+    },
 
     // --- Categories ---
     getCategories: async (): Promise<Category[]> => {
