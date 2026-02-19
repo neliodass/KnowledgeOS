@@ -35,6 +35,18 @@ export const api = {
     // --- Resources ---
     getInboxMix: () => fetchWithAuth('/inbox/mix'),
     getVaultMix: () => fetchWithAuth('/vault/mix'),
+    getVault: async (pageNumber: number = 1, pageSize: number = 12, searchTerm: string = '', categoryId?: string) => {
+        const query = new URLSearchParams({
+            PageNumber: pageNumber.toString(),
+            PageSize: pageSize.toString(),
+        });
+        if (searchTerm) query.append('SearchTerm', searchTerm);
+        if (categoryId) query.append('CategoryId', categoryId);
+
+        const res = await fetchWithAuth(`/vault?${query.toString()}`);
+        if (!res.ok) throw new Error("Failed to fetch vault");
+        return res.json();
+    },
     getInbox: async (pageNumber: number = 1, pageSize: number = 12, searchTerm: string = '') => {
         const query = new URLSearchParams({
             PageNumber: pageNumber.toString(),
