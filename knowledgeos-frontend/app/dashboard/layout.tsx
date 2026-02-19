@@ -161,7 +161,7 @@ function SidebarContent({ onClose }: SidebarContentProps) {
                     <div>
                         <Link href="/dashboard">
                             <h1 className="text-sm font-bold tracking-tighter text-tech-primary uppercase">KnowledgeOS</h1>
-                            <div className="text-[10px] text-tech-text-muted leading-none mt-0.5">SYS.V2.0.4</div>
+                            <div className="text-[10px] text-tech-text-muted leading-none mt-0.5">SYS.VER 0.8</div>
                         </Link>
                     </div>
                 </div>
