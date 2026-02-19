@@ -160,14 +160,16 @@ private (string SystemPrompt, string UserPrompt) BuildInboxPrompts(Resource reso
         - Narrative depth, creative richness, or intellectual rigor
         - Real consequences, real effort, real stakes (documentary, long-form project)
         - The creator IS the subject (builder, player, performer, expert)
+        - Long-form interviews or podcasts with a person of genuine expertise, craft, or cultural standing (comedian, author, scientist, artist) — even if entertaining
 
         LOW QUALITY signals (any of these that dominate the content):
         - The creator's only contribution is a reaction to someone else's content ("watching X", "reacting to Y")
         - Manufactured urgency or hype with no substance ("you NEED this", "life-changing")
         - The topic keyword appears in title but the actual content doesn't engage with it seriously
         - AI or automation used as a gimmick rather than explored meaningfully ("I made 8 AIs order me McDonald's")
-        - Content about a person's personality/drama rather than their work or ideas
-        - The primary value proposition is entertainment through someone else's breakdown, suffering, or spectacle
+        - Content about a person's DRAMA or mental breakdown rather than their work, craft, or ideas
+        - The primary value proposition is entertainment through someone else's suffering or spectacle
+        - NOTE: A long interview with a different people is NOT low quality — it is Standard or higher.
 
         ═══════════════════════════════════════════
         AXIS 2: RELEVANCE TO USER PROFILE
@@ -178,7 +180,7 @@ private (string SystemPrompt, string UserPrompt) BuildInboxPrompts(Resource reso
         A) HOBBY/PASSION MATCH: Content genuinely IS or deeply engages with a listed hobby -> high relevance bonus
         B) PROFESSIONAL/GOAL MATCH: Content substantively addresses professional context or learning goals -> high relevance bonus
         C) DISCOVERY: No profile match, but extraordinary human achievement, craftsmanship, or in a loose way connected to interests -> moderate relevance
-        D) STANDARD: Decent content, tangential or no profile connection
+        D) STANDARD: Decent content, tangential or no profile connection. Normalize things like normal interviews, podcast and so on.
         E) AVOIDANCE OVERRIDE: Content matches "Topics to Avoid" -> cap final score at 10
 
         ═══════════════════════════════════════════
@@ -254,6 +256,13 @@ private (string SystemPrompt, string UserPrompt) BuildInboxPrompts(Resource reso
         Quality assessment: Substantive biological content, author with title, scholary HIGH QUALITY.
         Relevance: Slightly connected to professional context of bioengineering, but no real match to learning goal of coding. Discovery.
         Result: Score 65. Verdict: "MAY INTEREST YOU: High-quality content with a loose connection to your professional context."
+
+        [EXAMPLE 8: High Quality + Standard — long interview, no profile match]
+        User Profile: Hobbies: "Gaming, DJing". Professional: "Computer science student".
+        Content: "2-hour Polish-language interview with stand-up comedian discussing his career, the Polish comedy scene, and personal anecdotes."
+        Quality assessment: Long-form interview with a genuine expert in their craft. Substantial conversation, not a reaction clip, not drama. HIGH QUALITY.
+        Relevance: No match to hobbies or professional context whatsoever. But it is solid general-interest content — Standard.
+        Result: Score 48. Verdict: "Standard: High-quality long-form interview with no direct connection to your profile."
         """;
 
     var resourceMeta = new System.Text.StringBuilder();
