@@ -134,97 +134,92 @@ export default function SettingsPage() {
     };
 
     return (
-        <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-4 gap-8 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-7xl mx-auto">
 
-            <section className="xl:col-span-4 flex flex-col gap-8">
-
-                <div className="flex flex-col gap-4">
-                    <div className="border-b border-tech-border pb-2 flex items-center justify-between">
-                        <h3 className="text-xs font-bold text-tech-primary uppercase tracking-tighter flex items-center gap-2">
-                            <Key className="w-4 h-4" />
-                            [IDENTITY_CONFIG]
-                        </h3>
-                    </div>
-                    <div className="border border-tech-border bg-tech-surface p-6 flex flex-col gap-4">
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-[10px] text-tech-text-muted uppercase font-bold">System Nickname</label>
-                            <div className="flex gap-2">
-                                <input
-                                    className="flex-1 bg-black border border-tech-border px-3 py-2 text-xs focus:outline-none focus:border-tech-primary text-tech-primary font-mono"
-                                    type="text"
-                                    value={nickname}
-                                    onChange={(e) => setNickname(e.target.value)}
-                                    placeholder={nickname}
-                                />
-                                <button
-                                    onClick={handleUpdateNickname}
-                                    disabled={nickLoading}
-                                    className="px-4 border border-tech-primary text-tech-primary text-[10px] font-bold uppercase hover:bg-tech-primary hover:text-black transition-all disabled:opacity-50"
-                                >
-                                    {nickLoading ? '...' : 'SAVE'}
-                                </button>
-                            </div>
+            <section className="flex flex-col gap-4">
+                <div className="border-b border-tech-border pb-2 flex items-center justify-between">
+                    <h3 className="text-xs font-bold text-tech-primary uppercase tracking-tighter flex items-center gap-2">
+                        <Key className="w-4 h-4" />
+                        [IDENTITY_CONFIG]
+                    </h3>
+                </div>
+                <div className="border border-tech-border bg-tech-surface p-6 flex flex-col gap-4">
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] text-tech-text-muted uppercase font-bold">System Nickname</label>
+                        <div className="flex gap-2">
+                            <input
+                                className="flex-1 bg-black border border-tech-border px-3 py-2 text-xs focus:outline-none focus:border-tech-primary text-tech-primary font-mono"
+                                type="text"
+                                value={nickname}
+                                onChange={(e) => setNickname(e.target.value)}
+                                placeholder="Enter identifier..."
+                            />
+                            <button
+                                onClick={handleUpdateNickname}
+                                disabled={nickLoading}
+                                className="px-4 border border-tech-primary text-tech-primary text-[10px] font-bold uppercase hover:bg-tech-primary hover:text-black transition-all disabled:opacity-50"
+                            >
+                                {nickLoading ? '...' : 'SAVE'}
+                            </button>
                         </div>
                     </div>
                 </div>
+            </section>
 
-                <div className="flex flex-col gap-4">
-                    <div className="border-b border-tech-border pb-2 flex items-center justify-between">
-                        <h3 className="text-xs font-bold text-tech-primary uppercase tracking-tighter flex items-center gap-2">
-                            <ShieldCheck className="w-4 h-4" />
-                            [SECURITY_PROTOCOL]
-                        </h3>
-                    </div>
-                    <div className="border border-tech-border bg-tech-surface p-6 flex flex-col gap-6">
-                        <div className="space-y-4">
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-[10px] text-tech-text-muted uppercase font-bold">Current Password</label>
-                                <input
-                                    className="bg-black border border-tech-border px-3 py-2 text-xs focus:outline-none focus:border-tech-primary text-tech-primary font-mono transition-colors"
-                                    type="password"
-                                    value={passwords.current}
-                                    onChange={e => setPasswords({...passwords, current: e.target.value})}
-                                />
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-[10px] text-tech-text-muted uppercase font-bold">New Password</label>
-                                <input
-                                    className="bg-black border border-tech-border px-3 py-2 text-xs focus:outline-none focus:border-tech-primary text-tech-primary font-mono transition-colors"
-                                    type="password"
-                                    value={passwords.new}
-                                    onChange={e => setPasswords({...passwords, new: e.target.value})}
-                                />
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-[10px] text-tech-text-muted uppercase font-bold">Confirm New Password</label>
-                                <input
-                                    className={`bg-black border px-3 py-2 text-xs focus:outline-none font-mono transition-colors ${
-                                        passwords.confirm && passwords.new !== passwords.confirm
-                                            ? 'border-red-500 text-red-400'
-                                            : 'border-tech-border focus:border-tech-primary text-tech-primary'
-                                    }`}
-                                    type="password"
-                                    value={passwords.confirm}
-                                    onChange={e => setPasswords({...passwords, confirm: e.target.value})}
-                                />
-                            </div>
+            <section className="flex flex-col gap-4">
+                <div className="border-b border-tech-border pb-2 flex items-center justify-between">
+                    <h3 className="text-xs font-bold text-tech-primary uppercase tracking-tighter flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4" />
+                        [SECURITY_PROTOCOL]
+                    </h3>
+                </div>
+                <div className="border border-tech-border bg-tech-surface p-6 flex flex-col gap-6">
+                    <div className="space-y-4">
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[10px] text-tech-text-muted uppercase font-bold">Current Password</label>
+                            <input
+                                className="bg-black border border-tech-border px-3 py-2 text-xs focus:outline-none focus:border-tech-primary text-tech-primary font-mono transition-colors"
+                                type="password"
+                                value={passwords.current}
+                                onChange={e => setPasswords({...passwords, current: e.target.value})}
+                            />
                         </div>
-
-                        {securityMsg && (
-                            <div className={`text-[10px] uppercase font-bold ${securityMsg.includes('ERROR') ? 'text-red-500' : 'text-tech-primary'}`}>
-                                &gt; {securityMsg}
-                            </div>
-                        )}
-
-                        <button
-                            onClick={handlePasswordChange}
-                            disabled={!passwords.current || !passwords.new || !passwords.confirm}
-                            className="w-full py-3 border border-tech-primary text-tech-primary text-xs font-bold uppercase flex items-center justify-center gap-2 hover:bg-tech-primary hover:text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <ShieldCheck className="w-4 h-4" />
-                            SAVE_CREDENTIALS
-                        </button>
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[10px] text-tech-text-muted uppercase font-bold">New Password</label>
+                            <input
+                                className="bg-black border border-tech-border px-3 py-2 text-xs focus:outline-none focus:border-tech-primary text-tech-primary font-mono transition-colors"
+                                type="password"
+                                value={passwords.new}
+                                onChange={e => setPasswords({...passwords, new: e.target.value})}
+                            />
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[10px] text-tech-text-muted uppercase font-bold">Confirm New Password</label>
+                            <input
+                                className={`bg-black border px-3 py-2 text-xs focus:outline-none font-mono transition-colors ${
+                                    passwords.confirm && passwords.new !== passwords.confirm
+                                        ? 'border-red-500 text-red-400'
+                                        : 'border-tech-border focus:border-tech-primary text-tech-primary'
+                                }`}
+                                type="password"
+                                value={passwords.confirm}
+                                onChange={e => setPasswords({...passwords, confirm: e.target.value})}
+                            />
+                        </div>
                     </div>
+                    {securityMsg && (
+                        <div className={`text-[10px] uppercase font-bold ${securityMsg.includes('ERROR') ? 'text-red-500' : 'text-tech-primary'}`}>
+                            &gt; {securityMsg}
+                        </div>
+                    )}
+                    <button
+                        onClick={handlePasswordChange}
+                        disabled={!passwords.current || !passwords.new || !passwords.confirm}
+                        className="w-full py-3 border border-tech-primary text-tech-primary text-xs font-bold uppercase flex items-center justify-center gap-2 hover:bg-tech-primary hover:text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <ShieldCheck className="w-4 h-4" />
+                        SAVE_CREDENTIALS
+                    </button>
                 </div>
             </section>
 
