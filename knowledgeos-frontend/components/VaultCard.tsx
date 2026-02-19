@@ -5,7 +5,17 @@ interface VaultCardProps {
     resource: VaultResource;
 }
 
+function getFaviconUrl(url: string) {
+    try {
+        const domain = new URL(url).hostname;
+        return `https://icons.duckduckgo.com/ip3/${domain}.ico`;
+    } catch {
+        return null;
+    }
+}
+
 export function VaultCard({ resource }: VaultCardProps) {
+    const faviconUrl = getFaviconUrl(resource.url);
     return (
         <div className="relative border border-tech-border bg-tech-surface p-5 hover:border-tech-green transition-all group">
 
@@ -34,7 +44,10 @@ export function VaultCard({ resource }: VaultCardProps) {
             </div>
 
             <h4 className="text-sm font-bold text-white uppercase mb-4 truncate">
-                <a href={resource.url} target="_blank" rel="noopener noreferrer" className="hover:text-tech-green">
+                <a href={resource.url} target="_blank" rel="noopener noreferrer" className="hover:text-tech-green flex items-center gap-2">
+                    {faviconUrl && (
+                        <img src={faviconUrl} alt="" width={14} height={14} className="flex-shrink-0" />
+                    )}
                     {resource.title}
                 </a>
             </h4>

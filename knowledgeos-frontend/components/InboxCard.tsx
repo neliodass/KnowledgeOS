@@ -16,6 +16,7 @@ interface ResourceTypeConfig {
     label: string;
     borderColor: string;
     hasBigPreview: boolean;
+    previewWidth: string;
     showCorners: boolean;
 }
 
@@ -25,13 +26,15 @@ const RESOURCE_CONFIG: Record<string, ResourceTypeConfig> = {
         label: 'VIDEO_STREAM',
         borderColor: 'border-tech-primary',
         hasBigPreview: true,
+        previewWidth: 'w-32 sm:w-48',
         showCorners: true,
     },
     Article: {
         icon: FileText,
         label: 'ARTICLE',
         borderColor: 'border-tech-primary',
-        hasBigPreview: false,
+        hasBigPreview: true,
+        previewWidth: 'w-24 sm:w-32',
         showCorners: false,
     },
     Podcast: {
@@ -39,6 +42,7 @@ const RESOURCE_CONFIG: Record<string, ResourceTypeConfig> = {
         label: 'AUDIO_LOG',
         borderColor: 'border-purple-500',
         hasBigPreview: true,
+        previewWidth: 'w-32 sm:w-48',
         showCorners: false,
     },
     Default: {
@@ -46,15 +50,26 @@ const RESOURCE_CONFIG: Record<string, ResourceTypeConfig> = {
         label: 'UNKNOWN_DATA',
         borderColor: 'border-tech-border',
         hasBigPreview: false,
+        previewWidth: 'w-32',
         showCorners: false,
     }
 };
+
+function getFaviconUrl(url: string) {
+    try {
+        const domain = new URL(url).hostname;
+        return `https://icons.duckduckgo.com/ip3/${domain}.ico`;
+    } catch {
+        return null;
+    }
+}
 
 export function InboxCard({ resource, onArchive, onClick }: InboxCardProps) {
     const [isArchiving, setIsArchiving] = useState(false);
 
     const config = RESOURCE_CONFIG[resource.resourceType] || RESOURCE_CONFIG.Default;
     const TypeIcon = config.icon;
+    const faviconUrl = getFaviconUrl(resource.url);
 
     const handleArchiveClick = async (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -76,19 +91,19 @@ export function InboxCard({ resource, onArchive, onClick }: InboxCardProps) {
             className={`border ${config.borderColor} bg-tech-surface relative group transition-all hover:border-tech-primary/50 cursor-pointer flex flex-row min-h-[100px]`}>
 
             {resource.imageUrl && config.hasBigPreview && (
-                <div className="relative w-32 sm:w-48 flex-shrink-0 border-r border-tech-border bg-black flex items-center justify-center overflow-hidden">
+                <div className={`relative ${config.previewWidth} flex-shrink-0 border-r border-tech-border bg-black flex items-center justify-center overflow-hidden`}>
                     <Image
                         src={resource.imageUrl}
                         alt={resource.title}
                         fill
-                        sizes="(max-width: 640px) 128px, 192px"
-                        className="object-contain opacity-90 group-hover:opacity-100 transition-all grayscale-[30%] group-hover:grayscale-0"
+                        sizes="(max-width: 640px) 96px, 192px"
+                        className={`opacity-90 group-hover:opacity-100 transition-all ${resource.resourceType === 'Article' ? 'object-cover' : 'object-contain'}`}
                     />
-
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/10 group-hover:bg-transparent transition-colors">
-                        {resource.resourceType === 'Video' &&
-                            <PlayCircle className="w-10 h-10 text-tech-primary/80 drop-shadow-2xl"/>}
-                    </div>
+                    {resource.resourceType === 'Video' && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/10 group-hover:bg-transparent transition-colors">
+                            <PlayCircle className="w-10 h-10 text-tech-primary/80 drop-shadow-2xl"/>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -101,8 +116,11 @@ export function InboxCard({ resource, onArchive, onClick }: InboxCardProps) {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="hover:text-tech-primary transition-colors z-10 relative"
+                                className="hover:text-tech-primary transition-colors z-10 relative flex items-center gap-2"
                             >
+                                {faviconUrl && (
+                                    <img src={faviconUrl} alt="" width={14} height={14} className="flex-shrink-0" />
+                                )}
                                 {resource.correctedTitle || resource.title}
                             </Link>
                         </h4>
@@ -128,6 +146,11 @@ export function InboxCard({ resource, onArchive, onClick }: InboxCardProps) {
                     <span className="text-[9px] text-gray-500 uppercase flex items-center gap-1 font-bold tracking-tighter">
                         <TypeIcon className="w-3 h-3"/> {config.label}
                     </span>
+                    {resource.siteName && (
+                        <span className="text-[9px] text-gray-600 uppercase font-bold tracking-tighter ml-auto">
+                            {resource.siteName}
+                        </span>
+                    )}
                 </div>
 
                 <div className="text-[11px] text-gray-400 leading-relaxed font-mono italic border-l border-tech-border/30 pl-2">
