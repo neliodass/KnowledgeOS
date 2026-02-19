@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import { Space_Mono } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/lib/ThemeProvider";
 
 const spaceMono = Space_Mono({
     subsets: ["latin"],
@@ -15,15 +16,25 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-                                       children,
-                                   }: Readonly<{
+    children,
+}: Readonly<{
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="pl">
+        <html lang="pl" suppressHydrationWarning>
+        <head>
+            <script dangerouslySetInnerHTML={{ __html: `
+                try {
+                    var t = localStorage.getItem('theme') || 'cyber-green';
+                    document.documentElement.setAttribute('data-theme', t);
+                } catch(e) {}
+            ` }} />
+        </head>
         <body className={`${spaceMono.className} bg-tech-bg text-tech-primary`}>
-        <div className="scanline" />
-        {children}
+        <ThemeProvider>
+            <div className="scanline" />
+            {children}
+        </ThemeProvider>
         </body>
         </html>
     );

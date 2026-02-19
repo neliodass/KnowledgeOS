@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import {
     Key, Save, FolderOpen, Plus, Trash2, Edit2,
-    Brain, Target, AlertTriangle, ShieldCheck, Folder
+    Brain, Target, AlertTriangle, ShieldCheck, Folder, Palette
 } from 'lucide-react';
+import { useTheme, Theme } from '@/lib/ThemeProvider';
 
 interface Category {
     id: string;
@@ -20,6 +21,8 @@ interface UserPreferences {
 }
 
 export default function SettingsPage() {
+    const { theme, setTheme } = useTheme();
+
     const [categories, setCategories] = useState<Category[]>([]);
     const [newCategory, setNewCategory] = useState('');
     const [catLoading, setCatLoading] = useState(false);
@@ -131,7 +134,7 @@ export default function SettingsPage() {
     };
 
     return (
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-4 gap-8 max-w-7xl mx-auto">
 
             <section className="xl:col-span-4 flex flex-col gap-8">
 
@@ -225,7 +228,7 @@ export default function SettingsPage() {
                 </div>
             </section>
 
-            <section className="xl:col-span-4 flex flex-col gap-4">
+            <section className="flex flex-col gap-4">
                 <div className="border-b border-tech-border pb-2 flex items-center justify-between">
                     <h3 className="text-xs font-bold text-tech-primary uppercase tracking-tighter flex items-center gap-2">
                         <FolderOpen className="w-4 h-4" />
@@ -284,7 +287,7 @@ export default function SettingsPage() {
                 </div>
             </section>
 
-            <section className="xl:col-span-4 flex flex-col gap-4">
+            <section className="flex flex-col gap-4">
                 <div className="border-b border-tech-border pb-2 flex items-center justify-between">
                     <h3 className="text-xs font-bold text-tech-primary uppercase tracking-tighter flex items-center gap-2">
                         <Brain className="w-4 h-4" />
@@ -353,7 +356,63 @@ export default function SettingsPage() {
                 </div>
             </section>
 
+            <section className="flex flex-col gap-4">
+                <div className="border-b border-tech-border pb-2 flex items-center justify-between">
+                    <h3 className="text-xs font-bold text-tech-primary uppercase tracking-tighter flex items-center gap-2">
+                        <Palette className="w-4 h-4" />
+                        [SYSTEM_THEME]
+                    </h3>
+                </div>
+                <div className="border border-tech-border bg-tech-surface p-6 flex flex-col gap-3">
+                    {([
+                        {
+                            id: 'cyber-green',
+                            label: 'Cyber Green',
+                            desc: 'Default dark terminal',
+                            accent: '#a3ffbf',
+                            bg: '#050505',
+                        },
+                        {
+                            id: 'cyber-purple',
+                            label: 'Cyber Purple',
+                            desc: 'Dark with purple accent',
+                            accent: '#c084fc',
+                            bg: '#06000f',
+                        },
+                        {
+                            id: 'clean-light',
+                            label: 'Clean Light',
+                            desc: 'Light minimal interface',
+                            accent: '#6366f1',
+                            bg: '#f8fafc',
+                        },
+                    ] as { id: Theme; label: string; desc: string; accent: string; bg: string }[]).map(t => (
+                        <button
+                            key={t.id}
+                            onClick={() => setTheme(t.id)}
+                            className={`flex items-center gap-4 p-4 border transition-all text-left ${
+                                theme === t.id
+                                    ? 'border-tech-primary bg-tech-primary-dim'
+                                    : 'border-tech-border hover:border-tech-primary/50'
+                            }`}
+                        >
+                            <div className="flex-shrink-0 w-10 h-10 border border-tech-border overflow-hidden rounded-sm flex items-center justify-center" style={{ backgroundColor: t.bg }}>
+                                <div className="w-4 h-4 rounded-full" style={{ backgroundColor: t.accent }} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="text-xs font-bold text-white uppercase">{t.label}</div>
+                                <div className="text-[10px] text-tech-text-muted uppercase">{t.desc}</div>
+                            </div>
+                            {theme === t.id && (
+                                <div className="w-2 h-2 rounded-full bg-tech-primary flex-shrink-0" />
+                            )}
+                        </button>
+                    ))}
+                </div>
+            </section>
+
         </div>
     );
 }
+
 
