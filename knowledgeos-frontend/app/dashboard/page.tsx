@@ -113,9 +113,9 @@ export default function Dashboard() {
 
                         <button
                             onClick={fetchInbox}
-                            className={`w-6 h-6 flex items-center justify-center text-gray-500 hover:text-tech-green transition-colors ${loadingInbox ? 'animate-spin' : ''}`}
+                            className={`w-6 h-6 border border-tech-border flex items-center justify-center text-gray-500 hover:text-tech-green hover:border-tech-green transition-colors ${loadingVault ? 'animate-spin' : ''}`}
                         >
-                            <RefreshCw className="w-4 h-4"/>
+                            <RefreshCw className="w-3 h-3"/>
                         </button>
                     </div>
                 </div>
