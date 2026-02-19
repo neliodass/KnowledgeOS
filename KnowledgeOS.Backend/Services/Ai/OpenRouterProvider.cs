@@ -91,7 +91,7 @@ public class OpenRouterProvider : IAiProvider
     {
         return new ChatCompletionOptions
         {
-            Temperature = 0.1f,
+            Temperature = 0.2f,
             ResponseFormat = ChatResponseFormat.CreateJsonSchemaFormat(
                 "inbox_analysis",
                 BinaryData.FromObjectAsJson(new
@@ -104,7 +104,7 @@ public class OpenRouterProvider : IAiProvider
                         verdict = new { type = "string", description = "Two sentences explaining the score." },
                         summary = new
                             { type = "string", description = "Summarize whole content in around 6-8 sentences. Do not provide there why it doesn't suit user." },
-                        suggestedTags = new { type = "array", items = new { type = "string" } }
+                        suggestedTags = new { type = "array", items = new { type = "string", description = "Taggs describing content, not score." } }
                     },
                     required = new[] { "correctedTitle", "score", "verdict", "summary", "suggestedTags" },
                     additionalProperties = false
@@ -117,7 +117,7 @@ public class OpenRouterProvider : IAiProvider
     {
         return new ChatCompletionOptions
         {
-            Temperature = 0.1f,
+            Temperature = 0.2f,
             ResponseFormat = ChatResponseFormat.CreateJsonSchemaFormat(
                 "vault_analysis",
                 BinaryData.FromObjectAsJson(new
@@ -177,7 +177,7 @@ private (string SystemPrompt, string UserPrompt) BuildInboxPrompts(Resource reso
 
         A) HOBBY/PASSION MATCH: Content genuinely IS or deeply engages with a listed hobby -> high relevance bonus
         B) PROFESSIONAL/GOAL MATCH: Content substantively addresses professional context or learning goals -> high relevance bonus
-        C) DISCOVERY: No profile match, but extraordinary human achievement, craftsmanship, or feat -> moderate relevance
+        C) DISCOVERY: No profile match, but extraordinary human achievement, craftsmanship, or in a loose way connected to interests -> moderate relevance
         D) STANDARD: Decent content, tangential or no profile connection
         E) AVOIDANCE OVERRIDE: Content matches "Topics to Avoid" -> cap final score at 10
 
@@ -185,11 +185,12 @@ private (string SystemPrompt, string UserPrompt) BuildInboxPrompts(Resource reso
         FINAL SCORE LOGIC
         ═══════════════════════════════════════════
 
-        High Quality + Hobby/Professional Match  -> 80-100
-        High Quality + Discovery                 -> 60-79
-        High Quality + Standard                  -> 35-59
-        Low Quality + any topic                  -> 0-25 (quality dominates, relevance irrelevant)
-        Any quality + Avoidance match            -> 0-10 (override)
+        High Quality + Professional Match: 85-100
+        High Quality + Hobby: 75-84
+        High Quality + Discovery: 60-74
+        High Quality + Standard: 35-59
+        Low Quality + any topic: 0-25 (quality dominates, relevance irrelevant)
+        Any quality + Avoidance match: 0-10 (override)
 
         ═══════════════════════════════════════════
         CRITICAL RULES
@@ -246,6 +247,13 @@ private (string SystemPrompt, string UserPrompt) BuildInboxPrompts(Resource reso
         Quality assessment: Substantive technical content, requires domain expertise to produce. HIGH QUALITY.
         Relevance: Direct professional and learning goal match.
         Result: Score 96. Verdict: "Professional Match: Substantive deep dive directly relevant to your distributed systems learning goal."
+        
+        [EXAMPLE 7: High Quality + Discovery - in some way connected to interests]
+        User Profile: Professional: "Bioengineer". Goals: "Learn coding".
+        Content: "Climate change is accelerating, but nature heals itself"
+        Quality assessment: Substantive biological content, author with title, scholary HIGH QUALITY.
+        Relevance: Slightly connected to professional context of bioengineering, but no real match to learning goal of coding. Discovery.
+        Result: Score 65. Verdict: "MAY INTEREST YOU: High-quality content with a loose connection to your professional context."
         """;
 
     var resourceMeta = new System.Text.StringBuilder();
