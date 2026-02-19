@@ -8,7 +8,6 @@ import {VaultCard} from '@/components/VaultCard';
 import {RefreshCw, Database, Inbox} from 'lucide-react';
 import {InboxDetailModal} from "@/components/InboxDetailModal";
 import {VaultDetailModal} from "@/components/VaultDetailModal";
-
 export default function Dashboard() {
     const [inboxItems, setInboxItems] = useState<InboxResource[]>([]);
     const [vaultItems, setVaultItems] = useState<VaultResource[]>([]);
@@ -17,7 +16,6 @@ export default function Dashboard() {
     const [selectedResource, setSelectedResource] = useState<InboxResource | null>(null);
     const [selectedVaultResource, setSelectedVaultResource] = useState<VaultResource | null>(null);
     const fetchInbox = async () => {
-        setLoadingInbox(true);
         try {
             const res = await api.getInboxMix();
             if (res.ok) {
@@ -176,15 +174,18 @@ export default function Dashboard() {
                     onArchive={handleArchiveFromModal}
                     onDelete={fetchInbox}
                     onRetry={fetchInbox}
-                />)}
+                />
+            )}
 
             {selectedVaultResource && (
                 <VaultDetailModal
                     resource={selectedVaultResource}
                     onClose={() => setSelectedVaultResource(null)}
                     onDelete={fetchVault}
-                />)}
+                />
+            )}
         </div>
         </div>
     );
 }
+

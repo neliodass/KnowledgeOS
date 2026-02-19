@@ -1,8 +1,7 @@
-
-import type { Metadata } from "next";
-import { Space_Mono } from "next/font/google";
+import type {Metadata} from "next";
+import {Space_Mono} from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "@/lib/ThemeProvider";
+import {ThemeProvider} from "@/lib/ThemeProvider";
 
 const spaceMono = Space_Mono({
     subsets: ["latin"],
@@ -16,8 +15,8 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-    children,
-}: Readonly<{
+                                       children,
+                                   }: Readonly<{
     children: React.ReactNode;
 }>) {
     return (
