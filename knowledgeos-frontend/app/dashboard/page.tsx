@@ -58,7 +58,7 @@ export default function Dashboard() {
             const res = await api.getPreferences();
             if (res.ok) {
                 const data = await res.json();
-                if (!data || (data.professionalContext=="" && data.learningGoals=="")) {
+                if (!data || (!data.professionalContext && !data.learningGoals)) {
                     setHasPreferences(false);
                 } else {
                     setHasPreferences(true);
@@ -88,7 +88,7 @@ export default function Dashboard() {
                                 Cognitive Profile Incomplete
                             </h4>
                             <p className="text-[10px] text-orange-300/70 uppercase">
-                                AI requires context to prioritize your stream effectively.
+                                AI requires your preferences to prioritize your stream effectively.
                             </p>
                         </div>
                     </div>
