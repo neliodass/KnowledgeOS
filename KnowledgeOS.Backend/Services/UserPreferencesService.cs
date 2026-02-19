@@ -25,6 +25,7 @@ public class UserPreferencesService : IUserPreferencesService
         {
             ProfessionalContext = prefs.ProfessionalContext,
             LearningGoals = prefs.LearningGoals,
+            Hobbies = prefs.Hobbies,
             TopicsToAvoid = prefs.TopicsToAvoid
         };
     }
@@ -41,6 +42,7 @@ public class UserPreferencesService : IUserPreferencesService
                 UserId = userId,
                 ProfessionalContext = dto.ProfessionalContext,
                 LearningGoals = dto.LearningGoals,
+                Hobbies = dto.Hobbies,
                 TopicsToAvoid = dto.TopicsToAvoid
             };
             _context.UserPreferences.Add(prefs);
@@ -49,6 +51,7 @@ public class UserPreferencesService : IUserPreferencesService
         {
             prefs.ProfessionalContext = dto.ProfessionalContext;
             prefs.LearningGoals = dto.LearningGoals;
+            prefs.Hobbies = dto.Hobbies;
             prefs.TopicsToAvoid = dto.TopicsToAvoid;
         }
 
