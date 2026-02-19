@@ -103,12 +103,15 @@ builder.Services.AddScoped<OpenAIClient>(sp =>
 });
 var aiModels = builder.Configuration.GetSection("Ai");
 foreach (var model in aiModels.GetChildren())
+{
+    var modelId = model.Value!;
     builder.Services.AddScoped<IAiProvider>(sp =>
     {
         var client = sp.GetRequiredService<OpenAIClient>();
         var logger = sp.GetRequiredService<ILogger<OpenRouterProvider>>();
-        return new OpenRouterProvider(client, model.Value!, logger);
+        return new OpenRouterProvider(client, modelId, logger);
     });
+}
 
 builder.Services.AddScoped<IAiService, AiService>();
 builder.Services.AddScoped<IAiAnalysisJob, AiAnalysisJob>();

@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+@theme {
+    --color-tech-bg: #050505;
+    --color-tech-surface: #111111;
+    --color-tech-surface-hover: #1a1a1a;
+    --color-tech-primary: #a3ffbf;
+    --color-tech-primary-dim: rgba(163, 255, 191, 0.1);
+    --color-tech-border: #333333;
+    --color-tech-muted: #666666;
+    --color-tech-green: #a3ffbf;
+    --color-tech-text-muted: #555555;
+
+    --animate-pulse-fast: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    --animate-blink: blink 1s step-end infinite;
+
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+    }
+}
+
+/* ── CYBER PURPLE ───────────────────────────────────────── */
+[data-theme="cyber-purple"] {
+    --color-tech-bg: #06000f;
+    --color-tech-surface: #0e0018;
+    --color-tech-surface-hover: #160022;
+    --color-tech-primary: #c084fc;
+    --color-tech-primary-dim: rgba(192, 132, 252, 0.1);
+    --color-tech-border: #2a1040;
+    --color-tech-green: #c084fc;
+    --color-tech-text-muted: #5a2a78;
+}
+[data-theme="cyber-purple"] .bg-tech-bg { background-color: #06000f; }
+[data-theme="cyber-purple"] .bg-tech-surface { background-color: #0e0018; }
+[data-theme="cyber-purple"] .border-tech-border { border-color: #2a1040; }
+[data-theme="cyber-purple"] .border-tech-primary { border-color: #c084fc; }
+[data-theme="cyber-purple"] .text-tech-primary { color: #c084fc; }
+[data-theme="cyber-purple"] .bg-tech-primary { background-color: #c084fc; }
+[data-theme="cyber-purple"] .bg-tech-primary-dim { background-color: rgba(192,132,252,0.1); }
+[data-theme="cyber-purple"] .text-tech-green { color: #c084fc; }
+[data-theme="cyber-purple"] .border-tech-green { border-color: #c084fc; }
+[data-theme="cyber-purple"] .hover\:bg-tech-primary:hover { background-color: #c084fc; }
+[data-theme="cyber-purple"] .hover\:border-tech-primary:hover { border-color: #c084fc; }
+[data-theme="cyber-purple"] .hover\:border-tech-green:hover { border-color: #c084fc; }
+[data-theme="cyber-purple"] .hover\:text-tech-primary:hover { color: #c084fc; }
+[data-theme="cyber-purple"] .hover\:text-tech-green:hover { color: #c084fc; }
+[data-theme="cyber-purple"] .focus\:border-tech-primary:focus { border-color: #c084fc; }
+[data-theme="cyber-purple"] ::-webkit-scrollbar-thumb:hover { background-color: #c084fc; }
+[data-theme="cyber-purple"] .bg-grid {
+    background-image:
+        linear-gradient(to right, #160022 1px, transparent 1px),
+        linear-gradient(to bottom, #160022 1px, transparent 1px);
+}
+
+/* ── CLEAN LIGHT ────────────────────────────────────────── */
+[data-theme="clean-light"] {
+    --color-tech-bg: #f8fafc;
+    --color-tech-surface: #ffffff;
+    --color-tech-surface-hover: #f1f5f9;
+    --color-tech-primary: #6366f1;
+    --color-tech-primary-dim: rgba(99, 102, 241, 0.08);
+    --color-tech-border: #e2e8f0;
+    --color-tech-green: #6366f1;
+    --color-tech-text-muted: #94a3b8;
+}
+[data-theme="clean-light"] body { background-color: #f8fafc; color: #334155; }
+[data-theme="clean-light"] .bg-tech-bg { background-color: #f8fafc; }
+[data-theme="clean-light"] .bg-tech-surface { background-color: #ffffff; }
+[data-theme="clean-light"] .bg-black { background-color: #f1f5f9; }
+[data-theme="clean-light"] .bg-black\/50 { background-color: rgba(241,245,249,0.8); }
+[data-theme="clean-light"] .bg-black\/90 { background-color: rgba(248,250,252,0.95); }
+[data-theme="clean-light"] .border-tech-border { border-color: #e2e8f0; }
+[data-theme="clean-light"] .border-tech-primary { border-color: #6366f1; }
+[data-theme="clean-light"] .text-tech-primary { color: #6366f1; }
+[data-theme="clean-light"] .bg-tech-primary { background-color: #6366f1; }
+[data-theme="clean-light"] .bg-tech-primary-dim { background-color: rgba(99,102,241,0.08); }
+[data-theme="clean-light"] .text-tech-green { color: #6366f1; }
+[data-theme="clean-light"] .border-tech-green { border-color: #6366f1; }
+[data-theme="clean-light"] .text-white { color: #0f172a; }
+[data-theme="clean-light"] .text-gray-300 { color: #475569; }
+[data-theme="clean-light"] .text-gray-400 { color: #64748b; }
+[data-theme="clean-light"] .text-gray-500 { color: #94a3b8; }
+[data-theme="clean-light"] .text-gray-600 { color: #94a3b8; }
+[data-theme="clean-light"] .hover\:bg-tech-primary:hover { background-color: #6366f1; }
+[data-theme="clean-light"] .hover\:border-tech-primary:hover { border-color: #6366f1; }
+[data-theme="clean-light"] .hover\:border-tech-green:hover { border-color: #6366f1; }
+[data-theme="clean-light"] .hover\:text-tech-primary:hover { color: #6366f1; }
+[data-theme="clean-light"] .hover\:text-tech-green:hover { color: #6366f1; }
+[data-theme="clean-light"] .focus\:border-tech-primary:focus { border-color: #6366f1; }
+[data-theme="clean-light"] .scanline { display: none; }
+[data-theme="clean-light"] .bg-grid {
+    background-image:
+        linear-gradient(to right, #e2e8f0 1px, transparent 1px),
+        linear-gradient(to bottom, #e2e8f0 1px, transparent 1px);
+}
+[data-theme="clean-light"] ::-webkit-scrollbar-track { background: #f1f5f9; border-left: 1px solid #e2e8f0; }
+[data-theme="clean-light"] ::-webkit-scrollbar-thumb { background-color: #cbd5e1; }
+[data-theme="clean-light"] ::-webkit-scrollbar-thumb:hover { background-color: #6366f1; }
+[data-theme="clean-light"] .modal-overlay { background: rgba(15,23,42,0.5); }
+
+/* ── SHARED ─────────────────────────────────────────────── */
+.modal-overlay {
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.15s ease-out;
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.bg-grid {
+    background-size: 40px 40px;
+    background-image:
+        linear-gradient(to right, #1a1a1a 1px, transparent 1px),
+        linear-gradient(to bottom, #1a1a1a 1px, transparent 1px);
+}
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #0a0a0a; border-left: 1px solid #333; }
+::-webkit-scrollbar-thumb { background-color: #333; }
+::-webkit-scrollbar-thumb:hover { background-color: #a3ffbf; }
+.scanline {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: linear-gradient(
+        to bottom,
+        rgba(255,255,255,0),
+        rgba(255,255,255,0) 50%,
+        rgba(0,0,0,0.2) 50%,
+        rgba(0,0,0,0.2)
+    );
+    background-size: 100% 4px;
+    pointer-events: none;
+    z-index: 50;
+    opacity: 0.15;
+}

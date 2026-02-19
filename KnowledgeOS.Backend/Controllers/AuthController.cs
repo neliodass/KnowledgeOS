@@ -4,6 +4,7 @@ using System.Text;
 using KnowledgeOS.Backend.DTOs.Auth;
 using KnowledgeOS.Backend.Entities.Users;
 using KnowledgeOS.Backend.Services.Abstractions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -40,5 +41,46 @@ public class AuthController : ControllerBase
         if (token == null) return Unauthorized("Invalid credentials");
 
         return Ok(new { token });
+    }
+
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<IActionResult> GetDisplayName()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return Unauthorized();
+
+        var displayName = await _identityService.GetDisplayNameAsync(userId);
+        if (displayName == null) return NotFound();
+
+        return Ok(new { displayName });
+    }
+
+    [Authorize]
+    [HttpPut("me/password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return Unauthorized();
+
+        var result = await _identityService.ChangePasswordAsync(userId, dto);
+
+        if (!result.Succeeded) return BadRequest(result.Errors);
+
+        return NoContent();
+    }
+
+    [Authorize]
+    [HttpPut("me/display-name")]
+    public async Task<IActionResult> ChangeDisplayName([FromBody] ChangeDisplayNameDto dto)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return Unauthorized();
+
+        var result = await _identityService.ChangeDisplayNameAsync(userId, dto);
+
+        if (!result.Succeeded) return BadRequest(result.Errors);
+
+        return NoContent();
     }
 }

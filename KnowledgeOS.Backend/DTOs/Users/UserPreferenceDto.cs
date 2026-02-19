@@ -7,6 +7,8 @@ public class UserPreferenceDto
 
     // "Co jest dla mnie ważne" (np. "Tutoriale, Deep Dive, Newsy technologiczne")
     public string? LearningGoals { get; set; }
+    //"Co jest moim hobby" (np. "Gotowanie, podróże, historia starożytna") - opcjonalnie, może pomóc w lepszym dopasowaniu treści
+    public string? Hobbies { get; set; }
 
     // "Czego unikać" (np. "Polityka, Clickbait, Filmy powyżej 1h bez spisu treści")
     public string? TopicsToAvoid { get; set; }

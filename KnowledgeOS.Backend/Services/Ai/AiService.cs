@@ -1,4 +1,5 @@
 using KnowledgeOS.Backend.Entities.Resources;
+using KnowledgeOS.Backend.Entities.Users;
 using KnowledgeOS.Backend.Services.Abstractions;
 using KnowledgeOS.Backend.Services.Ai.Abstractions;
 
@@ -15,7 +16,7 @@ public class AiService : IAiService
         _logger = logger;
     }
 
-    public async Task<InboxAnalysisResult> AnalyzeForInboxAsync(Resource resource, string userPreferences,
+    public async Task<InboxAnalysisResult> AnalyzeForInboxAsync(Resource resource, UserPreference? preferences,
         string? extraContent = null)
     {
         var exceptions = new List<Exception>();
@@ -23,7 +24,7 @@ public class AiService : IAiService
             try
             {
                 _logger.LogInformation($"Attempting INBOX analysis using: {provider.Name}");
-                return await provider.AnalyzeForInboxAsync(resource, userPreferences, extraContent);
+                return await provider.AnalyzeForInboxAsync(resource, preferences, extraContent);
             }
             catch (Exception ex)
             {
@@ -35,7 +36,7 @@ public class AiService : IAiService
         throw new AggregateException("All AI providers failed to analyze the resource for Inbox.", exceptions);
     }
 
-    public async Task<VaultAnalysisResult> AnalyzeForVaultAsync(Resource resource, string userPreferences,
+    public async Task<VaultAnalysisResult> AnalyzeForVaultAsync(Resource resource, UserPreference? preferences,
         List<string> existingCategories, string? extraContent = null)
     {
         var exceptions = new List<Exception>();
@@ -43,7 +44,7 @@ public class AiService : IAiService
             try
             {
                 _logger.LogInformation($"Attempting VAULT analysis using: {provider.Name}");
-                return await provider.AnalyzeForVaultAsync(resource, userPreferences, existingCategories, extraContent);
+                return await provider.AnalyzeForVaultAsync(resource, preferences, existingCategories, extraContent);
             }
             catch (Exception ex)
             {

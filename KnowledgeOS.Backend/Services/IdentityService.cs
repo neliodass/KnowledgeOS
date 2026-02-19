@@ -67,4 +67,27 @@ public class IdentityService : IIdentityService
         var token = tokenHandler.CreateToken(tokenDescriptor);
         return tokenHandler.WriteToken(token);
     }
+
+    public async Task<string?> GetDisplayNameAsync(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        return user?.DisplayName;
+    }
+
+    public async Task<IdentityResult> ChangePasswordAsync(string userId, ChangePasswordDto dto)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null) return IdentityResult.Failed(new IdentityError { Description = "User not found." });
+
+        return await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
+    }
+
+    public async Task<IdentityResult> ChangeDisplayNameAsync(string userId, ChangeDisplayNameDto dto)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null) return IdentityResult.Failed(new IdentityError { Description = "User not found." });
+
+        user.DisplayName = dto.DisplayName;
+        return await _userManager.UpdateAsync(user);
+    }
 }

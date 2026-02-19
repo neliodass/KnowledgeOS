@@ -246,6 +246,10 @@ namespace KnowledgeOS.Backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Hobbies")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
                     b.Property<string>("LearningGoals")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
