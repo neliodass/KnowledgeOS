@@ -41,6 +41,7 @@ export interface AuthResponse {
 export interface UserPreferences {
     professionalContext?: string;
     learningGoals?: string;
+    hobbies?: string;
     topicsToAvoid?: string;
 }
 export interface Category {

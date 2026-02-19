@@ -35,6 +35,17 @@ export const api = {
     // --- Resources ---
     getInboxMix: () => fetchWithAuth('/inbox/mix'),
     getVaultMix: () => fetchWithAuth('/vault/mix'),
+    getInbox: async (pageNumber: number = 1, pageSize: number = 12, searchTerm: string = '') => {
+        const query = new URLSearchParams({
+            PageNumber: pageNumber.toString(),
+            PageSize: pageSize.toString(),
+        });
+        if (searchTerm) query.append('SearchTerm', searchTerm);
+
+        const res = await fetchWithAuth(`/inbox?${query.toString()}`);
+        if (!res.ok) throw new Error("Failed to fetch inbox");
+        return res.json();
+    },
 
     archiveInboxResource: (id: string) =>
         fetchWithAuth(`/resources/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: 5 }) }), // 5 = Trash/Archived w zależności od enuma

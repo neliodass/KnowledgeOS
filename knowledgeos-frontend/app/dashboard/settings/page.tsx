@@ -15,6 +15,7 @@ interface Category {
 interface UserPreferences {
     professionalContext: string;
     learningGoals: string;
+    hobbies: string;
     topicsToAvoid: string;
 }
 
@@ -28,6 +29,7 @@ export default function SettingsPage() {
     const [preferences, setPreferences] = useState<UserPreferences>({
         professionalContext: '',
         learningGoals: '',
+        hobbies: '',
         topicsToAvoid: ''
     });
     const [prefLoading, setPrefLoading] = useState(false);
@@ -59,6 +61,7 @@ export default function SettingsPage() {
                     setPreferences({
                         professionalContext: data.professionalContext || '',
                         learningGoals: data.learningGoals || '',
+                        hobbies: data.hobbies || '',
                         topicsToAvoid: data.topicsToAvoid || ''
                     });
                 }
@@ -304,6 +307,19 @@ export default function SettingsPage() {
                             placeholder="What do you want to master?"
                             value={preferences.learningGoals}
                             onChange={e => setPreferences({...preferences, learningGoals: e.target.value})}
+                        />
+                    </div>
+                    {/* hobbies */}
+                    <div className="space-y-1.5">
+                        <div className="flex items-center gap-2 mb-1">
+                            <Plus className="w-3 h-3 text-tech-primary" />
+                            <span className="text-[10px] text-tech-text-muted uppercase font-bold">Hobbies & Interests</span>
+                        </div>
+                        <textarea
+                            className="w-full bg-black border border-tech-border p-3 text-xs leading-relaxed h-28 focus:outline-none focus:border-tech-primary text-gray-300 font-mono resize-none transition-colors"
+                            placeholder="What do you do for fun? (Help AI find creative analogies)"
+                            value={preferences.hobbies}
+                            onChange={e => setPreferences({...preferences, hobbies: e.target.value})}
                         />
                     </div>
 
