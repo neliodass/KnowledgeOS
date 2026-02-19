@@ -29,8 +29,8 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
 
 export const api = {
     // --- Auth ---
-    register: (body: any) => fetchWithAuth('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
-    login: (body: any) => fetchWithAuth('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
+    register: (body: unknown) => fetchWithAuth('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
+    login: (body: unknown) => fetchWithAuth('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
 
     // --- Resources ---
     getInboxMix: () => fetchWithAuth('/inbox/mix'),
@@ -100,6 +100,18 @@ export const api = {
 
     // --- User Preferences ---
     getPreferences: () => fetchWithAuth('/preferences'),
-    updatePreferences: (body: any) =>
+    updatePreferences: (body: unknown) =>
         fetchWithAuth('/preferences', { method: 'PUT', body: JSON.stringify(body) }),
+
+    // --- Profile ---
+    getMe: () => fetchWithAuth('/auth/me'),
+    updateProfile: (nickname: string) =>
+        fetchWithAuth('/auth/me', { method: 'PUT', body: JSON.stringify({ nickname }) }),
+
+    // --- Security ---
+    changePassword: (oldPassword: string, newPassword: string) =>
+        fetchWithAuth('/auth/change-password', {
+            method: 'PUT',
+            body: JSON.stringify({ oldPassword, newPassword })
+        }),
 };

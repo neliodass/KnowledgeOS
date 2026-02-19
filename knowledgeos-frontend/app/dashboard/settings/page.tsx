@@ -20,12 +20,10 @@ interface UserPreferences {
 }
 
 export default function SettingsPage() {
-    // categories state
     const [categories, setCategories] = useState<Category[]>([]);
     const [newCategory, setNewCategory] = useState('');
     const [catLoading, setCatLoading] = useState(false);
 
-    // user profile state
     const [preferences, setPreferences] = useState<UserPreferences>({
         professionalContext: '',
         learningGoals: '',
@@ -34,26 +32,27 @@ export default function SettingsPage() {
     });
     const [prefLoading, setPrefLoading] = useState(false);
 
-    // security stuff
-    const [passwords, setPasswords] = useState({
-        current: '',
-        new: '',
-        confirm: ''
-    });
+    const [nickname, setNickname] = useState('');
+    const [nickLoading, setNickLoading] = useState(false);
+
+    const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
     const [securityMsg, setSecurityMsg] = useState('');
 
-    // fetch everything on mount
     useEffect(() => {
         loadData();
     }, []);
 
     const loadData = async () => {
         try {
-            // get categories from api
             const catData = await api.getCategories();
             setCategories(catData);
 
-            // get user prefs
+            const meRes = await api.getMe();
+            if (meRes.ok) {
+                const meData = await meRes.json();
+                if (meData?.displayName) setNickname(meData.displayName);
+            }
+
             const prefRes = await api.getPreferences();
             if (prefRes.ok) {
                 const data = await prefRes.json();
@@ -67,11 +66,10 @@ export default function SettingsPage() {
                 }
             }
         } catch (e) {
-            console.error("failed to load settings", e);
+            console.error(e);
         }
     };
 
-    // category actions
     const handleAddCategory = async () => {
         if (!newCategory.trim()) return;
         setCatLoading(true);
@@ -84,14 +82,22 @@ export default function SettingsPage() {
     };
 
     const handleDeleteCategory = async (id: string) => {
-        if(!confirm("Are you sure?")) return;
+        if (!confirm("Are you sure?")) return;
         try {
             await api.deleteCategory(id);
             setCategories(categories.filter(c => c.id !== id));
         } catch(e) { console.error(e); }
     };
 
-    // preference actions
+    const handleUpdateNickname = async () => {
+        if (!nickname.trim()) return;
+        setNickLoading(true);
+        try {
+            await api.updateProfile(nickname);
+        } catch(e) { console.error(e); }
+        finally { setNickLoading(false); }
+    };
+
     const handleSavePreferences = async () => {
         setPrefLoading(true);
         try {
@@ -100,7 +106,6 @@ export default function SettingsPage() {
         finally { setPrefLoading(false); }
     };
 
-    // security actions
     const handlePasswordChange = async () => {
         setSecurityMsg('');
         if (passwords.new !== passwords.confirm) {
@@ -111,94 +116,115 @@ export default function SettingsPage() {
             setSecurityMsg('ERROR: Password too short');
             return;
         }
-
-        // todo: actual api call for password
-        setSecurityMsg('MOCK: Password update request sent.');
-        setPasswords({ current: '', new: '', confirm: '' });
+        try {
+            const res = await api.changePassword(passwords.current, passwords.new);
+            if (res.ok) {
+                setSecurityMsg('SUCCESS: Password updated.');
+                setPasswords({ current: '', new: '', confirm: '' });
+            } else {
+                setSecurityMsg('ERROR: Password update failed.');
+            }
+        } catch (error) {
+            setSecurityMsg('ERROR: Failed to connect to server.');
+            console.error(error);
+        }
     };
 
     return (
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 max-w-7xl mx-auto">
 
-            {/* security section */}
-            <section className="xl:col-span-4 flex flex-col gap-4">
-                <div className="border-b border-tech-border pb-2 flex items-center justify-between">
-                    <h3 className="text-xs font-bold text-tech-primary uppercase tracking-tighter flex items-center gap-2">
-                        <Key className="w-4 h-4" />
-                        [CREDENTIAL_UPDATE]
-                    </h3>
-                </div>
+            <section className="xl:col-span-4 flex flex-col gap-8">
 
-                <div className="border border-tech-border bg-tech-surface p-6 flex flex-col gap-6">
-                    <div className="space-y-4">
-
-                        {/* current user display */}
+                <div className="flex flex-col gap-4">
+                    <div className="border-b border-tech-border pb-2 flex items-center justify-between">
+                        <h3 className="text-xs font-bold text-tech-primary uppercase tracking-tighter flex items-center gap-2">
+                            <Key className="w-4 h-4" />
+                            [IDENTITY_CONFIG]
+                        </h3>
+                    </div>
+                    <div className="border border-tech-border bg-tech-surface p-6 flex flex-col gap-4">
                         <div className="flex flex-col gap-1.5">
                             <label className="text-[10px] text-tech-text-muted uppercase font-bold">System Nickname</label>
-                            <input
-                                className="bg-black border border-tech-border px-3 py-2 text-xs focus:ring-0 text-tech-primary font-mono cursor-not-allowed opacity-70"
-                                type="text"
-                                readOnly
-                                defaultValue="Current User"
-                            />
-                        </div>
-
-                        <div className="h-[1px] bg-tech-border w-full my-2"></div>
-
-                        {/* pass fields */}
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-[10px] text-tech-text-muted uppercase font-bold">Current Password</label>
-                            <input
-                                className="bg-black border border-tech-border px-3 py-2 text-xs focus:outline-none focus:border-tech-primary text-tech-primary font-mono transition-colors"
-                                type="password"
-                                value={passwords.current}
-                                onChange={e => setPasswords({...passwords, current: e.target.value})}
-                            />
-                        </div>
-
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-[10px] text-tech-text-muted uppercase font-bold">New Password</label>
-                            <input
-                                className="bg-black border border-tech-border px-3 py-2 text-xs focus:outline-none focus:border-tech-primary text-tech-primary font-mono transition-colors"
-                                type="password"
-                                value={passwords.new}
-                                onChange={e => setPasswords({...passwords, new: e.target.value})}
-                            />
-                        </div>
-
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-[10px] text-tech-text-muted uppercase font-bold">Confirm New Password</label>
-                            <input
-                                className={`bg-black border px-3 py-2 text-xs focus:outline-none font-mono transition-colors ${
-                                    passwords.confirm && passwords.new !== passwords.confirm
-                                        ? 'border-red-500 text-red-400'
-                                        : 'border-tech-border focus:border-tech-primary text-tech-primary'
-                                }`}
-                                type="password"
-                                value={passwords.confirm}
-                                onChange={e => setPasswords({...passwords, confirm: e.target.value})}
-                            />
+                            <div className="flex gap-2">
+                                <input
+                                    className="flex-1 bg-black border border-tech-border px-3 py-2 text-xs focus:outline-none focus:border-tech-primary text-tech-primary font-mono"
+                                    type="text"
+                                    value={nickname}
+                                    onChange={(e) => setNickname(e.target.value)}
+                                    placeholder={nickname}
+                                />
+                                <button
+                                    onClick={handleUpdateNickname}
+                                    disabled={nickLoading}
+                                    className="px-4 border border-tech-primary text-tech-primary text-[10px] font-bold uppercase hover:bg-tech-primary hover:text-black transition-all disabled:opacity-50"
+                                >
+                                    {nickLoading ? '...' : 'SAVE'}
+                                </button>
+                            </div>
                         </div>
                     </div>
+                </div>
 
-                    {securityMsg && (
-                        <div className={`text-[10px] uppercase font-bold ${securityMsg.includes('ERROR') ? 'text-red-500' : 'text-tech-primary'}`}>
-                            &gt; {securityMsg}
+                <div className="flex flex-col gap-4">
+                    <div className="border-b border-tech-border pb-2 flex items-center justify-between">
+                        <h3 className="text-xs font-bold text-tech-primary uppercase tracking-tighter flex items-center gap-2">
+                            <ShieldCheck className="w-4 h-4" />
+                            [SECURITY_PROTOCOL]
+                        </h3>
+                    </div>
+                    <div className="border border-tech-border bg-tech-surface p-6 flex flex-col gap-6">
+                        <div className="space-y-4">
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-[10px] text-tech-text-muted uppercase font-bold">Current Password</label>
+                                <input
+                                    className="bg-black border border-tech-border px-3 py-2 text-xs focus:outline-none focus:border-tech-primary text-tech-primary font-mono transition-colors"
+                                    type="password"
+                                    value={passwords.current}
+                                    onChange={e => setPasswords({...passwords, current: e.target.value})}
+                                />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-[10px] text-tech-text-muted uppercase font-bold">New Password</label>
+                                <input
+                                    className="bg-black border border-tech-border px-3 py-2 text-xs focus:outline-none focus:border-tech-primary text-tech-primary font-mono transition-colors"
+                                    type="password"
+                                    value={passwords.new}
+                                    onChange={e => setPasswords({...passwords, new: e.target.value})}
+                                />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-[10px] text-tech-text-muted uppercase font-bold">Confirm New Password</label>
+                                <input
+                                    className={`bg-black border px-3 py-2 text-xs focus:outline-none font-mono transition-colors ${
+                                        passwords.confirm && passwords.new !== passwords.confirm
+                                            ? 'border-red-500 text-red-400'
+                                            : 'border-tech-border focus:border-tech-primary text-tech-primary'
+                                    }`}
+                                    type="password"
+                                    value={passwords.confirm}
+                                    onChange={e => setPasswords({...passwords, confirm: e.target.value})}
+                                />
+                            </div>
                         </div>
-                    )}
 
-                    <button
-                        onClick={handlePasswordChange}
-                        disabled={!passwords.current || !passwords.new || !passwords.confirm}
-                        className="w-full py-3 border border-tech-primary text-tech-primary text-xs font-bold uppercase flex items-center justify-center gap-2 hover:bg-tech-primary hover:text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <ShieldCheck className="w-4 h-4" />
-                        SYMB_SAVE_CREDENTIALS
-                    </button>
+                        {securityMsg && (
+                            <div className={`text-[10px] uppercase font-bold ${securityMsg.includes('ERROR') ? 'text-red-500' : 'text-tech-primary'}`}>
+                                &gt; {securityMsg}
+                            </div>
+                        )}
+
+                        <button
+                            onClick={handlePasswordChange}
+                            disabled={!passwords.current || !passwords.new || !passwords.confirm}
+                            className="w-full py-3 border border-tech-primary text-tech-primary text-xs font-bold uppercase flex items-center justify-center gap-2 hover:bg-tech-primary hover:text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ShieldCheck className="w-4 h-4" />
+                            SAVE_CREDENTIALS
+                        </button>
+                    </div>
                 </div>
             </section>
 
-            {/* category manager */}
             <section className="xl:col-span-4 flex flex-col gap-4">
                 <div className="border-b border-tech-border pb-2 flex items-center justify-between">
                     <h3 className="text-xs font-bold text-tech-primary uppercase tracking-tighter flex items-center gap-2">
@@ -206,9 +232,7 @@ export default function SettingsPage() {
                         [CATEGORIES_DATABASE]
                     </h3>
                 </div>
-
-                <div className="border border-tech-border bg-tech-surface flex flex-col h-full max-h-[600px]">
-                    {/* input area */}
+                <div className="border border-tech-border bg-tech-surface flex flex-col h-auto min-h-[400px]">
                     <div className="p-4 border-b border-tech-border bg-black/50">
                         <div className="flex gap-2">
                             <input
@@ -228,8 +252,6 @@ export default function SettingsPage() {
                             </button>
                         </div>
                     </div>
-
-                    {/* list area */}
                     <div className="flex-1 overflow-y-auto">
                         <div className="divide-y divide-tech-border">
                             {categories.length === 0 ? (
@@ -240,8 +262,8 @@ export default function SettingsPage() {
                                         <div className="flex items-center gap-3">
                                             <Folder className="text-tech-text-muted w-5 h-5 group-hover:text-tech-primary transition-colors" />
                                             <span className="text-xs font-bold text-gray-300 group-hover:text-white uppercase w-full">
-                            {cat.name}
-                        </span>
+                                                {cat.name}
+                                            </span>
                                         </div>
                                         <div className="flex items-center gap-4 opacity-100 xl:opacity-0 xl:group-hover:opacity-100 transition-opacity">
                                             <button className="p-2 text-tech-text-muted hover:text-tech-primary transition-colors">
@@ -262,7 +284,6 @@ export default function SettingsPage() {
                 </div>
             </section>
 
-            {/* cognitive profile section */}
             <section className="xl:col-span-4 flex flex-col gap-4">
                 <div className="border-b border-tech-border pb-2 flex items-center justify-between">
                     <h3 className="text-xs font-bold text-tech-primary uppercase tracking-tighter flex items-center gap-2">
@@ -277,10 +298,7 @@ export default function SettingsPage() {
                         {prefLoading ? 'SAVING...' : 'SAVE_CONFIG'} <Save className="w-3 h-3" />
                     </button>
                 </div>
-
                 <div className="border border-tech-border bg-tech-surface p-6 flex flex-col gap-5">
-
-                    {/* professional field */}
                     <div className="space-y-1.5">
                         <div className="flex items-center gap-2 mb-1">
                             <Brain className="w-3 h-3 text-tech-primary" />
@@ -294,8 +312,6 @@ export default function SettingsPage() {
                             onChange={e => setPreferences({...preferences, professionalContext: e.target.value})}
                         />
                     </div>
-
-                    {/* goals field */}
                     <div className="space-y-1.5">
                         <div className="flex items-center gap-2 mb-1">
                             <Target className="w-3 h-3 text-tech-primary" />
@@ -309,7 +325,6 @@ export default function SettingsPage() {
                             onChange={e => setPreferences({...preferences, learningGoals: e.target.value})}
                         />
                     </div>
-                    {/* hobbies */}
                     <div className="space-y-1.5">
                         <div className="flex items-center gap-2 mb-1">
                             <Plus className="w-3 h-3 text-tech-primary" />
@@ -322,8 +337,6 @@ export default function SettingsPage() {
                             onChange={e => setPreferences({...preferences, hobbies: e.target.value})}
                         />
                     </div>
-
-                    {/* filters field */}
                     <div className="space-y-1.5">
                         <div className="flex items-center gap-2 mb-1">
                             <AlertTriangle className="w-3 h-3 text-tech-primary" />
@@ -337,10 +350,10 @@ export default function SettingsPage() {
                             onChange={e => setPreferences({...preferences, topicsToAvoid: e.target.value})}
                         />
                     </div>
-
                 </div>
             </section>
 
         </div>
     );
 }
+
