@@ -38,7 +38,7 @@ services:
       Ai__Model_2: ${AI_MODEL_2:-meta-llama/llama-3.3-70b-instruct:free}
       Ai__Model_3: ${AI_MODEL_3:-mistralai/mistral-small-3.1-24b-instruct:free}
       Ai__OpenRouterKey: ${OPENROUTER_API_KEY}
-      Cors__AllowedOrigins: "${CORS_ALLOWED_ORIGINS:-http://localhost:${FRONTEND_PORT:-3000},moz-extension://0cb7157b-42b2-4ace-b78f-3903cbcbd6fc,chrome-extension://iplilhnkllipnldlphdmhglmkpfmloep}"
+      Cors__AllowedOrigins: "${CORS_ALLOWED_ORIGINS:-http://localhost:3000},moz-extension://0cb7157b-42b2-4ace-b78f-3903cbcbd6fc,chrome-extension://iplilhnkllipnldlphdmhglmkpfmloep"
     depends_on:
       - db
 
