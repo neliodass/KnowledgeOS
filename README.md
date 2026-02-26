@@ -142,61 +142,9 @@ knowledgeos-frontend/
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### Docker — full stack (recommended)
 
-- [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- [Node.js 20+](https://nodejs.org/)
-- [PostgreSQL](https://www.postgresql.org/)
-- [OpenRouter API key](https://openrouter.ai/) (free tier works)
-
-### Backend setup
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/your-username/KnowledgeOS.git
-   cd KnowledgeOS/KnowledgeOS.Backend
-   ```
-
-2. **Configure environment**  
-   Create a `.env` file in `KnowledgeOS.Backend/`:
-   ```env
-   JWT_KEY=your_super_secret_jwt_key_min_32_chars
-   OPENROUTER_API_KEY=sk-or-...
-   ```
-
-3. **Configure `appsettings.json`**
-   ```json
-   {
-     "ConnectionStrings": {
-       "DefaultConnection": "Host=localhost;Port=5432;Database=knowledge_os;Username=postgres;Password=yourpassword"
-     },
-     "Ai": {
-       "Model_1": "google/gemini-2.0-flash-exp:free",
-       "Model_2": "meta-llama/llama-3.3-70b-instruct:free",
-       "Model_3": "mistralai/mistral-small-3.1-24b-instruct:free"
-     }
-   }
-   ```
-
-4. **Run migrations & start**
-   ```bash
-   dotnet ef database update
-   dotnet run
-   ```
-
-### Frontend setup
-
-```bash
-cd KnowledgeOS/knowledgeos-frontend
-npm install
-npm run dev
-```
-
-Frontend runs on `http://localhost:3000`, backend on `https://localhost:5001`.
-
-### Docker — full stack
-
-The entire stack (PostgreSQL, backend, frontend) can be run with a single command.
+The entire stack (PostgreSQL, backend, frontend) is managed by Docker Compose. No separate frontend/backend setup is needed.
 
 1. **Copy and configure the environment file**
    ```bash
@@ -208,9 +156,11 @@ The entire stack (PostgreSQL, backend, frontend) can be run with a single comman
    ```env
    # Local network (phone, tablet, other PC on the same WiFi)
    NEXT_PUBLIC_API_URL=http://192.168.1.100:5000/api
+   CORS_ALLOWED_ORIGINS=http://192.168.1.100:3000
 
    # VPS / public server
    NEXT_PUBLIC_API_URL=https://api.yourdomain.com/api
+   CORS_ALLOWED_ORIGINS=https://yourdomain.com
 
    # Ports (change if you have conflicts)
    FRONTEND_PORT=3000
@@ -226,10 +176,7 @@ The entire stack (PostgreSQL, backend, frontend) can be run with a single comman
    docker compose up -d --build
    ```
 
-3. **Run database migrations** (first time only)
-   ```bash
-   docker compose exec backend dotnet ef database update
-   ```
+   Database migrations are applied **automatically** on backend startup — no extra step needed.
 
    | Service | Default address |
    |---------|----------------|
@@ -239,31 +186,6 @@ The entire stack (PostgreSQL, backend, frontend) can be run with a single comman
    | Adminer (DB UI) | `http://localhost:8080` |
 
    > **Tip:** To find your local IP on Linux run `ip route get 1 | awk '{print $7}'`
-
----
-
-## 📡 API Overview
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/auth/register` | Register new user |
-| `POST` | `/api/auth/login` | Login, returns JWT |
-| `GET` | `/api/auth/me` | Get display name |
-| `PUT` | `/api/auth/me/password` | Change password |
-| `PUT` | `/api/auth/me/display-name` | Change display name |
-| `GET` | `/api/preferences` | Get user preferences |
-| `PUT` | `/api/preferences` | Update user preferences |
-| `POST` | `/api/resources` | Save new resource (URL) |
-| `GET` | `/api/inbox` | Get inbox resources (paged) |
-| `GET` | `/api/inbox/mix` | Get smart mix (high/mid/low score) |
-| `GET` | `/api/vault` | Get vault resources (paged, filterable) |
-| `GET` | `/api/vault/mix` | Get vault rediscovery mix |
-| `PUT` | `/api/resources/{id}/status` | Promote / trash resource |
-| `PUT` | `/api/resources/{id}/category` | Assign category |
-| `DELETE` | `/api/resources/{id}` | Two-step delete (Trash → permanent) |
-| `GET` | `/api/categories` | List categories |
-| `POST` | `/api/categories` | Create category |
-| `DELETE` | `/api/categories/{id}` | Delete category |
 
 ---
 
