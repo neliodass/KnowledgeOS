@@ -1,12 +1,12 @@
 'use client';
 
-import {useState, useEffect} from 'react';
+import {useState, useEffect, Suspense} from 'react';
 import {api} from '@/lib/api';
 import {useRouter, useSearchParams} from 'next/navigation';
 import Link from 'next/link';
 import {Fingerprint, Key, LockOpen, RefreshCw, UserPlus} from 'lucide-react';
 
-export default function LoginPage() {
+function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -192,5 +192,13 @@ export default function LoginPage() {
 
             </div>
         </main>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-tech-bg flex items-center justify-center text-tech-primary">Loading...</div>}>
+            <LoginForm />
+        </Suspense>
     );
 }

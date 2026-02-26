@@ -38,6 +38,7 @@ services:
       Ai__Model_2: ${AI_MODEL_2:-meta-llama/llama-3.3-70b-instruct:free}
       Ai__Model_3: ${AI_MODEL_3:-mistralai/mistral-small-3.1-24b-instruct:free}
       Ai__OpenRouterKey: ${OPENROUTER_API_KEY}
+      Cors__AllowedOrigins: "${CORS_ALLOWED_ORIGINS:-http://localhost:${FRONTEND_PORT:-3000},moz-extension://0cb7157b-42b2-4ace-b78f-3903cbcbd6fc,chrome-extension://iplilhnkllipnldlphdmhglmkpfmloep}"
     depends_on:
       - db
 
@@ -46,12 +47,14 @@ services:
       context: ./knowledgeos-frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000/api}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:${BACKEND_PORT:-5000}/api}
+        FRONTEND_PORT: ${FRONTEND_PORT:-3000}
     restart: unless-stopped
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      - "${FRONTEND_PORT:-3000}:${FRONTEND_PORT:-3000}"
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000/api}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:${BACKEND_PORT:-5000}/api}
+      PORT: ${FRONTEND_PORT:-3000}
     depends_on:
       - backend
 
