@@ -1,6 +1,7 @@
 using DotNetEnv;
 using Hangfire;
 using KnowledgeOS.Backend.Extensions;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 Env.Load();
@@ -15,6 +16,12 @@ builder.Services.AddSwaggerConfig();
 builder.Services.AddControllers();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<KnowledgeOS.Backend.Data.AppDbContext>();
+    await db.Database.MigrateAsync();
+}
 
 app.UseSwaggerConfig();
 app.UseCorsConfig(app.Environment);
