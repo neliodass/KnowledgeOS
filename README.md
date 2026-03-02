@@ -151,16 +151,16 @@ The entire stack (PostgreSQL, backend, frontend) is managed by Docker Compose. N
    cp .env.example .env
    ```
 
-   Open `.env` and set your values. The most important one is `NEXT_PUBLIC_API_URL` — this is the address the **browser** uses to reach the backend, so it must be your machine's actual IP (not `localhost`) if you want to access it from other devices on the network or expose it externally:
+   Open `.env` and set your values. Thanks to Next.js **rewrites**, the frontend always calls `/api` (same origin) and the server proxies it internally — **no CORS issues regardless of how you access the app** (local network, ZeroTier, Cloudflare Tunnel, VPS, etc.).
+
+   The only variable you need to set for networking is `INTERNAL_API_URL` — the address Next.js uses **server-side** to reach the backend (never exposed to the browser):
 
    ```env
-   # Local network (phone, tablet, other PC on the same WiFi)
-   NEXT_PUBLIC_API_URL=http://192.168.1.100:5000/api
-   CORS_ALLOWED_ORIGINS=http://192.168.1.100:3000
+   # Docker (default — uses container name)
+   INTERNAL_API_URL=http://backend:8080
 
-   # VPS / public server
-   NEXT_PUBLIC_API_URL=https://api.yourdomain.com/api
-   CORS_ALLOWED_ORIGINS=https://yourdomain.com
+   # Outside Docker / bare metal
+   INTERNAL_API_URL=http://localhost:5000
 
    # Ports (change if you have conflicts)
    FRONTEND_PORT=3000
@@ -170,6 +170,8 @@ The entire stack (PostgreSQL, backend, frontend) is managed by Docker Compose. N
    JWT_KEY=your_min_32_char_secret_here
    OPENROUTER_API_KEY=sk-or-...
    ```
+
+   > **CORS config (`CORS_ALLOWED_ORIGINS`) is no longer needed** — since all browser requests go to the frontend's own origin (`/api`), there are no cross-origin requests to the backend.
 
 2. **Run**
    ```bash

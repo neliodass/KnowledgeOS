@@ -4,7 +4,11 @@ public static class CorsExtensions
 {
     public static IServiceCollection AddCorsConfig(this IServiceCollection services, IConfiguration configuration)
     {
-        var allowedOrigins = configuration["Cors:AllowedOrigins"]
+     
+        var raw = Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS")
+                  ?? configuration["Cors:AllowedOrigins"];
+
+        var allowedOrigins = raw
             ?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             ?? ["http://localhost:3000", "moz-extension://0cb7157b-42b2-4ace-b78f-3903cbcbd6fc", "chrome-extension://iplilhnkllipnldlphdmhglmkpfmloep"];
 
