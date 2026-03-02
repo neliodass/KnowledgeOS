@@ -79,7 +79,44 @@ URL saved by user
 - `ErrorRecoveryJob` — periodically rescues stuck resources
 
 ---
+## 🖼️ See in action
+### Login and Register
+![Register and Login](./promo/register_n_login.gif)
 
+### Dashboard & Navigation
+![Dashboard](./promo/dashboard.png)
+![Modal](./promo/modal.png)
+
+### Features
+* **Adding to Vault:**
+  ![Adding to Vault](./promo/adding_to_vault.gif)
+* **Inbox Management:**
+  ![Good Example Inbox](./promo/good_example_inbox.gif)
+  *Avoid mistakes like this:*
+  ![Bad Example Inbox](./promo/bad_example_onbox.gif)
+
+### Settings & Customization
+* **Themes:**
+  ![Themes](./promo/themes.gif)
+* **Preferences:**
+  ![Setting Preferences](./promo/setting_preferences.gif)
+
+### Static Views
+![Add](./promo/add.png)
+![Add Category](./promo/add_category.png)
+![Inbox Static](./promo/inbox.png)
+![Vault Static](./promo/vault.png)
+![Settings Static](./promo/settings.png)
+---
+## 🧩 Extension
+
+There is an official browser extension in development to enhance your workflow by saving resources with a single click.
+
+> IMPORTANT
+> The extension is currently **under development (WIP)** and not yet fully functional, but you can check the progress here: <br>
+> 👉 [KnowledgeOS Extension Repository](https://github.com/neliodass/KnowledgeOS.BrowserExtension)
+
+---
 ## 🏗️ Architecture
 
 ### Backend
@@ -142,52 +179,49 @@ knowledgeos-frontend/
 
 ## 🚀 Getting Started
 
-### Docker — full stack (recommended)
+### 🐳 Docker Deployment
 
-The entire stack (PostgreSQL, backend, frontend) is managed by Docker Compose. No separate frontend/backend setup is needed.
+The entire stack (PostgreSQL, Go backend, and Next.js frontend) is managed via Docker Compose. This is the official way to run the application.
 
-1. **Copy and configure the environment file**
-   ```bash
-   cp .env.example .env
-   ```
+#### 1. Configure Environment
+Create your .env file from the template:
 
-   Open `.env` and set your values. Thanks to Next.js **rewrites**, the frontend always calls `/api` (same origin) and the server proxies it internally — **no CORS issues regardless of how you access the app** (local network, ZeroTier, Cloudflare Tunnel, VPS, etc.).
+```
+cp .env.example .env
+```
 
-   The only variable you need to set for networking is `INTERNAL_API_URL` — the address Next.js uses **server-side** to reach the backend (never exposed to the browser):
+Open .env and fill in the required variables. The frontend uses Next.js rewrites to communicate with the backend internally via the /api route.
 
-   ```env
-   # Docker (default — uses container name)
-   INTERNAL_API_URL=http://backend:8080
+**Key Network Configuration:**
+* **INTERNAL_API_URL**: The address Next.js uses server-side to reach the backend (uses the Docker service name).
+* **JWT_KEY**: Must be at least 32 characters long.
 
-   # Outside Docker / bare metal
-   INTERNAL_API_URL=http://localhost:5000
+``` 
+# Network (Internal Docker communication)
+INTERNAL_API_URL=http://backend:8080
 
-   # Ports (change if you have conflicts)
-   FRONTEND_PORT=3000
-   BACKEND_PORT=5000
+# Ports (External access)
+FRONTEND_PORT=3000
+BACKEND_PORT=5000
 
-   # Secrets
-   JWT_KEY=your_min_32_char_secret_here
-   OPENROUTER_API_KEY=sk-or-...
-   ```
+# Secrets
+JWT_KEY=your_min_32_char_secret_here
+OPENROUTER_API_KEY=sk-or-...
+```
 
-   > **CORS config (`CORS_ALLOWED_ORIGINS`) is no longer needed** — since all browser requests go to the frontend's own origin (`/api`), there are no cross-origin requests to the backend.
+#### 2. Launch the Stack
+Run the following command to build and start all services:
 
-2. **Run**
-   ```bash
-   docker compose up -d --build
-   ```
+```
+docker compose up -d --build
+```
 
-   Database migrations are applied **automatically** on backend startup — no extra step needed.
+#### 3. Access the Services
 
-   | Service | Default address |
-   |---------|----------------|
-   | Frontend | `http://localhost:3000` |
-   | Backend API | `http://localhost:5000` |
-   | Swagger | `http://localhost:5000/swagger` |
-   | Adminer (DB UI) | `http://localhost:8080` |
-
-   > **Tip:** To find your local IP on Linux run `ip route get 1 | awk '{print $7}'`
+| Service | Address | Description |
+| :--- | :--- | :--- |
+| **Frontend** | http://localhost:3000 | Main Web Application |
+| **Backend API** | http://localhost:5000 | REST API Root |
 
 ---
 
@@ -225,18 +259,6 @@ The entire stack (PostgreSQL, backend, frontend) is managed by Docker Compose. N
 - [ ] **Pocket / Readwise import** — migrate existing bookmarks
 - [ ] **Obsidian export** — export vault as Obsidian-compatible Markdown vault
 - [ ] **RSS / Atom feed ingestion** — auto-import from feeds
-
----
-
-## 🖼️ Screenshots
-
-![Dashboard](promo/dashboard.png)
-![Modal](promo/modal.png)
-![Add](promo/add.png)
-![Add_category](promo/add_category.png)
-![inbox](promo/inbox.png)
-![vault](promo/vault.png)
-![settings](promo/settings.png)
 
 ---
 
