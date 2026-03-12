@@ -9,6 +9,8 @@ import {Fingerprint, Key, LockOpen, RefreshCw, UserPlus} from 'lucide-react';
 function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    //move to chosen page or default dashboard
+    const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -37,7 +39,8 @@ function LoginForm() {
 
             const data = await res.json();
             localStorage.setItem('token', data.token);
-            router.push('/dashboard');
+            document.cookie = `token=${data.token}; path=/; max-age=604800; secure; samesite=strict`;
+            router.push(callbackUrl);
 
         } catch (err) {
             if (err instanceof Error) {

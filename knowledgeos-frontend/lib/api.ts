@@ -5,7 +5,7 @@ import {Category, CreateResourceRequest} from "@/lib/types";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '/api';
 
 async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const token = getCookie('token') || (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
 
     const headers = {
         'Content-Type': 'application/json',
@@ -25,6 +25,14 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     }
 
     return response;
+}
+
+function getCookie(name: string) {
+    if(typeof document === 'undefined') return null;
+    const value =`; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+    return null;
 }
 
 export const api = {
