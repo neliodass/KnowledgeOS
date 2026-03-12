@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using KnowledgeOS.Backend.Constants;
 using KnowledgeOS.Backend.Entities.Users;
 using Microsoft.AspNetCore.Identity;
 
@@ -11,13 +13,17 @@ public static class DbSeeder
 
         if (!await roleManager.RoleExistsAsync("Admin"))
         {
-            await roleManager.CreateAsync(new IdentityRole("Admin"));
+            var adminRole = new IdentityRole("Admin");
+            await roleManager.CreateAsync(adminRole);
+            await roleManager.AddClaimAsync(adminRole, new Claim("Permission", Permissions.BypassResourceOwnership));
+            await roleManager.AddClaimAsync(adminRole, new Claim("Permission", Permissions.BypassUserPrefsOwnership));
+            await roleManager.AddClaimAsync(adminRole, new Claim("Permission", Permissions.ResetPasswords));
         }
+
         if (!await roleManager.RoleExistsAsync("User"))
         {
             await roleManager.CreateAsync(new IdentityRole("User"));
         }
-        
     }
 
     public static async Task SeedAdminUserAsync(IServiceProvider serviceProvider)
