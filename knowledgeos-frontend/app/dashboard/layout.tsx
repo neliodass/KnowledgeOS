@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import {usePathname, useRouter} from 'next/navigation';
 import {
     LayoutDashboard,
     Inbox,
@@ -19,6 +19,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [displayName, setDisplayName] = useState('USER');
     const menuRef = useRef<HTMLDivElement>(null);
+    const router = useRouter();
 
     useEffect(() => {
         api.getMe().then(res => {
@@ -41,7 +42,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     const handleLogout = () => {
         localStorage.removeItem('token');
-        window.location.href = '/login';
+        document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict';
+        router.push('/login');
     };
 
     return (
@@ -49,7 +51,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="scanline"></div>
 
             <aside className="hidden md:flex w-64 flex-col border-r border-tech-border bg-tech-bg z-20 relative">
-                <SidebarContent />
+                <SidebarContent onLogout={handleLogout} />
             </aside>
 
             {isMobileMenuOpen && (
@@ -68,7 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         <X className="w-6 h-6" />
                     </button>
                 </div>
-                <SidebarContent onClose={() => setIsMobileMenuOpen(false)} />
+                <SidebarContent onClose={() => setIsMobileMenuOpen(false)} onLogout={handleLogout} />
             </aside>
 
             <div className="flex-1 flex flex-col min-w-0 relative bg-grid">
@@ -137,9 +139,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
 interface SidebarContentProps {
     onClose?: () => void;
+    onLogout: () => void;
 }
 
-function SidebarContent({ onClose }: SidebarContentProps) {
+function SidebarContent({ onClose, onLogout }: SidebarContentProps) {
     const pathname = usePathname();
 
     const isActive = (path: string) => pathname === path;
@@ -192,10 +195,7 @@ function SidebarContent({ onClose }: SidebarContentProps) {
 
             <div className="p-4 border-t border-tech-border">
                 <button
-                    onClick={() => {
-                        localStorage.removeItem('token');
-                        window.location.href = '/login';
-                    }}
+                    onClick={onLogout}
                     className="w-full flex items-center gap-2 justify-center py-2 text-[10px] text-red-400 hover:text-red-300 border border-transparent hover:border-red-900/30 hover:bg-red-900/10 transition-all uppercase tracking-wider"
                 >
                     <LogOut className="w-3 h-3" />
