@@ -1,5 +1,6 @@
 using DotNetEnv;
 using Hangfire;
+using KnowledgeOS.Backend.Data;
 using KnowledgeOS.Backend.Extensions;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,6 +22,9 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<KnowledgeOS.Backend.Data.AppDbContext>();
     await db.Database.MigrateAsync();
+    
+    await DbSeeder.SeedRolesAsync(scope.ServiceProvider);
+    await DbSeeder.SeedAdminUserAsync(scope.ServiceProvider);
 }
 
 app.UseSwaggerConfig();
