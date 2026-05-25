@@ -166,8 +166,6 @@ public class AiAnalysisJob : IAiAnalysisJob
 
     private async Task UpdateTagsAsync(Resource resource, string[] tags)
     {
-        resource.Tags.Clear();
-
         foreach (var tagName in tags)
         {
             var normalizedTagName = tagName.Trim().ToLowerInvariant();

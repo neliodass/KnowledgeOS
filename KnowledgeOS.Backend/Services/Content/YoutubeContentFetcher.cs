@@ -28,38 +28,41 @@ public class YouTubeContentFetcher : IContentFetcher
 
         try
         {
-            var description = video.Description??"";
-            var trackManifest = await _youtubeClient.Videos.ClosedCaptions.GetManifestAsync(video.Url);
-            var trackInfo = trackManifest.Tracks.FirstOrDefault(lang => lang.Language.Code == "en")
-                            ?? trackManifest.Tracks.FirstOrDefault(lang => lang.Language.Code == "pl") ??
-                            trackManifest.Tracks.FirstOrDefault();
-            if (trackInfo == null) return null;
-
-            var track = await _youtubeClient.Videos.ClosedCaptions.GetAsync(trackInfo);
-
             var sb = new StringBuilder();
-            var charCount = 0;
-            const int maxChars = 6000;
+            var description = video.Description ?? "";
             if (!string.IsNullOrWhiteSpace(description))
             {
                 sb.AppendLine("[VIDEO DESCRIPTION]");
                 sb.AppendLine(description);
-                sb.AppendLine("[TRANSCRIPT EXCERPT]");
-                charCount += description.Length;
-            }
-            foreach (var caption in track.Captions)
-            {
-                if (charCount > maxChars) break;
-                sb.AppendLine(caption.Text);
-                charCount += caption.Text.Length;
             }
 
+            var trackManifest = await _youtubeClient.Videos.ClosedCaptions.GetManifestAsync(video.Url);
+            var trackInfo = trackManifest.Tracks.FirstOrDefault(lang => lang.Language.Code == "en")
+                            ?? trackManifest.Tracks.FirstOrDefault(lang => lang.Language.Code == "pl")
+                            ?? trackManifest.Tracks.FirstOrDefault();
+            if (trackInfo == null)
+                return sb.Length > 0 ? sb.ToString() : null;
+
+            var track = await _youtubeClient.Videos.ClosedCaptions.GetAsync(trackInfo);
+            var captions = track.Captions.Select(c => c.Text).ToList();
+            var excerpt = TranscriptExcerptBuilder.BuildFromCaptions(captions);
+
+            if (string.IsNullOrWhiteSpace(excerpt))
+                return sb.Length > 0 ? sb.ToString() : null;
+
+            if (sb.Length > 0)
+                sb.AppendLine("[TRANSCRIPT EXCERPT]");
+            sb.Append(excerpt);
             return sb.ToString();
         }
         catch (Exception ex)
         {
-            _logger.LogWarning($"Failed to fetch subtitles for video {video.Id}: {ex.Message}");
-            return null;
+            _logger.LogWarning("Failed to fetch subtitles for video {VideoId}: {Message}", video.Id, ex.Message);
+            var description = video.Description;
+            if (string.IsNullOrWhiteSpace(description))
+                return null;
+
+            return $"[VIDEO DESCRIPTION]\n{description}";
         }
     }
 }

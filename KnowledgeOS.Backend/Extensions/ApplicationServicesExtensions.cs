@@ -46,7 +46,12 @@ public static class ApplicationServicesExtensions
         var aiModels = configuration.GetSection("Ai");
         foreach (var model in aiModels.GetChildren())
         {
+            if (!model.Key.StartsWith("Model_", StringComparison.Ordinal))
+                continue;
+
             var modelId = model.Value!;
+            if (string.IsNullOrWhiteSpace(modelId))
+                continue;
             services.AddScoped<IAiProvider>(sp =>
             {
                 var client = sp.GetRequiredService<OpenAIClient>();

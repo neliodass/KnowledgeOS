@@ -48,7 +48,9 @@ URL saved by user
 - Every saved resource is scored **0–100** based on your personal profile
 - AI generates a **verdict**, **summary**, and **tags**
 - Scoring uses a two-axis system: **Intrinsic Quality** × **Relevance to your profile**
+- The AI returns discrete tiers; the backend maps them to a stable **0–100** score (less random than asking the model for a number)
 - Protects against keyword hallucination — "AI" in title ≠ match if content is a gimmick
+- Short or sparse user profiles use conservative relevance rules (no guessing from title keywords alone)
 
 ### 📥 Inbox & 🏛️ Vault
 - **Inbox** — staging area for new resources, shows AI score and verdict
@@ -172,7 +174,8 @@ knowledgeos-frontend/
 - **Table Per Type (TPT)** — `VideoResource`, `ArticleResource`, `RedditResource` each have their own table, sharing the base `Resources` table
 - **1:1 Metadata composition** — `InboxMetadata` and `VaultMetadata` are separate tables linked by FK, not flat columns on `Resource`
 - **Global query filters** — all queries are automatically scoped to `CurrentUser.UserId`
-- **AI provider abstraction** — multiple models registered as `IAiProvider`, `AiService` tries them in order with fallback
+- **AI provider abstraction** — multiple models registered as `IAiProvider` (`Model_*` config keys only), `AiService` tries them in order with fallback
+- **Deterministic inbox score** — `ScoreCalculator` maps `intrinsicQuality` + `relevance` + avoidance to 0–100; prompts live in `Services/Ai/Prompts/`
 - **Next.js App Router** — full server/client component split, JWT stored in `localStorage`, all API calls typed via shared `lib/types.ts`
 
 ---

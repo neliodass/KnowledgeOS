@@ -17,7 +17,8 @@ public record InboxAnalysisResult(
     int Score,
     string Verdict,
     string Summary,
-    string[] SuggestedTags
+    string[] SuggestedTags,
+    bool ScoredFromMetadataOnly = false
 );
 
 public record VaultAnalysisResult(

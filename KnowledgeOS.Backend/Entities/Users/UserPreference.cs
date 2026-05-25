@@ -23,6 +23,7 @@ public class UserPreference : IUserOwnedResource
     {
         return $"""
                 MY CONTEXT: {ProfessionalContext ?? "General Audience"}
+                HOBBIES: {Hobbies ?? "Not specified"}
                 INTERESTS/GOALS: {LearningGoals ?? "General Knowledge"}
                 AVOID: {TopicsToAvoid ?? "Nothing specific"}
                 """;

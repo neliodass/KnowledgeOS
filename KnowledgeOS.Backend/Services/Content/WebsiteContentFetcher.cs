@@ -41,7 +41,11 @@ public class WebsiteContentFetcher : IContentFetcher
 
             var sb = new StringBuilder();
 
-            var paragraphs = doc.DocumentNode.SelectNodes("//p | //article | //h1 | //h2 | //h3 | //li");
+            if (!string.IsNullOrWhiteSpace(resource.Description))
+            {
+                sb.AppendLine("[PAGE DESCRIPTION]");
+                sb.AppendLine(CleanText(resource.Description));
+            }
 
             var contentNodes =
                 doc.DocumentNode.SelectNodes(
