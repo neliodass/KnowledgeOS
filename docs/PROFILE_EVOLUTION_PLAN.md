@@ -78,4 +78,4 @@ gh pr create --base dev --draft  # PR zamiast bezpośredniego merge do dev
 | B2 | done |
 | B3 | done |
 | B4 | done |
-| C1–C4 | pending |
+| C1–C4 | done (PR `feat/backend/profile-embeddings-phase-c`) |

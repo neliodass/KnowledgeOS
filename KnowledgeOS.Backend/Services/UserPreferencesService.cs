@@ -11,11 +11,16 @@ public class UserPreferencesService : IUserPreferencesService
 {
     private readonly AppDbContext _context;
     private readonly IProfileEmbeddingSyncService _profileEmbeddingSync;
+    private readonly IInboxReanalysisScheduler _inboxReanalysis;
 
-    public UserPreferencesService(AppDbContext context, IProfileEmbeddingSyncService profileEmbeddingSync)
+    public UserPreferencesService(
+        AppDbContext context,
+        IProfileEmbeddingSyncService profileEmbeddingSync,
+        IInboxReanalysisScheduler inboxReanalysis)
     {
         _context = context;
         _profileEmbeddingSync = profileEmbeddingSync;
+        _inboxReanalysis = inboxReanalysis;
     }
 
     public async Task<UserPreferenceDto> GetPreferencesAsync(string userId)
@@ -60,5 +65,6 @@ public class UserPreferencesService : IUserPreferencesService
 
         await _context.SaveChangesAsync();
         await _profileEmbeddingSync.SyncForUserAsync(userId);
+        await _inboxReanalysis.ScheduleForUserAsync(userId);
     }
 }

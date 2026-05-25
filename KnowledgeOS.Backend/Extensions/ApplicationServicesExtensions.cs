@@ -29,6 +29,7 @@ public static class ApplicationServicesExtensions
         services.AddScoped<IEmbeddingService, OpenRouterEmbeddingService>();
         services.AddScoped<IProfileEmbeddingSyncService, ProfileEmbeddingSyncService>();
         services.AddScoped<RelevanceEmbeddingMatcher>();
+        services.AddScoped<IInboxReanalysisScheduler, InboxReanalysisScheduler>();
         services.AddScoped<IErrorRecoveryJob, ErrorRecoveryJob>();
         services.AddScoped<ICategoryService, CategoryService>();
 
