@@ -6,12 +6,12 @@ Workflow:
 
 ```bash
 git checkout dev && git pull
-git checkout -b feat/...
-# implementacja
-dotnet test KnowledgeOS.Backend/../KnowledgeOS.Backend.Tests  # gdy dotyczy backendu
-git commit -m "..."
+git checkout -b feat/...-phase-x
+# implementacja (wiele commitów na jednej gałęzi fazy jest OK)
+dotnet test KnowledgeOS.Backend/../KnowledgeOS.Backend.Tests
+git commit -m "..."  # powtarzaj per logiczny krok
 git push -u origin HEAD
-# merge do dev (PR lub lokalnie)
+gh pr create --base dev --draft  # PR zamiast bezpośredniego merge do dev
 ```
 
 ---
