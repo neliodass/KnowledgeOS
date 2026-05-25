@@ -5,9 +5,12 @@ namespace KnowledgeOS.Backend.Services.Ai.Prompts;
 
 public static class ProfileRefinePromptBuilder
 {
-    public static (string SystemPrompt, string UserPrompt) Build(UserPreferenceDto current, string userMessage)
+    public static (string SystemPrompt, string UserPrompt) Build(
+        UserPreferenceDto current,
+        string userMessage,
+        ScoringFeedbackContextDto? scoringContext = null)
     {
-        const string systemPrompt = """
+        var systemPrompt = """
             You are a profile editor for a personal knowledge vault. Output ONLY valid JSON.
 
             The user describes how their interests, goals, or avoidance rules changed.
@@ -23,7 +26,13 @@ public static class ProfileRefinePromptBuilder
 
             assistantSummary: 2-4 sentences explaining what you changed and why.
             hasChanges: true if any field meaningfully differs from the input profile.
-            """;
+            """ + (scoringContext == null
+            ? ""
+            : """
+
+            The payload may include scoringFeedback: the user disagrees with an AI inbox score.
+            Adjust the profile so future scoring would better match their intent. Do not defend the old score.
+            """);
 
         var payload = new
         {
@@ -34,7 +43,17 @@ public static class ProfileRefinePromptBuilder
                 current.Hobbies,
                 current.TopicsToAvoid
             },
-            userMessage
+            userMessage,
+            scoringFeedback = scoringContext == null
+                ? null
+                : new
+                {
+                    scoringContext.Title,
+                    scoringContext.Url,
+                    scoringContext.AiScore,
+                    scoringContext.AiVerdict,
+                    scoringContext.UserComment
+                }
         };
 
         var userPrompt = JsonSerializer.Serialize(payload);

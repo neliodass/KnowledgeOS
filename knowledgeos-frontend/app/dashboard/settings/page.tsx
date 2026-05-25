@@ -113,7 +113,7 @@ export default function SettingsPage() {
         setRefineError('');
         setRefinePreview(null);
         try {
-            const result: ProfileRefineResponse = await api.refinePreferences(refineMessage.trim());
+            const result: ProfileRefineResponse = await api.refinePreferences(refineMessage.trim(), undefined);
             setRefinePreview(result);
         } catch (e) {
             setRefineError(e instanceof Error ? e.message : 'Refine failed');

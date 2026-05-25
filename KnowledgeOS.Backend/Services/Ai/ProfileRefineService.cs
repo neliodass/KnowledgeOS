@@ -1,7 +1,9 @@
 using System.Text.Json;
+using KnowledgeOS.Backend.Data;
 using KnowledgeOS.Backend.DTOs.Users;
 using KnowledgeOS.Backend.Services.Abstractions;
 using KnowledgeOS.Backend.Services.Ai.Prompts;
+using Microsoft.EntityFrameworkCore;
 using OpenAI;
 using OpenAI.Chat;
 
@@ -12,16 +14,19 @@ public class ProfileRefineService : IProfileRefineService
     private readonly OpenAIClient _openAiClient;
     private readonly string _modelId;
     private readonly IUserPreferencesService _preferencesService;
+    private readonly AppDbContext _context;
     private readonly ILogger<ProfileRefineService> _logger;
 
     public ProfileRefineService(
         OpenAIClient openAiClient,
         IConfiguration configuration,
         IUserPreferencesService preferencesService,
+        AppDbContext context,
         ILogger<ProfileRefineService> logger)
     {
         _openAiClient = openAiClient;
         _preferencesService = preferencesService;
+        _context = context;
         _logger = logger;
         _modelId = configuration["Ai:Model_1"]
                    ?? configuration.GetSection("Ai").GetChildren()
@@ -29,11 +34,17 @@ public class ProfileRefineService : IProfileRefineService
                    ?? throw new InvalidOperationException("No AI model configured for profile refine (Ai:Model_1).");
     }
 
-    public async Task<ProfileRefineResponseDto> RefineAsync(string userId, string message,
+    public async Task<ProfileRefineResponseDto> RefineAsync(
+        string userId,
+        string message,
+        Guid? resourceId = null,
         CancellationToken cancellationToken = default)
     {
         var current = await _preferencesService.GetPreferencesAsync(userId);
-        var (systemPrompt, userPrompt) = ProfileRefinePromptBuilder.Build(current, message);
+        var scoringContext = resourceId.HasValue
+            ? await BuildScoringContextAsync(resourceId.Value, message, cancellationToken)
+            : null;
+        var (systemPrompt, userPrompt) = ProfileRefinePromptBuilder.Build(current, message, scoringContext);
         var options = BuildOptions();
 
         var raw = await CallAiWithRetryAsync(systemPrompt, userPrompt, options, cancellationToken);
@@ -89,6 +100,26 @@ public class ProfileRefineService : IProfileRefineService
             }
 
         throw new InvalidOperationException("Profile refine AI failed after retries.");
+    }
+
+    private async Task<ScoringFeedbackContextDto?> BuildScoringContextAsync(
+        Guid resourceId,
+        string userComment,
+        CancellationToken cancellationToken)
+    {
+        var resource = await _context.Resources
+            .Include(r => r.InboxMeta)
+            .FirstOrDefaultAsync(r => r.Id == resourceId, cancellationToken);
+
+        if (resource == null)
+            return null;
+
+        return new ScoringFeedbackContextDto(
+            resource.CorrectedTitle ?? resource.Title,
+            resource.Url,
+            resource.InboxMeta?.AiScore,
+            resource.InboxMeta?.AiVerdict,
+            userComment);
     }
 
     private static ChatCompletionOptions BuildOptions()

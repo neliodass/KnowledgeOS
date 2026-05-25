@@ -56,7 +56,8 @@ public class PreferencesController : ControllerBase
 
         try
         {
-            var result = await _profileRefineService.RefineAsync(userId, request.Message, cancellationToken);
+            var result = await _profileRefineService.RefineAsync(
+                userId, request.Message, request.ResourceId, cancellationToken);
             return Ok(result);
         }
         catch (Exception ex)

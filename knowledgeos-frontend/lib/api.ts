@@ -122,10 +122,22 @@ export const api = {
     getPreferences: () => fetchWithAuth('/preferences'),
     updatePreferences: (body: unknown) =>
         fetchWithAuth('/preferences', { method: 'PUT', body: JSON.stringify(body) }),
-    refinePreferences: async (message: string) => {
+    submitScoringFeedback: async (resourceId: string, comment: string) => {
+        const res = await fetchWithAuth(`/resources/${resourceId}/scoring-feedback`, {
+            method: 'POST',
+            body: JSON.stringify({ comment }),
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error((err as { message?: string }).message ?? 'Failed to save feedback');
+        }
+        return res.json();
+    },
+
+    refinePreferences: async (message: string, resourceId?: string) => {
         const res = await fetchWithAuth('/preferences/refine', {
             method: 'POST',
-            body: JSON.stringify({ message }),
+            body: JSON.stringify({ message, resourceId: resourceId ?? null }),
         });
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
