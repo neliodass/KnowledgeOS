@@ -212,6 +212,16 @@ JWT_KEY=your_min_32_char_secret_here
 OPENROUTER_API_KEY=sk-or-...
 ```
 
+#### Backend tests
+
+From `KnowledgeOS.Backend/`:
+
+```bash
+dotnet test ../KnowledgeOS.Backend.Tests/KnowledgeOS.Backend.Tests.csproj
+```
+
+Covers deterministic AI scoring (`ScoreCalculator`, tier parsing, response parser, transcript excerpts).
+
 #### 2. Launch the Stack
 Run the following command to build and start all services:
 
