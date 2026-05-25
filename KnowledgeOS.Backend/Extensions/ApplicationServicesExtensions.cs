@@ -23,6 +23,7 @@ public static class ApplicationServicesExtensions
         services.AddScoped<IAiAnalysisJob, AiAnalysisJob>();
         services.AddScoped<IAiService, AiService>();
         services.AddScoped<IUserPreferencesService, UserPreferencesService>();
+        services.AddScoped<IProfileRefineService, ProfileRefineService>();
         services.AddScoped<IErrorRecoveryJob, ErrorRecoveryJob>();
         services.AddScoped<ICategoryService, CategoryService>();
 
