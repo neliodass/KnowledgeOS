@@ -1,4 +1,5 @@
 using KnowledgeOS.Backend.Constants;
+using KnowledgeOS.Backend.Entities.Feedback;
 using KnowledgeOS.Backend.Entities.Resources;
 using KnowledgeOS.Backend.Entities.Resources.ConcreteResources;
 using KnowledgeOS.Backend.Entities.Tagging;
@@ -39,6 +40,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 
     //Users stuff
     public DbSet<UserPreference> UserPreferences { get; set; }
+    public DbSet<ScoringFeedback> ScoringFeedbacks { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -81,13 +83,22 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<UserPreference>()
             .HasIndex(up => up.UserId)
             .IsUnique();
-        
+
+        modelBuilder.Entity<ScoringFeedback>()
+            .HasOne(f => f.Resource)
+            .WithMany()
+            .HasForeignKey(f => f.ResourceId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ScoringFeedback>()
+            .HasIndex(f => new { f.UserId, f.ResourceId, f.CreatedAt });
+
         //Filters
         
         //main entities
         modelBuilder.ApplyResourceOwnershipFilter<Resource>(_currentUserService);
         modelBuilder.ApplyResourceOwnershipFilter<Category>(_currentUserService);
-        modelBuilder.ApplyResourceOwnershipFilter<Category>(_currentUserService);
+        modelBuilder.ApplyResourceOwnershipFilter<ScoringFeedback>(_currentUserService);
         
         
         //dependent entities
