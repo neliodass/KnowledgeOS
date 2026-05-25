@@ -1,5 +1,5 @@
-import {InboxResource} from '@/lib/types';
-import {X, PlayCircle, Eye, Sparkles, Archive, Trash2, Database, ExternalLink, RefreshCw, Loader2} from 'lucide-react';
+import {InboxResource, ProfileRefineResponse} from '@/lib/types';
+import {X, PlayCircle, Eye, Sparkles, Archive, Trash2, Database, ExternalLink, RefreshCw, Loader2, MessageSquare} from 'lucide-react';
 import Image from "next/image";
 import Link from "next/link";
 import {useState} from "react";
@@ -17,6 +17,12 @@ interface InboxDetailModalProps {
 export function InboxDetailModal({resource, onClose, onArchive, onDelete, onPromote,onRetry}: InboxDetailModalProps) {
     const [isRetrying, setIsRetrying] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [showScoreFeedback, setShowScoreFeedback] = useState(false);
+    const [feedbackMessage, setFeedbackMessage] = useState('');
+    const [feedbackLoading, setFeedbackLoading] = useState(false);
+    const [feedbackError, setFeedbackError] = useState('');
+    const [refinePreview, setRefinePreview] = useState<ProfileRefineResponse | null>(null);
+    const [applyLoading, setApplyLoading] = useState(false);
     const isVideo = resource.resourceType === 'Video';
     const handleRetry = async () => {
         setIsRetrying(true);
@@ -32,6 +38,40 @@ export function InboxDetailModal({resource, onClose, onArchive, onDelete, onProm
             setIsRetrying(false);
         }
     };
+    const handleScoreFeedback = async () => {
+        if (!feedbackMessage.trim()) return;
+        setFeedbackLoading(true);
+        setFeedbackError('');
+        setRefinePreview(null);
+        try {
+            await api.submitScoringFeedback(resource.id, feedbackMessage.trim());
+            const result: ProfileRefineResponse = await api.refinePreferences(
+                feedbackMessage.trim(),
+                resource.id
+            );
+            setRefinePreview(result);
+        } catch (e) {
+            setFeedbackError(e instanceof Error ? e.message : 'Profile update failed');
+        } finally {
+            setFeedbackLoading(false);
+        }
+    };
+
+    const handleApplyProfileFix = async () => {
+        if (!refinePreview?.hasChanges) return;
+        setApplyLoading(true);
+        try {
+            await api.updatePreferences(refinePreview.proposedPreferences);
+            setShowScoreFeedback(false);
+            setFeedbackMessage('');
+            setRefinePreview(null);
+        } catch (e) {
+            setFeedbackError(e instanceof Error ? e.message : 'Failed to save profile');
+        } finally {
+            setApplyLoading(false);
+        }
+    };
+
     const handleDelete = async () => {
         if (!window.confirm("Are you sure you want to move this item to trash?")) return;
 
@@ -138,6 +178,53 @@ export function InboxDetailModal({resource, onClose, onArchive, onDelete, onProm
                                         className="text-sm text-gray-300 leading-relaxed font-mono whitespace-pre-line">
                                         {resource.aiVerdict || "No detailed verdict available for this node."}
                                     </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowScoreFeedback(v => !v)}
+                                        className="text-[10px] font-bold text-tech-primary border border-tech-primary/50 px-2 py-1 hover:bg-tech-primary-dim flex items-center gap-1"
+                                    >
+                                        <MessageSquare className="w-3 h-3"/>
+                                        {showScoreFeedback ? 'HIDE_SCORE_FEEDBACK' : 'SCORE_DOESNT_FIT'}
+                                    </button>
+                                    {showScoreFeedback && (
+                                        <div className="border border-tech-border bg-black/40 p-4 space-y-3">
+                                            <textarea
+                                                className="w-full bg-black border border-tech-border p-2 text-xs text-gray-300 font-mono h-20 resize-none focus:outline-none focus:border-tech-primary"
+                                                spellCheck={false}
+                                                placeholder="Np. za wysoko — nie interesuje mnie polityka, to tylko clickbait..."
+                                                value={feedbackMessage}
+                                                onChange={e => setFeedbackMessage(e.target.value)}
+                                            />
+                                            <div className="flex flex-wrap gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleScoreFeedback}
+                                                    disabled={feedbackLoading || !feedbackMessage.trim()}
+                                                    className="text-[10px] font-bold text-tech-primary border border-tech-primary px-2 py-1 disabled:opacity-50"
+                                                >
+                                                    {feedbackLoading ? 'ANALYZING...' : 'FIX_MY_PROFILE'}
+                                                </button>
+                                                {refinePreview?.hasChanges && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleApplyProfileFix}
+                                                        disabled={applyLoading}
+                                                        className="text-[10px] font-bold bg-tech-primary text-black px-2 py-1 disabled:opacity-50"
+                                                    >
+                                                        {applyLoading ? 'SAVING...' : 'APPLY_PROFILE'}
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {feedbackError && (
+                                                <p className="text-[10px] text-red-400">{feedbackError}</p>
+                                            )}
+                                            {refinePreview && (
+                                                <p className="text-xs text-gray-400 leading-relaxed">
+                                                    {refinePreview.assistantSummary}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="border-l-2 border-tech-primary pl-6 space-y-4">
                                     <h4 className="text-xs font-bold text-tech-primary uppercase tracking-[0.2em] mb-2">
