@@ -4,6 +4,7 @@ using KnowledgeOS.Backend.Entities.Resources;
 using KnowledgeOS.Backend.Entities.Users;
 using KnowledgeOS.Backend.Services.Ai.Abstractions;
 using KnowledgeOS.Backend.Services.Ai.Prompts;
+using KnowledgeOS.Backend.Services.Ai.Embeddings;
 using KnowledgeOS.Backend.Services.Ai.Scoring;
 using OpenAI;
 using OpenAI.Chat;
@@ -14,14 +15,20 @@ public class OpenRouterProvider : IAiProvider
 {
     private readonly OpenAIClient _openAiClient;
     private readonly string _modelId;
+    private readonly RelevanceEmbeddingMatcher _relevanceEmbeddingMatcher;
     private readonly ILogger<OpenRouterProvider> _logger;
 
     public string Name => $"OpenRouter ({_modelId})";
 
-    public OpenRouterProvider(OpenAIClient openAiClient, string modelId, ILogger<OpenRouterProvider> logger)
+    public OpenRouterProvider(
+        OpenAIClient openAiClient,
+        string modelId,
+        RelevanceEmbeddingMatcher relevanceEmbeddingMatcher,
+        ILogger<OpenRouterProvider> logger)
     {
         _openAiClient = openAiClient;
         _modelId = modelId;
+        _relevanceEmbeddingMatcher = relevanceEmbeddingMatcher;
         _logger = logger;
     }
 
@@ -29,18 +36,26 @@ public class OpenRouterProvider : IAiProvider
         string? extraContext = null)
     {
         var hasSnippet = !string.IsNullOrWhiteSpace(extraContext);
+        var embeddingHint = await _relevanceEmbeddingMatcher.TryMatchAsync(
+            userPreferences, resource, extraContext);
+
         var options = BuildInboxOptions();
-        var (systemPrompt, userPrompt) = InboxScoringPromptBuilder.Build(resource, userPreferences, extraContext);
+        var (systemPrompt, userPrompt) =
+            InboxScoringPromptBuilder.Build(resource, userPreferences, extraContext, embeddingHint);
 
         var content = await CallAiWithRetryAsync(systemPrompt, userPrompt, options);
         var dto = AiAnalysisResponseParser.ParseInbox(content);
+
+        if (embeddingHint != null)
+            dto.Relevance = RelevanceTierHarmonizer.HarmonizeLlmRelevance(dto.Relevance, embeddingHint);
+
         var tiers = dto.ToTiers(hasSnippet);
         var score = ScoreCalculator.Compute(tiers);
 
         _logger.LogInformation(
-            "Inbox scoring {ResourceId} model={Model}: quality={Quality} relevance={Relevance} avoidance={Avoidance} score={Score} metadataOnly={MetadataOnly}",
+            "Inbox scoring {ResourceId} model={Model}: quality={Quality} relevance={Relevance} avoidance={Avoidance} score={Score} metadataOnly={MetadataOnly} embedSim={EmbedSim}",
             resource.Id, _modelId, tiers.IntrinsicQuality, tiers.Relevance, tiers.MatchesAvoidance, score,
-            tiers.ScoredFromMetadataOnly);
+            tiers.ScoredFromMetadataOnly, embeddingHint?.Similarity);
 
         return new InboxAnalysisResult(
             dto.CorrectedTitle!,
