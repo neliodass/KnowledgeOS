@@ -2,6 +2,7 @@ using KnowledgeOS.Backend.Data;
 using KnowledgeOS.Backend.DTOs.Users;
 using KnowledgeOS.Backend.Entities.Users;
 using KnowledgeOS.Backend.Services.Abstractions;
+using KnowledgeOS.Backend.Services.Ai.Embeddings;
 using Microsoft.EntityFrameworkCore;
 
 namespace KnowledgeOS.Backend.Services;
@@ -9,10 +10,12 @@ namespace KnowledgeOS.Backend.Services;
 public class UserPreferencesService : IUserPreferencesService
 {
     private readonly AppDbContext _context;
+    private readonly IProfileEmbeddingSyncService _profileEmbeddingSync;
 
-    public UserPreferencesService(AppDbContext context)
+    public UserPreferencesService(AppDbContext context, IProfileEmbeddingSyncService profileEmbeddingSync)
     {
         _context = context;
+        _profileEmbeddingSync = profileEmbeddingSync;
     }
 
     public async Task<UserPreferenceDto> GetPreferencesAsync(string userId)
@@ -56,5 +59,6 @@ public class UserPreferencesService : IUserPreferencesService
         }
 
         await _context.SaveChangesAsync();
+        await _profileEmbeddingSync.SyncForUserAsync(userId);
     }
 }

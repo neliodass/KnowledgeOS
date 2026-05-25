@@ -5,6 +5,7 @@ using KnowledgeOS.Backend.Services;
 using KnowledgeOS.Backend.Services.Abstractions;
 using KnowledgeOS.Backend.Services.Ai;
 using KnowledgeOS.Backend.Services.Ai.Abstractions;
+using KnowledgeOS.Backend.Services.Ai.Embeddings;
 using KnowledgeOS.Backend.Services.Content;
 using OpenAI;
 
@@ -25,6 +26,8 @@ public static class ApplicationServicesExtensions
         services.AddScoped<IUserPreferencesService, UserPreferencesService>();
         services.AddScoped<IProfileRefineService, ProfileRefineService>();
         services.AddScoped<IScoringFeedbackService, ScoringFeedbackService>();
+        services.AddScoped<IEmbeddingService, OpenRouterEmbeddingService>();
+        services.AddScoped<IProfileEmbeddingSyncService, ProfileEmbeddingSyncService>();
         services.AddScoped<IErrorRecoveryJob, ErrorRecoveryJob>();
         services.AddScoped<ICategoryService, CategoryService>();
 
