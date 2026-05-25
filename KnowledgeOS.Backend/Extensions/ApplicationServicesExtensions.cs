@@ -24,6 +24,7 @@ public static class ApplicationServicesExtensions
         services.AddScoped<IAiService, AiService>();
         services.AddScoped<IUserPreferencesService, UserPreferencesService>();
         services.AddScoped<IProfileRefineService, ProfileRefineService>();
+        services.AddScoped<IScoringFeedbackService, ScoringFeedbackService>();
         services.AddScoped<IErrorRecoveryJob, ErrorRecoveryJob>();
         services.AddScoped<ICategoryService, CategoryService>();
 

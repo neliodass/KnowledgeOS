@@ -1,3 +1,4 @@
+using KnowledgeOS.Backend.DTOs.Feedback;
 using KnowledgeOS.Backend.DTOs.Resources;
 using KnowledgeOS.Backend.Services.Abstractions;
 using Microsoft.AspNetCore.Authorization;
@@ -11,11 +12,16 @@ namespace KnowledgeOS.Backend.Controllers;
 public class ResourcesController : ControllerBase
 {
     private readonly IResourceService _resourceService;
+    private readonly IScoringFeedbackService _scoringFeedbackService;
     private readonly ICurrentUserService _currentUserService;
 
-    public ResourcesController(IResourceService resourceService, ICurrentUserService currentUserService)
+    public ResourcesController(
+        IResourceService resourceService,
+        IScoringFeedbackService scoringFeedbackService,
+        ICurrentUserService currentUserService)
     {
         _resourceService = resourceService;
+        _scoringFeedbackService = scoringFeedbackService;
         _currentUserService = currentUserService;
     }
 
@@ -58,6 +64,25 @@ public class ResourcesController : ControllerBase
         {
             await _resourceService.RetryProcessingAsync(id, userId!);
             return Accepted();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
+    [HttpPost("{id}/scoring-feedback")]
+    public async Task<ActionResult<ScoringFeedbackResponseDto>> SubmitScoringFeedback(
+        Guid id,
+        [FromBody] ScoringFeedbackRequestDto request)
+    {
+        var userId = _currentUserService.UserId;
+        if (userId == null) return Unauthorized();
+
+        try
+        {
+            var result = await _scoringFeedbackService.CreateAsync(userId, id, request.Comment);
+            return Ok(result);
         }
         catch (KeyNotFoundException)
         {
