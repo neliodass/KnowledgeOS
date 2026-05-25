@@ -122,6 +122,17 @@ export const api = {
     getPreferences: () => fetchWithAuth('/preferences'),
     updatePreferences: (body: unknown) =>
         fetchWithAuth('/preferences', { method: 'PUT', body: JSON.stringify(body) }),
+    refinePreferences: async (message: string) => {
+        const res = await fetchWithAuth('/preferences/refine', {
+            method: 'POST',
+            body: JSON.stringify({ message }),
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error((err as { message?: string }).message ?? 'Profile refine failed');
+        }
+        return res.json();
+    },
 
     // --- Profile ---
     getMe: () => fetchWithAuth('/auth/me'),

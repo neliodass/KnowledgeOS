@@ -44,6 +44,13 @@ export interface UserPreferences {
     hobbies?: string;
     topicsToAvoid?: string;
 }
+
+export interface ProfileRefineResponse {
+    assistantSummary: string;
+    proposedPreferences: UserPreferences;
+    changedFields: string[];
+    hasChanges: boolean;
+}
 export interface Category {
     id: string;
     name: string;

@@ -72,5 +72,6 @@ git push -u origin HEAD
 |---|--------|
 | A1 | done |
 | A2 | done |
-| A3 | in progress |
-| A4–C4 | pending |
+| A3 | done |
+| A4 | done |
+| B1–C4 | pending |

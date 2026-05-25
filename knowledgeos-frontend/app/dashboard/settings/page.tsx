@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import {
     Key, Save, FolderOpen, Plus, Trash2, Edit2,
-    Brain, Target, AlertTriangle, ShieldCheck, Folder, Palette
+    Brain, Target, AlertTriangle, ShieldCheck, Folder, Palette, MessageSquare
 } from 'lucide-react';
+import type { ProfileRefineResponse } from '@/lib/types';
 import { useTheme, Theme } from '@/lib/ThemeProvider';
 
 interface Category {
@@ -34,6 +35,11 @@ export default function SettingsPage() {
         topicsToAvoid: ''
     });
     const [prefLoading, setPrefLoading] = useState(false);
+
+    const [refineMessage, setRefineMessage] = useState('');
+    const [refineLoading, setRefineLoading] = useState(false);
+    const [refineError, setRefineError] = useState('');
+    const [refinePreview, setRefinePreview] = useState<ProfileRefineResponse | null>(null);
 
     const [nickname, setNickname] = useState('');
     const [nickLoading, setNickLoading] = useState(false);
@@ -100,6 +106,45 @@ export default function SettingsPage() {
         } catch(e) { console.error(e); }
         finally { setNickLoading(false); }
     };
+
+    const handleRefineProfile = async () => {
+        if (!refineMessage.trim()) return;
+        setRefineLoading(true);
+        setRefineError('');
+        setRefinePreview(null);
+        try {
+            const result: ProfileRefineResponse = await api.refinePreferences(refineMessage.trim());
+            setRefinePreview(result);
+        } catch (e) {
+            setRefineError(e instanceof Error ? e.message : 'Refine failed');
+        } finally {
+            setRefineLoading(false);
+        }
+    };
+
+    const handleApplyRefine = async () => {
+        if (!refinePreview?.hasChanges) return;
+        const proposed = refinePreview.proposedPreferences;
+        setPreferences({
+            professionalContext: proposed.professionalContext ?? '',
+            learningGoals: proposed.learningGoals ?? '',
+            hobbies: proposed.hobbies ?? '',
+            topicsToAvoid: proposed.topicsToAvoid ?? '',
+        });
+        setPrefLoading(true);
+        try {
+            await api.updatePreferences(proposed);
+            setRefinePreview(null);
+            setRefineMessage('');
+        } catch (e) {
+            console.error(e);
+            setRefineError('Failed to save refined profile');
+        } finally {
+            setPrefLoading(false);
+        }
+    };
+
+    const isFieldChanged = (field: string) => refinePreview?.changedFields.includes(field) ?? false;
 
     const handleSavePreferences = async () => {
         setPrefLoading(true);
@@ -283,6 +328,68 @@ export default function SettingsPage() {
             </section>
 
             <section className="flex flex-col gap-4">
+                <div className="border-b border-tech-border pb-2">
+                    <h3 className="text-xs font-bold text-tech-primary uppercase tracking-tighter flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4" />
+                        [PROFILE_REFINE]
+                    </h3>
+                    <p className="text-[10px] text-gray-500 mt-1">
+                        Opisz, co się u Ciebie zmieniło — AI zaproponuje aktualizację profilu (podgląd przed zapisem).
+                    </p>
+                </div>
+                <div className="border border-tech-border bg-tech-surface p-6 flex flex-col gap-4">
+                    <textarea
+                        className="w-full bg-black border border-tech-border p-3 text-xs leading-relaxed h-24 focus:outline-none focus:border-tech-primary text-gray-300 font-mono resize-none"
+                        spellCheck={false}
+                        placeholder='Np. „Mniej polityki, więcej gotowania i podróży. Nie interesuje mnie już gaming.”'
+                        value={refineMessage}
+                        onChange={e => setRefineMessage(e.target.value)}
+                    />
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            onClick={handleRefineProfile}
+                            disabled={refineLoading || !refineMessage.trim()}
+                            className="text-[10px] font-bold text-tech-primary border border-tech-primary px-3 py-1.5 hover:bg-tech-primary hover:text-black transition-all disabled:opacity-50"
+                        >
+                            {refineLoading ? 'ANALYZING...' : 'PROPOSE_CHANGES'}
+                        </button>
+                        {refinePreview && (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={handleApplyRefine}
+                                    disabled={!refinePreview.hasChanges || prefLoading}
+                                    className="text-[10px] font-bold text-black bg-tech-primary px-3 py-1.5 hover:opacity-90 disabled:opacity-50"
+                                >
+                                    APPLY_TO_PROFILE
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setRefinePreview(null)}
+                                    className="text-[10px] font-bold text-gray-400 border border-tech-border px-3 py-1.5 hover:text-white"
+                                >
+                                    DISCARD
+                                </button>
+                            </>
+                        )}
+                    </div>
+                    {refineError && (
+                        <p className="text-[10px] text-red-400 font-bold">{refineError}</p>
+                    )}
+                    {refinePreview && (
+                        <div className="border border-tech-primary/30 bg-black/50 p-4 space-y-2">
+                            <p className="text-[10px] text-tech-primary font-bold uppercase">AI summary</p>
+                            <p className="text-xs text-gray-300 leading-relaxed">{refinePreview.assistantSummary}</p>
+                            {!refinePreview.hasChanges && (
+                                <p className="text-[10px] text-gray-500 italic">No changes detected — try rephrasing.</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </section>
+
+            <section className="flex flex-col gap-4">
                 <div className="border-b border-tech-border pb-2 flex items-center justify-between">
                     <h3 className="text-xs font-bold text-tech-primary uppercase tracking-tighter flex items-center gap-2">
                         <Brain className="w-4 h-4" />
@@ -303,10 +410,10 @@ export default function SettingsPage() {
                             <span className="text-[10px] text-tech-text-muted uppercase font-bold">Professional Context</span>
                         </div>
                         <textarea
-                            className="w-full bg-black border border-tech-border p-3 text-xs leading-relaxed h-28 focus:outline-none focus:border-tech-primary text-gray-300 font-mono resize-none transition-colors"
+                            className={`w-full bg-black border p-3 text-xs leading-relaxed h-28 focus:outline-none focus:border-tech-primary text-gray-300 font-mono resize-none transition-colors ${isFieldChanged('professionalContext') ? 'border-tech-primary' : 'border-tech-border'}`}
                             spellCheck="false"
                             placeholder="Describe your role and expertise..."
-                            value={preferences.professionalContext}
+                            value={refinePreview?.proposedPreferences.professionalContext ?? preferences.professionalContext}
                             onChange={e => setPreferences({...preferences, professionalContext: e.target.value})}
                         />
                     </div>
@@ -319,7 +426,7 @@ export default function SettingsPage() {
                             className="w-full bg-black border border-tech-border p-3 text-xs leading-relaxed h-28 focus:outline-none focus:border-tech-primary text-gray-300 font-mono resize-none transition-colors"
                             spellCheck="false"
                             placeholder="What do you want to master?"
-                            value={preferences.learningGoals}
+                            value={refinePreview?.proposedPreferences.learningGoals ?? preferences.learningGoals}
                             onChange={e => setPreferences({...preferences, learningGoals: e.target.value})}
                         />
                     </div>
@@ -331,7 +438,7 @@ export default function SettingsPage() {
                         <textarea
                             className="w-full bg-black border border-tech-border p-3 text-xs leading-relaxed h-28 focus:outline-none focus:border-tech-primary text-gray-300 font-mono resize-none transition-colors"
                             placeholder="What do you do for fun? (Help AI find creative analogies)"
-                            value={preferences.hobbies}
+                            value={refinePreview?.proposedPreferences.hobbies ?? preferences.hobbies}
                             onChange={e => setPreferences({...preferences, hobbies: e.target.value})}
                         />
                     </div>
@@ -344,7 +451,7 @@ export default function SettingsPage() {
                             className="w-full bg-black border border-tech-border p-3 text-xs leading-relaxed h-28 focus:outline-none focus:border-tech-primary text-gray-300 font-mono resize-none transition-colors"
                             spellCheck="false"
                             placeholder="Content you want to filter out..."
-                            value={preferences.topicsToAvoid}
+                            value={refinePreview?.proposedPreferences.topicsToAvoid ?? preferences.topicsToAvoid}
                             onChange={e => setPreferences({...preferences, topicsToAvoid: e.target.value})}
                         />
                     </div>
