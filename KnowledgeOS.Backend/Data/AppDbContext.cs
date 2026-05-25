@@ -8,6 +8,7 @@ using KnowledgeOS.Backend.Extensions;
 using KnowledgeOS.Backend.Services.Abstractions;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Pgvector;
 
 namespace KnowledgeOS.Backend.Data;
 
@@ -83,6 +84,11 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<UserPreference>()
             .HasIndex(up => up.UserId)
             .IsUnique();
+
+        modelBuilder.HasPostgresExtension("vector");
+        modelBuilder.Entity<UserPreference>()
+            .Property(p => p.ProfileEmbedding)
+            .HasColumnType("vector(1536)");
 
         modelBuilder.Entity<ScoringFeedback>()
             .HasOne(f => f.Resource)

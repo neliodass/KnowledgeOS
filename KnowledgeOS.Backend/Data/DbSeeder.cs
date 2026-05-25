@@ -28,7 +28,7 @@ public static class DbSeeder
 
     public static async Task SeedAdminUserAsync(IServiceProvider serviceProvider)
     {
-        var userManager = serviceProvider.GetRequiredService<UserManager<IdentityUser>>();
+        var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
         var adminEmail = "admin@knowledgeos.local";
         var adminUser = await userManager.FindByEmailAsync(adminEmail);

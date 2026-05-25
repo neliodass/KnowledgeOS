@@ -176,6 +176,7 @@ knowledgeos-frontend/
 - **Global query filters** — all queries are automatically scoped to `CurrentUser.UserId`
 - **AI provider abstraction** — multiple models registered as `IAiProvider` (`Model_*` config keys only), `AiService` tries them in order with fallback
 - **Deterministic inbox score** — `ScoreCalculator` maps `intrinsicQuality` + `relevance` + avoidance to 0–100; prompts live in `Services/Ai/Prompts/`
+- **Profile embeddings (pgvector)** — OpenRouter embeddings on preference save; cosine hint harmonizes LLM relevance; inbox items re-scored after profile update (batch of 20)
 - **Next.js App Router** — full server/client component split, JWT stored in `localStorage`, all API calls typed via shared `lib/types.ts`
 
 ---

@@ -32,6 +32,8 @@ services:
       Ai__Model_2: ${AI_MODEL_2:-meta-llama/llama-3.3-70b-instruct:free}
       Ai__Model_3: ${AI_MODEL_3:-mistralai/mistral-small-3.1-24b-instruct:free}
       Ai__OpenRouterKey: ${OPENROUTER_API_KEY}
+      Ai__EmbeddingModel: ${AI_EMBEDDING_MODEL:-openai/text-embedding-3-small}
+      Ai__EmbeddingDimensions: ${AI_EMBEDDING_DIMENSIONS:-1536}
     depends_on:
       - db
 
