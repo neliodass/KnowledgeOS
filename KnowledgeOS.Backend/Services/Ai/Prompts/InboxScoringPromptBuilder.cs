@@ -2,6 +2,7 @@ using System.Text.Json;
 using KnowledgeOS.Backend.Entities.Resources;
 using KnowledgeOS.Backend.Entities.Resources.ConcreteResources;
 using KnowledgeOS.Backend.Entities.Users;
+using KnowledgeOS.Backend.Services.Ai.Embeddings;
 
 namespace KnowledgeOS.Backend.Services.Ai.Prompts;
 
@@ -10,7 +11,8 @@ public static class InboxScoringPromptBuilder
     public static (string SystemPrompt, string UserPrompt) Build(
         Resource resource,
         UserPreference? prefs,
-        string? contentSnippet)
+        string? contentSnippet,
+        EmbeddingRelevanceHint? embeddingHint = null)
     {
         var profile = AiProfileDtoFactory.From(prefs);
         var hasSnippet = !string.IsNullOrWhiteSpace(contentSnippet);
@@ -54,6 +56,8 @@ public static class InboxScoringPromptBuilder
             Example B — shallow + learn + none: AI tools listicle with hype title, no real teaching. substanceDepth shallow, contentIntent learn, relevance none.
 
             Example C — insufficient_data: contentSnippet null. substanceDepth insufficient_data, contentIntent mixed, relevance none, cautious verdict.
+
+            If embeddingRelevanceHint is present, treat it as a semantic similarity signal (not override substanceDepth). Use it to sanity-check relevance.
             """;
 
         var resourcePayload = BuildResourcePayload(resource);
@@ -69,7 +73,14 @@ public static class InboxScoringPromptBuilder
             },
             resource = resourcePayload,
             contentSnippet = hasSnippet ? contentSnippet : null,
-            hasContentSnippet = hasSnippet
+            hasContentSnippet = hasSnippet,
+            embeddingRelevanceHint = embeddingHint == null
+                ? null
+                : new
+                {
+                    suggestedRelevance = embeddingHint.SuggestedTier.ToString().ToLowerInvariant(),
+                    similarity = Math.Round(embeddingHint.Similarity, 3)
+                }
         };
 
         var userPrompt = JsonSerializer.Serialize(userPayload, new JsonSerializerOptions { WriteIndented = false });

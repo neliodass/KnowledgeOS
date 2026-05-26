@@ -5,6 +5,7 @@ using KnowledgeOS.Backend.Services;
 using KnowledgeOS.Backend.Services.Abstractions;
 using KnowledgeOS.Backend.Services.Ai;
 using KnowledgeOS.Backend.Services.Ai.Abstractions;
+using KnowledgeOS.Backend.Services.Ai.Embeddings;
 using KnowledgeOS.Backend.Services.Content;
 using OpenAI;
 
@@ -25,6 +26,10 @@ public static class ApplicationServicesExtensions
         services.AddScoped<IUserPreferencesService, UserPreferencesService>();
         services.AddScoped<IProfileRefineService, ProfileRefineService>();
         services.AddScoped<IScoringFeedbackService, ScoringFeedbackService>();
+        services.AddScoped<IEmbeddingService, OpenRouterEmbeddingService>();
+        services.AddScoped<IProfileEmbeddingSyncService, ProfileEmbeddingSyncService>();
+        services.AddScoped<RelevanceEmbeddingMatcher>();
+        services.AddScoped<IInboxReanalysisScheduler, InboxReanalysisScheduler>();
         services.AddScoped<IErrorRecoveryJob, ErrorRecoveryJob>();
         services.AddScoped<ICategoryService, CategoryService>();
 
@@ -58,7 +63,8 @@ public static class ApplicationServicesExtensions
             {
                 var client = sp.GetRequiredService<OpenAIClient>();
                 var logger = sp.GetRequiredService<ILogger<OpenRouterProvider>>();
-                return new OpenRouterProvider(client, modelId, logger);
+                var matcher = sp.GetRequiredService<RelevanceEmbeddingMatcher>();
+                return new OpenRouterProvider(client, modelId, matcher, logger);
             });
         }
 
