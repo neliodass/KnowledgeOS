@@ -1,5 +1,5 @@
 import { InboxResource } from '@/lib/types';
-import { PlayCircle, Archive, FileText, Mic, Hash, LucideIcon, ExternalLink } from 'lucide-react';
+import { PlayCircle, Archive, ExternalLink } from 'lucide-react';
 import Image from "next/image";
 import { api } from "@/lib/api";
 import { useState } from "react";
@@ -7,6 +7,7 @@ import Link from "next/link";
 import { InboxAxisBars } from '@/components/InboxAxisBars';
 import { InboxProcessingIndicator } from '@/components/InboxProcessingIndicator';
 import { hasInboxAxes } from '@/lib/inboxTiers';
+import { getFaviconUrl, getResourceTypeConfig } from '@/lib/resourceCardUtils';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,53 +19,10 @@ interface InboxCardProps {
     onClick: () => void;
 }
 
-interface ResourceTypeConfig {
-    icon: LucideIcon;
-    label: string;
-    hasBigPreview: boolean;
-    previewHeightClass: string;
-}
-
-const RESOURCE_CONFIG: Record<string, ResourceTypeConfig> = {
-    Video: {
-        icon: PlayCircle,
-        label: 'Wideo',
-        hasBigPreview: true,
-        previewHeightClass: 'h-40',
-    },
-    Article: {
-        icon: FileText,
-        label: 'Artykuł',
-        hasBigPreview: true,
-        previewHeightClass: 'h-40',
-    },
-    Podcast: {
-        icon: Mic,
-        label: 'Podcast',
-        hasBigPreview: true,
-        previewHeightClass: 'h-40',
-    },
-    Default: {
-        icon: Hash,
-        label: 'Link',
-        hasBigPreview: false,
-        previewHeightClass: 'h-40',
-    }
-};
-
-function getFaviconUrl(url: string) {
-    try {
-        const domain = new URL(url).hostname;
-        return `https://icons.duckduckgo.com/ip3/${domain}.ico`;
-    } catch {
-        return null;
-    }
-}
-
 export function InboxCard({ resource, onArchive, onClick }: InboxCardProps) {
     const [isArchiving, setIsArchiving] = useState(false);
 
-    const config = RESOURCE_CONFIG[resource.resourceType] || RESOURCE_CONFIG.Default;
+    const config = getResourceTypeConfig(resource.resourceType);
     const TypeIcon = config.icon;
     const faviconUrl = getFaviconUrl(resource.url);
     const showAxes = hasInboxAxes(resource);
