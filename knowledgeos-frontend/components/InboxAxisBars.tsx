@@ -1,5 +1,7 @@
 import { InboxResource } from '@/lib/types';
 import { intentAxis, relevanceAxis, substanceAxis } from '@/lib/inboxTiers';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 
 interface InboxAxisBarsProps {
     resource: Pick<InboxResource, 'substanceDepth' | 'contentIntent' | 'relevance' | 'takeaway' | 'scoredFromMetadataOnly'>;
@@ -18,15 +20,10 @@ function AxisRow({
     return (
         <div className={compact ? 'space-y-0.5' : 'space-y-1'}>
             <div className="flex justify-between items-baseline gap-2">
-                <span className="text-[10px] text-gray-500">{title}</span>
-                <span className="text-[10px] text-gray-300 truncate">{axis.label}</span>
+                <span className="text-[11px] text-slate-500">{title}</span>
+                <span className="text-[11px] text-slate-700 truncate">{axis.label}</span>
             </div>
-            <div className="h-1 bg-tech-border/60 rounded-full overflow-hidden">
-                <div
-                    className="h-full bg-tech-primary/80 rounded-full transition-all"
-                    style={{ width: `${Math.max(axis.fillPercent, 4)}%` }}
-                />
-            </div>
+            <Progress value={Math.max(axis.fillPercent, 4)} className="h-1.5 bg-slate-200" />
         </div>
     );
 }
@@ -39,13 +36,15 @@ export function InboxAxisBars({ resource, compact }: InboxAxisBarsProps) {
     return (
         <div className={compact ? 'space-y-2' : 'space-y-2.5'}>
             {resource.takeaway && (
-                <p className="text-xs text-gray-300 leading-snug">{resource.takeaway}</p>
+                <Badge variant="secondary" className="rounded-md text-[11px] font-medium">
+                    {resource.takeaway}
+                </Badge>
             )}
             <AxisRow title="Głębia" axis={substance} compact={compact} />
             <AxisRow title="Charakter" axis={intent} compact={compact} />
             <AxisRow title="Dla Ciebie" axis={relevance} compact={compact} />
             {resource.scoredFromMetadataOnly && (
-                <p className="text-[10px] text-gray-600">Ocena na podstawie metadanych — brak fragmentu treści.</p>
+                <p className="text-[11px] text-slate-500">Ocena na podstawie metadanych — brak fragmentu treści.</p>
             )}
         </div>
     );
