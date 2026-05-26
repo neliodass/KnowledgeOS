@@ -128,9 +128,7 @@ export default function Dashboard() {
                         No pending items in stream.
                     </div>
                 ) : (
-                    inboxItems.slice(0, 3)
-                        .sort((a, b) => (b.aiScore ?? 0) - (a.aiScore ?? 0))
-                        .map(item => (
+                    inboxItems.slice(0, 3).map(item => (
                             <InboxCard
                                 key={item.id}
                                 resource={item}

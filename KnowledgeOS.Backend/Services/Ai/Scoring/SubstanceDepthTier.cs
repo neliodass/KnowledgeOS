@@ -1,8 +1,9 @@
 namespace KnowledgeOS.Backend.Services.Ai.Scoring;
 
-public enum IntrinsicQualityTier
+public enum SubstanceDepthTier
 {
-    High,
-    Low,
+    Deep,
+    Moderate,
+    Shallow,
     InsufficientData
 }

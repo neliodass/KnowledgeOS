@@ -1,6 +1,7 @@
 using System.Text.Json;
 using KnowledgeOS.Backend.Data;
 using KnowledgeOS.Backend.DTOs.Users;
+using KnowledgeOS.Backend.Services;
 using KnowledgeOS.Backend.Services.Abstractions;
 using KnowledgeOS.Backend.Services.Ai.Prompts;
 using Microsoft.EntityFrameworkCore;
@@ -114,11 +115,16 @@ public class ProfileRefineService : IProfileRefineService
         if (resource == null)
             return null;
 
+        var meta = resource.InboxMeta;
         return new ScoringFeedbackContextDto(
             resource.CorrectedTitle ?? resource.Title,
             resource.Url,
-            resource.InboxMeta?.AiScore,
-            resource.InboxMeta?.AiVerdict,
+            meta?.SubstanceDepth,
+            meta?.ContentIntent,
+            meta?.Relevance,
+            meta?.Takeaway,
+            InboxMetadataMapper.GetEffectiveSortPriority(meta),
+            meta?.AiVerdict,
             userComment);
     }
 

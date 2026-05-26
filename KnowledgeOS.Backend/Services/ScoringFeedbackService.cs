@@ -30,7 +30,9 @@ public class ScoringFeedbackService : IScoringFeedbackService
             UserId = userId,
             ResourceId = resourceId,
             Comment = comment.Trim(),
-            AiScoreAtFeedback = resource.InboxMeta?.AiScore,
+            AiScoreAtFeedback = resource.InboxMeta != null
+                ? InboxMetadataMapper.GetEffectiveSortPriority(resource.InboxMeta)
+                : null,
             AiVerdictAtFeedback = resource.InboxMeta?.AiVerdict,
             CreatedAt = DateTime.UtcNow
         };

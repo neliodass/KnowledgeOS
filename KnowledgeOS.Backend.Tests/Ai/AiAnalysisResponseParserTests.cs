@@ -8,9 +8,11 @@ public class AiAnalysisResponseParserTests
     private const string ValidInboxJson = """
         {
           "correctedTitle": "Better Title",
-          "intrinsicQuality": "high",
+          "substanceDepth": "deep",
+          "contentIntent": "entertain",
           "relevance": "hobby",
           "matchesAvoidance": false,
+          "takeaway": "Technika w kuchni · Rozrywka",
           "verdict": "Hobby match because of substantive content.",
           "summary": "A long enough summary of the resource content for testing.",
           "suggestedTags": ["cooking", "technique", "recipe"]
@@ -33,7 +35,7 @@ public class AiAnalysisResponseParserTests
 
         var dto = AiAnalysisResponseParser.ParseInbox(wrapped);
 
-        Assert.Equal("high", dto.IntrinsicQuality);
+        Assert.Equal("deep", dto.SubstanceDepth);
     }
 
     [Fact]

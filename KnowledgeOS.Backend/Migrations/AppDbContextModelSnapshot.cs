@@ -66,7 +66,7 @@ namespace KnowledgeOS.Backend.Migrations
                     b.Property<Guid>("ResourceId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("AiScore")
+                    b.Property<int?>("AiScore")
                         .HasColumnType("integer");
 
                     b.Property<string>("AiSummary")
@@ -77,6 +77,31 @@ namespace KnowledgeOS.Backend.Migrations
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
+
+                    b.Property<string>("ContentIntent")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<bool>("MatchesAvoidance")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Relevance")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<bool>("ScoredFromMetadataOnly")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("SortPriority")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SubstanceDepth")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Takeaway")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
 
                     b.HasKey("ResourceId");
 
