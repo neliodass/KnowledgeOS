@@ -7,6 +7,9 @@ import { VaultCard } from '@/components/VaultCard';
 import { VaultDetailModal } from '@/components/VaultDetailModal';
 import { Search, Loader2, Database, ChevronLeft, ChevronRight, AlertCircle, X } from 'lucide-react';
 import { getCategoryColor } from '@/lib/categoryColor';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 export default function VaultPage() {
     const [items, setItems] = useState<VaultResource[]>([]);
@@ -29,7 +32,7 @@ export default function VaultPage() {
     }, []);
 
     useEffect(() => {
-        loadData();
+        void loadData();
     }, [page, searchTerm, selectedCategoryId]);
 
     const loadData = async () => {
@@ -66,18 +69,15 @@ export default function VaultPage() {
 
     return (
         <div className="space-y-8 max-w-7xl mx-auto">
-
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-tech-border pb-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-tech-border pb-6">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-tech-primary/10 border border-tech-primary flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-lg bg-tech-primary-dim border border-tech-primary/30 flex items-center justify-center">
                         <Database className="w-6 h-6 text-tech-primary" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-white uppercase tracking-widest font-mono">
-                            Vault Database
-                        </h1>
-                        <p className="text-xs text-tech-primary font-mono uppercase tracking-widest">
-                            {totalItems} Nodes stored
+                        <h1 className="text-2xl font-semibold text-tech-foreground">Vault</h1>
+                        <p className="text-sm text-tech-foreground-muted">
+                            {totalItems} zapisanych zasobów
                         </p>
                     </div>
                 </div>
@@ -87,10 +87,10 @@ export default function VaultPage() {
                         type="text"
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
-                        placeholder="SEARCH_VAULT_NODES..."
-                        className="w-full bg-black/50 border border-tech-border p-3 pl-10 text-sm text-white focus:border-tech-primary focus:outline-none transition-colors font-mono uppercase placeholder:text-gray-600"
+                        placeholder="Szukaj po tytule lub tagach..."
+                        className="w-full rounded-md border border-tech-border bg-tech-surface p-3 pl-10 text-sm text-tech-foreground focus:border-tech-primary focus:outline-none transition-colors placeholder:text-tech-foreground-muted"
                     />
-                    <Search className="absolute left-3 top-3 w-4 h-4 text-tech-text-muted group-focus-within:text-tech-primary transition-colors" />
+                    <Search className="absolute left-3 top-3 w-4 h-4 text-tech-foreground-muted group-focus-within:text-tech-primary transition-colors" />
                     <button type="submit" className="hidden">Submit</button>
                 </form>
             </div>
@@ -98,14 +98,16 @@ export default function VaultPage() {
             {categories.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                     <button
+                        type="button"
                         onClick={() => handleCategorySelect(undefined)}
-                        className={`px-3 py-1 text-[10px] font-bold uppercase border transition-all ${
+                        className={cn(
+                            'rounded-md border px-3 py-1.5 text-xs font-medium transition-all',
                             !selectedCategoryId
-                                ? 'border-tech-primary bg-tech-primary-dim text-tech-primary'
-                                : 'border-tech-border text-gray-500 hover:border-tech-border hover:text-gray-300'
-                        }`}
+                                ? 'border-tech-primary/40 bg-tech-primary-dim text-tech-primary'
+                                : 'border-tech-border text-tech-foreground-muted hover:bg-tech-surface-hover hover:text-tech-foreground'
+                        )}
                     >
-                        All
+                        Wszystkie
                     </button>
                     {categories.map(cat => {
                         const c = getCategoryColor(cat.name);
@@ -113,15 +115,17 @@ export default function VaultPage() {
                         return (
                             <button
                                 key={cat.id}
+                                type="button"
                                 onClick={() => handleCategorySelect(cat.id)}
-                                className={`px-3 py-1 text-[10px] font-bold uppercase border transition-all flex items-center gap-1 ${
+                                className={cn(
+                                    'rounded-md border px-3 py-1.5 text-xs font-medium transition-all inline-flex items-center gap-1',
                                     isActive
                                         ? `${c.border} ${c.bg} ${c.text}`
-                                        : 'border-tech-border text-gray-500 hover:text-gray-300 hover:border-tech-border'
-                                }`}
+                                        : 'border-tech-border text-tech-foreground-muted hover:bg-tech-surface-hover hover:text-tech-foreground'
+                                )}
                             >
                                 {cat.name}
-                                {isActive && <X className="w-2.5 h-2.5" />}
+                                {isActive && <X className="w-3 h-3" />}
                             </button>
                         );
                     })}
@@ -130,19 +134,19 @@ export default function VaultPage() {
 
             <div className="min-h-[400px]">
                 {isLoading ? (
-                    <div className="h-64 flex flex-col items-center justify-center gap-4 border border-dashed border-tech-border">
+                    <Card className="h-64 flex flex-col items-center justify-center gap-4 border-dashed">
                         <Loader2 className="w-8 h-8 text-tech-primary animate-spin" />
-                        <span className="text-xs text-tech-text-muted uppercase font-bold tracking-widest">Fetching Data...</span>
-                    </div>
+                        <span className="text-sm text-tech-foreground-muted">Pobieram zasoby...</span>
+                    </Card>
                 ) : items.length === 0 ? (
-                    <div className="h-64 flex flex-col items-center justify-center gap-4 border border-dashed border-tech-border bg-tech-surface/30">
-                        <AlertCircle className="w-8 h-8 text-gray-500" />
-                        <span className="text-xs text-gray-500 uppercase font-bold tracking-widest">
-                            {searchTerm || selectedCategoryId ? 'NO_RESULTS_FOUND' : 'VAULT_IS_EMPTY'}
+                    <Card className="h-64 flex flex-col items-center justify-center gap-4 border-dashed">
+                        <AlertCircle className="w-8 h-8 text-tech-foreground-muted" />
+                        <span className="text-sm text-tech-foreground-muted">
+                            {searchTerm || selectedCategoryId ? 'Brak wyników' : 'Vault jest pusty'}
                         </span>
-                    </div>
+                    </Card>
                 ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         {items.map(item => (
                             <VaultCard
                                 key={item.id}
@@ -156,24 +160,26 @@ export default function VaultPage() {
 
             {!isLoading && totalPages > 1 && (
                 <div className="flex items-center justify-between border-t border-tech-border pt-6">
-                    <div className="text-xs text-tech-text-muted font-mono uppercase">
-                        Page <span className="text-tech-primary">{page}</span> of {totalPages}
+                    <div className="text-sm text-tech-foreground-muted">
+                        Strona <span className="text-tech-foreground font-medium">{page}</span> z {totalPages}
                     </div>
                     <div className="flex items-center gap-2">
-                        <button
+                        <Button
                             onClick={() => setPage(p => Math.max(1, p - 1))}
                             disabled={page === 1}
-                            className="p-2 border border-tech-border text-tech-text-muted hover:text-white hover:border-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                            variant="outline"
+                            size="icon"
                         >
                             <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                             disabled={page === totalPages}
-                            className="p-2 border border-tech-border text-tech-text-muted hover:text-white hover:border-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                            variant="outline"
+                            size="icon"
                         >
                             <ChevronRight className="w-4 h-4" />
-                        </button>
+                        </Button>
                     </div>
                 </div>
             )}
@@ -188,4 +194,3 @@ export default function VaultPage() {
         </div>
     );
 }
-

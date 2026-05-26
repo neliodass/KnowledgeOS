@@ -24,14 +24,13 @@ export default function RootLayout({
         <head>
             <script dangerouslySetInnerHTML={{ __html: `
                 try {
-                    var t = localStorage.getItem('theme') || 'cyber-green';
+                    var t = localStorage.getItem('theme') || 'clean-light';
                     document.documentElement.setAttribute('data-theme', t);
                 } catch(e) {}
             ` }} />
         </head>
-        <body className={`${spaceMono.className} bg-tech-bg text-tech-primary`}>
+        <body className={`${spaceMono.className} bg-tech-bg text-tech-foreground`}>
         <ThemeProvider>
-            <div className="scanline" />
             {children}
         </ThemeProvider>
         </body>

@@ -13,10 +13,18 @@ import {
     CheckCircle2,
     Link as LinkIcon,
     Search,
-    AlertCircle,
     Sparkles,
     Check
 } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+
+interface VaultReviewData {
+    aiSummary?: string;
+    suggestedCategoryName?: string;
+    categoryId?: string;
+}
 
 export default function AddResourcePage() {
     const router = useRouter();
@@ -26,22 +34,21 @@ export default function AddResourcePage() {
     const [url, setUrl] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [resourceId, setResourceId] = useState<string | null>(null);
-    const [analyzedData, setAnalyzedData] = useState<any>(null);
+    const [analyzedData, setAnalyzedData] = useState<VaultReviewData | null>(null);
 
     const [categories, setCategories] = useState<Category[]>([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
     const [searchCategory, setSearchCategory] = useState("");
-    const [isCategoriesLoading, setIsCategoriesLoading] = useState(false);
     const [isCreatingCategory, setIsCreatingCategory] = useState(false);
 
     useEffect(() => {
         if (mode === 'vault' && step === 'input') {
-            loadCategories();
+            void loadCategories();
         }
     }, [mode, step]);
 
     useEffect(() => {
-        let interval: NodeJS.Timeout;
+        let interval: ReturnType<typeof setInterval> | undefined;
 
         if (step === 'processing' && resourceId) {
             interval = setInterval(async () => {
@@ -55,10 +62,10 @@ export default function AddResourcePage() {
                             setSearchCategory(data.suggestedCategoryName);
                         }
                         setStep('review');
-                        clearInterval(interval);
+                        if (interval) clearInterval(interval);
                     }
-                } catch (error) {
-
+                } catch {
+                    // still processing
                 }
             }, 2500);
         }
@@ -69,13 +76,11 @@ export default function AddResourcePage() {
     }, [step, resourceId]);
 
     const loadCategories = async () => {
-        setIsCategoriesLoading(true);
         try {
             const data = await api.getCategories();
             setCategories(data);
         } catch (error) {
-        } finally {
-            setIsCategoriesLoading(false);
+            console.error(error);
         }
     };
 
@@ -88,6 +93,7 @@ export default function AddResourcePage() {
             setSelectedCategoryId(newCat.id);
             setSearchCategory("");
         } catch (error) {
+            console.error(error);
         } finally {
             setIsCreatingCategory(false);
         }
@@ -108,10 +114,10 @@ export default function AddResourcePage() {
                 setResourceId(res.id);
                 setStep('processing');
             } else {
-                router.push('/dashboard');
-                router.refresh();
+                router.push('/dashboard/inbox');
             }
         } catch (error) {
+            console.error(error);
         } finally {
             setIsLoading(false);
         }
@@ -125,8 +131,8 @@ export default function AddResourcePage() {
                 await api.updateVaultResourceCategory(resourceId, selectedCategoryId);
             }
             router.push('/dashboard/vault');
-            router.refresh();
         } catch (error) {
+            console.error(error);
         } finally {
             setIsLoading(false);
         }
@@ -139,207 +145,210 @@ export default function AddResourcePage() {
     const showCreateOption = searchCategory && !categories.some(c => c.name.toLowerCase() === searchCategory.toLowerCase());
 
     return (
-        <div className="w-full max-w-3xl mx-auto space-y-8 p-4 md:p-8">
-            <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-bold text-white tracking-tight uppercase font-mono">
-                    Input Protocol
-                </h1>
-                <p className="text-tech-text-muted text-sm font-mono">
-                    Ingest new data into KnowledgeOS.
-                </p>
-            </div>
-
+        <div className="w-full max-w-2xl mx-auto space-y-6">
             {step === 'input' && (
                 <>
-                    <div className="grid grid-cols-2 gap-4 p-1 bg-tech-surface border border-tech-border">
-                        <button
-                            onClick={() => setMode('inbox')}
-                            type="button"
-                            className={`flex items-center justify-center gap-3 py-4 transition-all duration-300 ${
-                                mode === 'inbox'
-                                    ? 'bg-tech-primary text-black font-bold shadow-[0_0_20px_rgba(163,255,191,0.3)]'
-                                    : 'text-tech-text-muted hover:text-white hover:bg-white/5'
-                            }`}
-                        >
-                            <Inbox className="w-5 h-5" />
-                            <span className="uppercase tracking-widest text-sm">Inbox</span>
-                        </button>
-                        <button
-                            onClick={() => setMode('vault')}
-                            type="button"
-                            className={`flex items-center justify-center gap-3 py-4 transition-all duration-300 ${
-                                mode === 'vault'
-                                    ? 'bg-tech-primary text-black font-bold shadow-[0_0_20px_rgba(163,255,191,0.3)]'
-                                    : 'text-tech-text-muted hover:text-white hover:bg-white/5'
-                            }`}
-                        >
-                            <Database className="w-5 h-5" />
-                            <span className="uppercase tracking-widest text-sm">Vault</span>
-                        </button>
-                    </div>
+                    <Card className="border-dashed">
+                        <CardHeader>
+                            <CardTitle className="text-tech-foreground">Gdzie zapisać link?</CardTitle>
+                            <CardDescription>
+                                Inbox — do ręcznej oceny. Vault — od razu do biblioteki.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={() => setMode('inbox')}
+                                    type="button"
+                                    className={`flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-all ${
+                                        mode === 'inbox'
+                                            ? 'border-tech-primary bg-tech-primary-dim text-tech-primary'
+                                            : 'border-dashed border-tech-border text-tech-foreground-muted hover:border-tech-primary/40 hover:text-tech-foreground'
+                                    }`}
+                                >
+                                    <Inbox className="w-4 h-4" />
+                                    Inbox
+                                </button>
+                                <button
+                                    onClick={() => setMode('vault')}
+                                    type="button"
+                                    className={`flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-all ${
+                                        mode === 'vault'
+                                            ? 'border-tech-primary bg-tech-primary-dim text-tech-primary'
+                                            : 'border-dashed border-tech-border text-tech-foreground-muted hover:border-tech-primary/40 hover:text-tech-foreground'
+                                    }`}
+                                >
+                                    <Database className="w-4 h-4" />
+                                    Vault
+                                </button>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                    <form onSubmit={handleInitialSubmit} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="space-y-3">
-                            <label className="text-xs font-bold text-tech-primary uppercase tracking-widest flex items-center gap-2">
-                                <LinkIcon className="w-3 h-3" />
-                                Target URL
-                            </label>
-                            <div className="relative group">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-tech-foreground">
+                                <LinkIcon className="w-4 h-4 text-tech-primary" />
+                                Adres URL
+                            </CardTitle>
+                            <CardDescription>Wklej link do artykułu, wideo lub strony.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <form onSubmit={handleInitialSubmit} className="space-y-4">
                                 <input
                                     type="url"
                                     value={url}
                                     onChange={(e) => setUrl(e.target.value)}
                                     placeholder="https://..."
                                     required
-                                    className="w-full bg-tech-bg border-2 border-tech-border p-4 text-white placeholder-gray-600 focus:outline-none focus:border-tech-primary focus:shadow-[0_0_30px_rgba(163,255,191,0.1)] transition-all font-mono"
+                                    className="w-full rounded-lg border border-tech-border bg-tech-surface px-4 py-3 text-sm text-tech-foreground placeholder:text-tech-foreground-muted focus:outline-none focus:ring-2 focus:ring-tech-primary/40"
                                 />
-                            </div>
-                        </div>
 
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="w-full bg-white text-black font-bold py-4 uppercase tracking-[0.2em] hover:bg-tech-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
-                        >
-                            {isLoading ? (
-                                <>
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                    Initiating...
-                                </>
-                            ) : (
-                                <>
-                                    Initiate Ingestion
-                                    <ArrowRight className="w-5 h-5" />
-                                </>
-                            )}
-                        </button>
-                    </form>
+                                <Button type="submit" disabled={isLoading} className="w-full">
+                                    {isLoading ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Dodawanie...
+                                        </>
+                                    ) : (
+                                        <>
+                                            Dodaj do {mode === 'inbox' ? 'Inbox' : 'Vault'}
+                                            <ArrowRight className="w-4 h-4" />
+                                        </>
+                                    )}
+                                </Button>
+                            </form>
+                        </CardContent>
+                    </Card>
                 </>
             )}
 
             {step === 'processing' && (
-                <div className="flex flex-col items-center justify-center py-20 space-y-6 border border-tech-border bg-tech-surface animate-in zoom-in duration-500">
-                    <div className="relative">
-                        <Loader2 className="w-16 h-16 text-tech-primary animate-spin" />
-                        <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-white animate-pulse" />
-                    </div>
-                    <div className="text-center space-y-2">
-                        <h3 className="text-xl font-bold text-white uppercase tracking-widest">AI Analysis in Progress</h3>
-                        <p className="text-tech-primary font-mono text-sm">Extracting metadata and categorizing...</p>
-                    </div>
-                </div>
+                <Card className="border-dashed">
+                    <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
+                        <div className="relative">
+                            <Loader2 className="w-12 h-12 text-tech-primary animate-spin" />
+                            <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 text-tech-foreground-muted animate-pulse" />
+                        </div>
+                        <div className="text-center space-y-1">
+                            <h3 className="text-lg font-semibold text-tech-foreground">Analiza AI w toku</h3>
+                            <p className="text-sm text-tech-foreground-muted">Pobieram metadane i proponuję kategorię...</p>
+                        </div>
+                    </CardContent>
+                </Card>
             )}
 
             {step === 'review' && analyzedData && (
-                <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-                    <div className="p-6 border border-tech-primary bg-tech-primary/5 space-y-4">
-                        <div className="flex items-center gap-2">
-                            <Check className="w-5 h-5 text-tech-primary" />
-                            <h3 className="font-bold text-white uppercase tracking-widest">Analysis Complete</h3>
-                        </div>
-                        <div className="space-y-2">
-                            <h4 className="text-[10px] text-tech-primary uppercase font-bold tracking-widest">Generated Summary</h4>
-                            <p className="text-sm text-gray-300 font-mono leading-relaxed">
-                                {analyzedData.aiSummary || "No summary generated."}
+                <div className="space-y-4">
+                    <Card className="border-dashed border-tech-primary/40 bg-tech-primary-dim">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-tech-foreground text-base">
+                                <Check className="w-4 h-4 text-tech-primary" />
+                                Analiza zakończona
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-sm text-tech-foreground-muted leading-relaxed">
+                                {analyzedData.aiSummary || "Brak wygenerowanego podsumowania."}
                             </p>
-                        </div>
-                    </div>
+                        </CardContent>
+                    </Card>
 
-                    <div className="space-y-4 p-6 border border-tech-border bg-tech-surface/30">
-                        <div className="flex items-center justify-between">
-                            <label className="text-xs font-bold text-tech-primary uppercase tracking-widest flex items-center gap-2">
-                                <Sparkles className="w-3 h-3" />
-                                Classification Review
-                            </label>
-                        </div>
-
-                        {analyzedData.suggestedCategoryName && !analyzedData.categoryId && (
-                            <div className="p-3 mb-4 bg-tech-primary/10 border border-tech-primary flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Sparkles className="w-4 h-4 text-tech-primary" />
-                                    <span className="text-xs text-tech-primary font-bold uppercase">AI Suggestion: {analyzedData.suggestedCategoryName}</span>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-base text-tech-foreground">
+                                <Sparkles className="w-4 h-4 text-tech-primary" />
+                                Kategoria
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {analyzedData.suggestedCategoryName && !analyzedData.categoryId && (
+                                <div className="rounded-lg border border-dashed border-tech-primary/50 bg-tech-primary-dim p-3 flex items-center justify-between gap-3">
+                                    <Badge variant="outline">Sugestia AI: {analyzedData.suggestedCategoryName}</Badge>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                            setSearchCategory(analyzedData.suggestedCategoryName ?? '');
+                                            setSelectedCategoryId(null);
+                                        }}
+                                    >
+                                        Użyj
+                                    </Button>
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        setSearchCategory(analyzedData.suggestedCategoryName);
-                                        setSelectedCategoryId(null);
-                                    }}
-                                    className="text-[10px] bg-tech-primary text-black px-2 py-1 font-bold uppercase hover:bg-white transition-colors"
-                                >
-                                    Use Suggestion
-                                </button>
-                            </div>
-                        )}
-
-                        <div className="relative">
-                            <input
-                                type="text"
-                                value={searchCategory}
-                                onChange={(e) => {
-                                    setSearchCategory(e.target.value);
-                                    setSelectedCategoryId(null);
-                                }}
-                                placeholder="Search or create category..."
-                                className="w-full bg-black/50 border border-tech-border p-3 text-sm text-white focus:border-tech-primary focus:outline-none mb-4 font-mono"
-                            />
-                            <Search className="absolute right-3 top-3 w-4 h-4 text-gray-500" />
-                        </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                            {showCreateOption && (
-                                <button
-                                    type="button"
-                                    onClick={handleCreateCategory}
-                                    disabled={isCreatingCategory}
-                                    className="p-3 text-left border border-dashed border-tech-primary/50 text-tech-primary hover:bg-tech-primary/10 transition-all flex items-center justify-between group"
-                                >
-                                    <span className="truncate text-xs font-bold uppercase">
-                                        {isCreatingCategory ? "Creating..." : `+ Create "${searchCategory}"`}
-                                    </span>
-                                    {isCreatingCategory ? <Loader2 className="w-3 h-3 animate-spin"/> : <Plus className="w-3 h-3" />}
-                                </button>
                             )}
 
-                            {filteredCategories.map((cat) => (
-                                <button
-                                    key={cat.id}
-                                    type="button"
-                                    onClick={() => {
-                                        setSelectedCategoryId(cat.id);
-                                        setSearchCategory(cat.name);
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={searchCategory}
+                                    onChange={(e) => {
+                                        setSearchCategory(e.target.value);
+                                        setSelectedCategoryId(null);
                                     }}
-                                    className={`p-3 text-left border transition-all text-xs uppercase tracking-wider ${
-                                        selectedCategoryId === cat.id
-                                            ? 'border-tech-primary bg-tech-primary/10 text-tech-primary'
-                                            : 'border-tech-border text-gray-400 hover:border-gray-500 hover:text-gray-200'
-                                    }`}
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <span className="truncate">{cat.name}</span>
-                                        {selectedCategoryId === cat.id && <CheckCircle2 className="w-3 h-3" />}
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                                    placeholder="Szukaj lub utwórz kategorię..."
+                                    className="w-full rounded-lg border border-tech-border bg-tech-surface px-4 py-2.5 pr-10 text-sm text-tech-foreground focus:outline-none focus:ring-2 focus:ring-tech-primary/40"
+                                />
+                                <Search className="absolute right-3 top-2.5 w-4 h-4 text-tech-foreground-muted" />
+                            </div>
 
-                    <button
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-52 overflow-y-auto">
+                                {showCreateOption && (
+                                    <button
+                                        type="button"
+                                        onClick={handleCreateCategory}
+                                        disabled={isCreatingCategory}
+                                        className="rounded-lg border border-dashed border-tech-primary/50 p-3 text-left text-xs text-tech-primary hover:bg-tech-primary-dim transition-all flex items-center justify-between gap-2"
+                                    >
+                                        <span className="truncate">
+                                            {isCreatingCategory ? 'Tworzenie...' : `+ Utwórz "${searchCategory}"`}
+                                        </span>
+                                        {isCreatingCategory ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                                    </button>
+                                )}
+
+                                {filteredCategories.map((cat) => (
+                                    <button
+                                        key={cat.id}
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedCategoryId(cat.id);
+                                            setSearchCategory(cat.name);
+                                        }}
+                                        className={`rounded-lg border p-3 text-left text-xs transition-all ${
+                                            selectedCategoryId === cat.id
+                                                ? 'border-tech-primary bg-tech-primary-dim text-tech-primary'
+                                                : 'border-tech-border text-tech-foreground-muted hover:border-tech-primary/30 hover:text-tech-foreground'
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="truncate">{cat.name}</span>
+                                            {selectedCategoryId === cat.id && <CheckCircle2 className="w-3 h-3 flex-shrink-0" />}
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Button
                         onClick={handleFinalizeVault}
                         disabled={isLoading || !selectedCategoryId}
-                        className="w-full bg-tech-primary text-black font-bold py-4 uppercase tracking-[0.2em] hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                        className="w-full"
                     >
                         {isLoading ? (
                             <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                Saving...
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Zapisywanie...
                             </>
                         ) : (
                             <>
-                                Confirm & Save to Vault
-                                <Database className="w-5 h-5" />
+                                Zapisz w Vault
+                                <Database className="w-4 h-4" />
                             </>
                         )}
-                    </button>
+                    </Button>
                 </div>
             )}
         </div>

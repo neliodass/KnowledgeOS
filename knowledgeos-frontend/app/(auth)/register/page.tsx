@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { User, Mail, Key, Terminal, ArrowRight, ShieldCheck, Cpu, Activity, Globe } from 'lucide-react';
+import { User, Mail, KeyRound, ArrowRight, ShieldAlert } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -31,7 +33,7 @@ export default function RegisterPage() {
         setError('');
 
         if (formData.password !== formData.confirmPassword) {
-            setError('SECURITY_ALERT: Passwords do not match.');
+            setError('Hasła nie są takie same.');
             return;
         }
 
@@ -48,174 +50,121 @@ export default function RegisterPage() {
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
                 if (Array.isArray(errorData)) {
-                    throw new Error(errorData.map((e: any) => e.description).join(', '));
+                    throw new Error(errorData.map((e: { description?: string }) => e.description ?? 'Błąd walidacji').join(', '));
                 }
-                throw new Error(errorData.message || 'REGISTRATION_FAILED');
+                throw new Error((errorData as { message?: string }).message || 'Rejestracja nie powiodła się.');
             }
 
-            // Sukces
             router.push('/login?registered=true');
 
-        } catch (err: any) {
-            setError(err.message || 'SYSTEM_CRITICAL_ERROR');
+        } catch (err) {
+            if (err instanceof Error) {
+                setError(err.message || 'Wystąpił błąd systemu.');
+            } else {
+                setError('Wystąpił błąd systemu.');
+            }
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <main className="min-h-screen bg-tech-bg text-gray-300 flex items-center justify-center p-4 bg-grid relative overflow-hidden">
-
-            {/* Tło i dekoracje systemowe */}
-            <div className="fixed top-6 left-6 flex flex-col gap-1 z-10 hidden sm:flex">
-                <div className="text-[10px] font-bold tracking-[0.2em] text-tech-primary/60">ENCRYPTION: ACTIVE</div>
-                <div className="text-[10px] font-bold tracking-[0.2em] text-tech-primary/40">SECURE_TUNNEL: ESTABLISHED</div>
-            </div>
-
-            <div className="fixed bottom-6 right-6 flex flex-col items-end gap-1 z-10 hidden sm:flex">
-                <div className="text-[10px] font-bold tracking-[0.2em] text-tech-primary/60">SYS.V2.0.4</div>
-                <div className="text-[10px] font-bold tracking-[0.2em] text-tech-primary/40">LOC: EDGE_NODE_01</div>
-            </div>
-
-            {/* Wielki napis w tle */}
-            <div className="fixed inset-0 pointer-events-none opacity-[0.02] flex items-center justify-center overflow-hidden">
-                <span className="text-[20vw] font-bold text-tech-primary select-none whitespace-nowrap">KNOWLEDGE_OS</span>
-            </div>
-            <div className="relative w-full max-w-md bg-tech-bg border border-tech-primary p-8 md:p-12 z-20 shadow-[0_0_50px_-12px_rgba(163,255,191,0.1)]">
-                {/* Corners */}
-                <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-tech-primary"></div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 border-tech-primary"></div>
-                <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-tech-primary"></div>
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-tech-primary"></div>
-                <div className="mb-10 text-center justify-center">
-                    <h1 className="text-3xl font-bold tracking-widest uppercase text-tech-primary">
-                        KNOWLEDGE_OS
-                        <span className="inline-block w-2.5 h-5 bg-tech-primary ml-1 align-middle animate-blink"></span>
-                    </h1>
-                    <p className="text-[10px] text-tech-muted mt-2 uppercase tracking-widest italic">
-                        Second brain link hub</p>
-                </div>
-                <div className="text-left mb-8">
-                    <header
-                        className="text-l font-bold text-white uppercase tracking-[0.2em] mb-2 mt-2">Initialize_Account
-                    </header>
-                    <div className="h-0.5 w-30 bg-tech-primary"></div>
-                </div>
-
+        <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+            <Card className="w-full max-w-md">
+                <CardHeader className="space-y-2">
+                    <CardTitle className="text-2xl text-slate-900">Utwórz konto</CardTitle>
+                    <CardDescription>
+                        Załóż konto, aby zapisywać zasoby i personalizować scoring.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
                     {error && (
-                        <div className="mb-6 p-3 bg-red-900/20 border border-red-500/50 text-red-400 text-xs font-mono uppercase tracking-wider flex items-center gap-2">
-                            <ShieldCheck className="w-4 h-4" />
-                            <span>&gt; {error}</span>
+                        <div className="rounded-md border border-red-200 bg-red-50 text-red-600 text-sm px-3 py-2 flex items-center gap-2">
+                            <ShieldAlert className="w-4 h-4" />
+                            <span>{error}</span>
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
-
-                        {/* Username */}
-                        <div className="space-y-2">
-                            <label className="block text-[10px] font-bold text-tech-primary uppercase tracking-widest">Identity (Username)</label>
-                            <div className="relative group">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-tech-muted group-focus-within:text-tech-primary transition-colors">
-                    <User className="w-4 h-4" />
-                </span>
+                    <form onSubmit={handleSubmit} className="space-y-3">
+                        <div className="space-y-1.5">
+                            <label className="text-sm text-slate-600">Nazwa użytkownika</label>
+                            <div className="relative">
+                                <User className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
                                 <input
                                     name="displayName"
                                     type="text"
                                     required
                                     value={formData.displayName}
                                     onChange={handleChange}
-                                    className="w-full bg-tech-surface border border-tech-border py-3 pl-10 pr-4 text-sm text-white font-mono  focus:border-tech-primary focus:outline-none transition-colors placeholder:text-gray-700"
-                                    placeholder="ENTER_ID_STRING..."
+                                    className="w-full rounded-md border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 text-sm pl-10 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                                    placeholder="Twoja nazwa"
                                 />
                             </div>
                         </div>
 
-                        {/* Email */}
-                        <div className="space-y-2">
-                            <label className="block text-[10px] font-bold text-tech-primary uppercase tracking-widest">Email_Address</label>
-                            <div className="relative group">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-tech-muted group-focus-within:text-tech-primary transition-colors">
-                    <Mail className="w-4 h-4" />
-                </span>
+                        <div className="space-y-1.5">
+                            <label className="text-sm text-slate-600">E-mail</label>
+                            <div className="relative">
+                                <Mail className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
                                 <input
                                     name="email"
                                     type="email"
                                     required
                                     value={formData.email}
                                     onChange={handleChange}
-                                    className="w-full bg-tech-surface border border-tech-border py-3 pl-10 pr-4 text-sm text-white font-mono focus:border-tech-primary focus:outline-none transition-colors placeholder:text-gray-700"
-                                    placeholder="USER@NODE.SYS"
+                                    className="w-full rounded-md border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 text-sm pl-10 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                                    placeholder="you@example.com"
                                 />
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Password */}
-                            <div className="space-y-2">
-                                <label className="block text-[10px] font-bold text-tech-primary uppercase tracking-widest">Access_Key</label>
-                                <div className="relative group">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-tech-muted group-focus-within:text-tech-primary transition-colors">
-                    <Key className="w-4 h-4" />
-                  </span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <label className="text-sm text-slate-600">Hasło</label>
+                                <div className="relative">
+                                    <KeyRound className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
                                     <input
                                         name="password"
                                         type="password"
                                         required
                                         value={formData.password}
                                         onChange={handleChange}
-                                        className="w-full bg-tech-surface border border-tech-border py-3 pl-10 pr-4 text-sm text-white font-mono focus:border-tech-primary focus:outline-none transition-colors placeholder:text-gray-700"
-                                        placeholder="********"
+                                        className="w-full rounded-md border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 text-sm pl-10 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                                        placeholder="••••••••"
                                     />
                                 </div>
                             </div>
-
-                            {/* Confirm Password */}
-                            <div className="space-y-2">
-                                <label className="block text-[10px] font-bold text-tech-primary uppercase tracking-widest">Re-Enter Key</label>
-                                <div className="relative group">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-tech-muted group-focus-within:text-tech-primary transition-colors">
-                    <Key className="w-4 h-4" />
-                  </span>
+                            <div className="space-y-1.5">
+                                <label className="text-sm text-slate-600">Potwierdź hasło</label>
+                                <div className="relative">
+                                    <KeyRound className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
                                     <input
                                         name="confirmPassword"
                                         type="password"
                                         required
                                         value={formData.confirmPassword}
                                         onChange={handleChange}
-                                        className="w-full bg-tech-surface border border-tech-border py-3 pl-10 pr-4 text-sm text-white font-mono focus:border-tech-primary focus:outline-none transition-colors placeholder:text-gray-700"
-                                        placeholder="********"
+                                        className="w-full rounded-md border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 text-sm pl-10 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                                        placeholder="••••••••"
                                     />
                                 </div>
                             </div>
                         </div>
 
-
-                        {/* Submit Button */}
-                        <div className="pt-4">
-                            <button
-                                type="submit"
-                                disabled={isLoading}
-                                className="group relative w-full bg-tech-primary py-4 text-black font-bold uppercase tracking-[0.3em] text-sm hover:bg-white transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {isLoading ? (
-                                    <span>INITIALIZING...</span>
-                                ) : (
-                                    <>
-                                        <span>Initialize_Account</span>
-                                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                                    </>
-                                )}
-
-                                {/* Button decorative corner */}
-                                <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-tech-bg border-r border-b border-tech-primary"></div>
-                            </button>
-
-                            <p className="text-[9px] text-center text-tech-muted mt-6 uppercase tracking-widest">
-                                Already registered? <Link href="/login" className="text-tech-primary hover:underline">Access_Login_Terminal</Link>
-                            </p>
-                        </div>
+                        <Button type="submit" disabled={isLoading} className="w-full mt-2">
+                            {isLoading ? 'Tworzenie konta...' : 'Utwórz konto'}
+                            <ArrowRight className="w-4 h-4" />
+                        </Button>
                     </form>
-                </div>
+
+                    <p className="text-sm text-slate-500">
+                        Masz już konto?{" "}
+                        <Link href="/login" className="text-indigo-600 hover:text-indigo-500 font-medium">
+                            Zaloguj się
+                        </Link>
+                    </p>
+                </CardContent>
+            </Card>
         </main>
     );
 }

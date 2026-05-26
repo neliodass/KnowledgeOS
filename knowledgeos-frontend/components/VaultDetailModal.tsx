@@ -1,11 +1,16 @@
 'use client';
 
 import { VaultResource } from '@/lib/types';
-import { X, Eye, Trash2, ExternalLink, Loader2 } from 'lucide-react';
+import { X, PlayCircle, Trash2, ExternalLink, Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useState } from 'react';
 import { api } from '@/lib/api';
-import {getCategoryColor} from "@/lib/categoryColor";
+import { categoryBadgeClass } from '@/lib/categoryColor';
+import { getResourceTypeConfig } from '@/lib/resourceCardUtils';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 
 interface VaultDetailModalProps {
     resource: VaultResource;
@@ -16,9 +21,12 @@ interface VaultDetailModalProps {
 
 export function VaultDetailModal({ resource, onClose, onDelete }: VaultDetailModalProps) {
     const [isDeleting, setIsDeleting] = useState(false);
+    const config = getResourceTypeConfig(resource.resourceType);
+    const TypeIcon = config.icon;
+    const isVideo = resource.resourceType === 'Video';
 
     const handleDelete = async () => {
-        if (!window.confirm("Are you sure you want to move this item to trash?")) return;
+        if (!window.confirm('Na pewno przenieść ten zasób do kosza?')) return;
         setIsDeleting(true);
         try {
             const res = await api.deleteResource(resource.id);
@@ -35,33 +43,27 @@ export function VaultDetailModal({ resource, onClose, onDelete }: VaultDetailMod
 
     return (
         <div
-            className="fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-8 modal-overlay"
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-8 bg-slate-900/50"
             onClick={onClose}
         >
             <div
-                className="relative w-full max-w-4xl bg-tech-bg border-2 border-tech-primary shadow-[0_0_30px_rgba(163,255,191,0.15)] flex flex-col max-h-[90vh]"
+                className="relative w-full max-w-4xl bg-white border border-slate-200 shadow-xl rounded-xl flex flex-col max-h-[90vh]"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="flex items-center justify-between border-b border-tech-primary p-4 bg-tech-primary-dim">
-                    <div className="flex items-center gap-3">
-                        <Eye className="w-5 h-5 text-tech-primary" />
-                        <h2 className="text-sm font-bold text-tech-primary uppercase tracking-widest">
-                            Vault_ID: {resource.id.substring(0, 8)}
-                        </h2>
-                    </div>
-                    <button
-                        onClick={onClose}
-                        className="w-8 h-8 border border-tech-primary flex items-center justify-center text-tech-primary hover:bg-tech-primary hover:text-black transition-colors"
-                    >
+                <div className="flex items-center justify-between border-b border-slate-200 p-4">
+                    <h2 className="text-sm font-semibold text-slate-900">
+                        Vault · {resource.id.substring(0, 8)}
+                    </h2>
+                    <Button onClick={onClose} variant="outline" size="icon" className="h-8 w-8">
                         <X className="w-5 h-5" />
-                    </button>
+                    </Button>
                 </div>
 
                 <div className="overflow-y-auto flex-1">
                     <div className="p-6 md:p-8">
                         {resource.imageUrl && (
-                            <div className="relative w-full aspect-video border border-tech-border mb-8 bg-black/50 overflow-hidden group cursor-pointer">
-                                <a href={resource.url} target="_blank" rel="noopener noreferrer">
+                            <div className="relative w-full aspect-video border border-slate-200 mb-8 group cursor-pointer bg-slate-100 overflow-hidden rounded-lg">
+                                <Link href={resource.url} target="_blank" rel="noopener noreferrer">
                                     <Image
                                         src={resource.imageUrl}
                                         alt={resource.title}
@@ -69,34 +71,43 @@ export function VaultDetailModal({ resource, onClose, onDelete }: VaultDetailMod
                                         sizes="(max-width: 1200px) 100vw, 800px"
                                         className="object-cover grayscale-50 group-hover:grayscale-0 transition-all opacity-60 group-hover:opacity-100"
                                     />
-                                </a>
-                                <div className="absolute bottom-4 left-4 bg-black/90 border border-tech-primary px-3 py-1 flex items-center gap-4">
-
-                                    <span className="text-sm text-tech-primary font-bold uppercase tracking-tighter">
-                                        {resource.resourceType.toUpperCase()}_NODE
-                                    </span>
-                                </div>
+                                    {isVideo && (
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <PlayCircle className="w-20 h-20 text-white drop-shadow-[0_0_10px_rgba(0,0,0,0.8)]" />
+                                        </div>
+                                    )}
+                                </Link>
                             </div>
                         )}
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             <div className="md:col-span-2 space-y-6">
                                 <div>
-                                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                        <span className="text-[10px] font-bold bg-tech-primary text-black px-1.5 py-0.5 uppercase">
-                                            SOURCE: {resource.siteName || 'WEB'}
-                                        </span>
-                                        {resource.categoryName && (() => {
-                                            const c = getCategoryColor(resource.categoryName);
-                                            return (
-                                                <span className={`text-[10px] font-bold border ${c.border} ${c.bg} ${c.text} px-1.5 py-0.5 uppercase`}>
-                                                    {resource.categoryName}
-                                                </span>
-                                            );
-                                        })()}
+                                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                                        <Badge variant="outline" className="text-slate-600">
+                                            <TypeIcon className="w-3 h-3 mr-1.5" />
+                                            {config.label}
+                                        </Badge>
+                                        {resource.siteName && (
+                                            <span className="text-xs text-slate-500">{resource.siteName}</span>
+                                        )}
+                                        {resource.categoryName ? (
+                                            <span className={categoryBadgeClass(resource.categoryName)}>
+                                                {resource.categoryName}
+                                            </span>
+                                        ) : (
+                                            <Badge variant="secondary" className="rounded-md text-[11px]">
+                                                Bez kategorii
+                                            </Badge>
+                                        )}
                                     </div>
-                                    <h3 className="text-2xl font-bold text-white uppercase leading-tight font-mono">
-                                        <a href={resource.url} target="_blank" rel="noopener noreferrer" className="hover:text-tech-primary flex items-start gap-2">
+                                    <h3 className="text-2xl font-semibold text-slate-900 leading-tight">
+                                        <a
+                                            href={resource.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="hover:text-indigo-600 flex items-start gap-2"
+                                        >
                                             {resource.title}
                                             <ExternalLink className="w-4 h-4 mt-1 opacity-50 flex-shrink-0" />
                                         </a>
@@ -104,66 +115,76 @@ export function VaultDetailModal({ resource, onClose, onDelete }: VaultDetailMod
                                 </div>
 
                                 {resource.aiSummary && (
-                                    <div className="border-l-2 border-tech-primary pl-6 space-y-4">
-                                        <h4 className="text-xs font-bold text-tech-primary uppercase tracking-[0.2em] mb-2">
-                                            &gt; AI_SUMMARY
-                                        </h4>
-                                        <div className="text-sm text-gray-300 leading-relaxed font-mono whitespace-pre-line">
+                                    <div className="border-l-2 border-slate-200 pl-6 space-y-2">
+                                        <h4 className="text-xs font-semibold text-slate-700">Podsumowanie AI</h4>
+                                        <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
                                             {resource.aiSummary}
-                                        </div>
+                                        </p>
                                     </div>
                                 )}
 
                                 {resource.userNote && (
-                                    <div className="border-l-2 border-tech-border pl-6 space-y-4">
-                                        <h4 className="text-xs font-bold text-tech-text-muted uppercase tracking-[0.2em] mb-2">
-                                            &gt; USER_NOTE
-                                        </h4>
-                                        <div className="text-sm text-gray-400 leading-relaxed font-mono whitespace-pre-line">
+                                    <div className="border-l-2 border-slate-200 pl-6 space-y-2">
+                                        <h4 className="text-xs font-semibold text-slate-700">Twoja notatka</h4>
+                                        <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
                                             {resource.userNote}
-                                        </div>
+                                        </p>
                                     </div>
                                 )}
                             </div>
 
                             <div className="space-y-6">
-                                <div className="p-4 border border-tech-border bg-tech-surface">
-                                    <h4 className="text-[10px] font-bold text-tech-text-muted uppercase mb-4 tracking-widest">Metadata Tags</h4>
+                                <Card className="p-4 border-slate-200 bg-slate-50">
+                                    <h4 className="text-xs font-semibold text-slate-600 mb-3">Tagi</h4>
                                     <div className="flex flex-wrap gap-2">
-                                        {resource.tags && resource.tags.length > 0 ? resource.tags.map(tag => (
-                                            <span key={tag} className="text-[10px] text-tech-primary border border-tech-primary/30 px-2 py-1 uppercase">
-                                                #{tag}
-                                            </span>
-                                        )) : (
-                                            <span className="text-[10px] text-gray-600">NO_TAGS_DETECTED</span>
+                                        {resource.tags && resource.tags.length > 0 ? (
+                                            resource.tags.map(tag => (
+                                                <Badge key={tag} variant="secondary" className="rounded-md">
+                                                    #{tag}
+                                                </Badge>
+                                            ))
+                                        ) : (
+                                            <span className="text-xs text-slate-500">Brak tagów</span>
                                         )}
                                     </div>
-                                </div>
+                                </Card>
 
                                 {resource.author && (
-                                    <div className="p-4 border border-tech-border bg-tech-surface">
-                                        <h4 className="text-[10px] font-bold text-tech-text-muted uppercase mb-2 tracking-widest">Author</h4>
-                                        <span className="text-xs text-gray-300 font-mono">{resource.author}</span>
-                                    </div>
+                                    <Card className="p-4 border-slate-200 bg-slate-50">
+                                        <h4 className="text-xs font-semibold text-slate-600 mb-2">Autor</h4>
+                                        <span className="text-xs text-slate-700">{resource.author}</span>
+                                    </Card>
+                                )}
+
+                                {resource.promotedToVaultAt && (
+                                    <Card className="p-4 border-slate-200 bg-slate-50">
+                                        <h4 className="text-xs font-semibold text-slate-600 mb-2">W vault od</h4>
+                                        <span className="text-xs text-slate-700">
+                                            {new Date(resource.promotedToVaultAt).toLocaleDateString('pl-PL')}
+                                        </span>
+                                    </Card>
                                 )}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="p-6 border-t border-tech-border bg-tech-surface sticky bottom-0 z-10">
-                    <button
+                <div className="p-6 border-t border-slate-200 bg-white sticky bottom-0 z-10">
+                    <Button
                         onClick={handleDelete}
                         disabled={isDeleting}
-                        className="w-full flex items-center justify-center gap-3 py-3 border border-red-900 bg-red-900/10 text-red-500 hover:bg-red-500 hover:text-white transition-all font-bold text-xs uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
+                        variant="destructive"
+                        className="w-full justify-center"
                     >
-                        {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                        {isDeleting ? "Deleting..." : "Trash"}
-                    </button>
+                        {isDeleting ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <Trash2 className="w-4 h-4" />
+                        )}
+                        {isDeleting ? 'Usuwam...' : 'Przenieś do kosza'}
+                    </Button>
                 </div>
             </div>
         </div>
     );
 }
-
-

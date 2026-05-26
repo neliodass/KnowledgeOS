@@ -1,10 +1,14 @@
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using KnowledgeOS.Backend.Data;
 
 #nullable disable
 
 namespace KnowledgeOS.Backend.Migrations;
 
 /// <inheritdoc />
+[DbContext(typeof(AppDbContext))]
+[Migration("20260526120000_AddInboxMultiAxisScoring")]
 public partial class AddInboxMultiAxisScoring : Migration
 {
     /// <inheritdoc />

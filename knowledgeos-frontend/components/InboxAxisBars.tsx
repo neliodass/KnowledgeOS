@@ -1,32 +1,63 @@
 import { InboxResource } from '@/lib/types';
-import { intentAxis, relevanceAxis, substanceAxis } from '@/lib/inboxTiers';
+import {
+    intentAxis,
+    inboxAxisBadgeClass,
+    relevanceAxis,
+    substanceAxis,
+    type InboxAxisDisplay,
+} from '@/lib/inboxTiers';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface InboxAxisBarsProps {
     resource: Pick<InboxResource, 'substanceDepth' | 'contentIntent' | 'relevance' | 'takeaway' | 'scoredFromMetadataOnly'>;
     compact?: boolean;
 }
 
-function AxisRow({
+function AxisValue({ axis }: { axis: InboxAxisDisplay }) {
+    return (
+        <span className={inboxAxisBadgeClass(axis)}>
+            <span aria-hidden className="text-[12px] leading-none">
+                {axis.emoji}
+            </span>
+            <span>{axis.label}</span>
+        </span>
+    );
+}
+
+function AxisChip({
     title,
     axis,
     compact,
 }: {
     title: string;
-    axis: { label: string; fillPercent: number };
+    axis: InboxAxisDisplay;
     compact?: boolean;
 }) {
     return (
-        <div className={compact ? 'space-y-0.5' : 'space-y-1'}>
-            <div className="flex justify-between items-baseline gap-2">
-                <span className="text-[10px] text-gray-500">{title}</span>
-                <span className="text-[10px] text-gray-300 truncate">{axis.label}</span>
-            </div>
-            <div className="h-1 bg-tech-border/60 rounded-full overflow-hidden">
-                <div
-                    className="h-full bg-tech-primary/80 rounded-full transition-all"
-                    style={{ width: `${Math.max(axis.fillPercent, 4)}%` }}
-                />
-            </div>
+        <div
+            className={cn(
+                'inline-flex items-center gap-1.5 rounded-md border border-tech-border bg-tech-surface/80',
+                compact ? 'px-2 py-1' : 'px-2.5 py-1.5'
+            )}
+        >
+            <span className="text-[10px] uppercase tracking-wide text-tech-foreground-muted">{title}</span>
+            <AxisValue axis={axis} />
+        </div>
+    );
+}
+
+function AxisRow({
+    title,
+    axis,
+}: {
+    title: string;
+    axis: InboxAxisDisplay;
+}) {
+    return (
+        <div className="flex items-center justify-between gap-3">
+            <span className="text-xs text-tech-foreground-muted">{title}</span>
+            <AxisValue axis={axis} />
         </div>
     );
 }
@@ -37,15 +68,31 @@ export function InboxAxisBars({ resource, compact }: InboxAxisBarsProps) {
     const relevance = relevanceAxis(resource.relevance);
 
     return (
-        <div className={compact ? 'space-y-2' : 'space-y-2.5'}>
+        <div className={compact ? 'space-y-2' : 'space-y-3'}>
             {resource.takeaway && (
-                <p className="text-xs text-gray-300 leading-snug">{resource.takeaway}</p>
+                <Badge variant="secondary" className="rounded-md text-[11px] font-medium">
+                    {resource.takeaway}
+                </Badge>
             )}
-            <AxisRow title="Głębia" axis={substance} compact={compact} />
-            <AxisRow title="Charakter" axis={intent} compact={compact} />
-            <AxisRow title="Dla Ciebie" axis={relevance} compact={compact} />
+
+            {compact ? (
+                <div className="flex flex-wrap gap-1.5">
+                    <AxisChip title="Głębia" axis={substance} compact />
+                    <AxisChip title="Charakter" axis={intent} compact />
+                    <AxisChip title="Dla Ciebie" axis={relevance} compact />
+                </div>
+            ) : (
+                <div className="rounded-lg border border-tech-border bg-tech-surface/50 p-3 space-y-2.5">
+                    <AxisRow title="Głębia treści" axis={substance} />
+                    <AxisRow title="Charakter" axis={intent} />
+                    <AxisRow title="Dopasowanie do Ciebie" axis={relevance} />
+                </div>
+            )}
+
             {resource.scoredFromMetadataOnly && (
-                <p className="text-[10px] text-gray-600">Ocena na podstawie metadanych — brak fragmentu treści.</p>
+                <p className="text-[11px] text-tech-foreground-muted">
+                    Ocena na podstawie metadanych — brak fragmentu treści.
+                </p>
             )}
         </div>
     );
