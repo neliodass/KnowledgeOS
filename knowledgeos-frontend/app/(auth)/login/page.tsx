@@ -4,7 +4,9 @@ import {useState, useEffect, Suspense} from 'react';
 import {api} from '@/lib/api';
 import {useRouter, useSearchParams} from 'next/navigation';
 import Link from 'next/link';
-import {Fingerprint, Key, LockOpen, RefreshCw, UserPlus} from 'lucide-react';
+import {Fingerprint, KeyRound, LogIn, UserPlus} from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 function LoginForm() {
     const router = useRouter();
@@ -20,7 +22,7 @@ function LoginForm() {
 
     useEffect(() => {
         if (searchParams.get('registered') === 'true') {
-            setSuccessMessage('ACCESS_GRANTED: USER_CREATED');
+            setSuccessMessage('Konto zostało utworzone. Zaloguj się.');
         }
     }, [searchParams]);
 
@@ -34,7 +36,7 @@ function LoginForm() {
             const res = await api.login({email, password});
 
             if (!res.ok) {
-                throw new Error('ACCESS_DENIED: INVALID_CREDENTIALS');
+                throw new Error('Nieprawidłowy e-mail lub hasło.');
             }
 
             const data = await res.json();
@@ -46,7 +48,7 @@ function LoginForm() {
             if (err instanceof Error) {
                 setError(err.message)
             } else {
-                setError("SYSTEM_ERROR")
+                setError("Wystąpił błąd logowania.")
             }
         } finally {
             setIsLoading(false);
@@ -54,153 +56,80 @@ function LoginForm() {
     };
 
     return (
-        <main
-            className="min-h-screen bg-tech-bg text-gray-300 flex items-center justify-center p-4 bg-grid relative overflow-hidden">
+        <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+            <Card className="w-full max-w-md">
+                <CardHeader className="space-y-2">
+                    <CardTitle className="text-2xl text-slate-900">Zaloguj się</CardTitle>
+                    <CardDescription>
+                        Kontynuuj pracę z Inboxem i Vault.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {error && (
+                        <div className="rounded-md border border-red-200 bg-red-50 text-red-600 text-sm px-3 py-2">
+                            {error}
+                        </div>
+                    )}
 
-            {/* Tło i dekoracje systemowe */}
-            <div className="fixed top-6 left-6 flex flex-col gap-1 z-10 hidden sm:flex">
-                <div className="text-[10px] font-bold tracking-[0.2em] text-tech-primary/60">ENCRYPTION: ACTIVE</div>
-                <div className="text-[10px] font-bold tracking-[0.2em] text-tech-primary/40">SECURE_TUNNEL:
-                    ESTABLISHED
-                </div>
-            </div>
+                    {successMessage && (
+                        <div className="rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm px-3 py-2">
+                            {successMessage}
+                        </div>
+                    )}
 
-            <div className="fixed bottom-6 right-6 flex flex-col items-end gap-1 z-10 hidden sm:flex">
-                <div className="text-[10px] font-bold tracking-[0.2em] text-tech-primary/60">SYS.V2.0.4</div>
-                <div className="text-[10px] font-bold tracking-[0.2em] text-tech-primary/40">LOC: EDGE_NODE_01</div>
-            </div>
-
-            {/* Wielki napis w tle */}
-            <div
-                className="fixed inset-0 pointer-events-none opacity-[0.02] flex items-center justify-center overflow-hidden">
-                <span
-                    className="text-[20vw] font-bold text-tech-primary select-none whitespace-nowrap">KNOWLEDGE_OS</span>
-            </div>
-
-            {/* Main card */}
-            <div
-                className="relative w-full max-w-md bg-tech-bg border border-tech-primary p-8 md:p-12 z-20 shadow-[0_0_50px_-12px_rgba(163,255,191,0.1)]">
-
-                {/* Corners */}
-                <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-tech-primary"></div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 border-tech-primary"></div>
-                <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-tech-primary"></div>
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-tech-primary"></div>
-
-                {/* Header */}
-                <div className="mb-10 text-center justify-center">
-                    <h1 className="text-3xl font-bold tracking-widest uppercase text-tech-primary">
-                        KNOWLEDGE_OS
-                        <span className="inline-block w-2.5 h-5 bg-tech-primary ml-1 align-middle animate-blink"></span>
-                    </h1>
-                    <p className="text-[10px] text-tech-muted mt-2 uppercase tracking-widest italic">
-                      Second brain link hub</p>
-                </div>
-                <div className="text-left">
-                    <header
-                        className="text-l font-bold text-white uppercase tracking-[0.2em] mb-2 mt-2">Authenticate_Identity
-                    </header>
-                    <div className="h-0.5 w-30 mb-8 bg-tech-primary"></div>
-                </div>
-
-
-                {/* errors */}
-                {error && (
-                    <div
-                        className="mb-6 p-3 bg-red-900/20 border border-red-500/50 text-red-400 text-xs font-mono text-center uppercase tracking-wider">
-                        &gt; {error}
-                    </div>
-                )}
-
-                {successMessage && (
-                    <div
-                        className="mb-6 p-3 bg-tech-primary/10 border border-tech-primary/50 text-tech-primary text-xs font-mono text-center uppercase tracking-wider">
-                        &gt; {successMessage}
-                    </div>
-                )}
-
-                <form onSubmit={handleSubmit} className="space-y-8">
-
-                    <div className="space-y-2">
-                        <label
-                            className="block text-[10px] font-bold text-tech-primary/80 uppercase tracking-widest ml-1">
-                            &gt; Email_Address
-                        </label>
-                        <div className="relative group">
-                            <input
-                                type="email"
-                                required
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full bg-black border border-tech-border focus:border-tech-primary focus:ring-0 focus:outline-none text-tech-primary placeholder:text-tech-primary/20 text-sm px-4 py-3 pl-10 transition-colors"
-                                placeholder="Enter credentials..."
-                            />
-                            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                                <Fingerprint className="w-4 h-4 text-tech-primary/40"/>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-1.5">
+                            <label className="text-sm text-slate-600">E-mail</label>
+                            <div className="relative">
+                                <Fingerprint className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
+                                <input
+                                    type="email"
+                                    required
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full rounded-md border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 text-sm pl-10 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                                    placeholder="you@example.com"
+                                />
                             </div>
                         </div>
-                    </div>
 
-                    <div className="space-y-2">
-                        <label
-                            className="block text-[10px] font-bold text-tech-primary/80 uppercase tracking-widest ml-1">
-                            &gt; Access_Key
-                        </label>
-                        <div className="relative group">
-                            <input
-                                type="password"
-                                required
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full bg-black border border-tech-border focus:border-tech-primary focus:ring-0 focus:outline-none text-tech-primary placeholder:text-tech-primary/20 text-sm px-4 py-3 pl-10 transition-colors"
-                                placeholder="••••••••"
-                            />
-                            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                                <Key className="w-4 h-4 text-tech-primary/40"/>
+                        <div className="space-y-1.5">
+                            <label className="text-sm text-slate-600">Hasło</label>
+                            <div className="relative">
+                                <KeyRound className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
+                                <input
+                                    type="password"
+                                    required
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full rounded-md border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 text-sm pl-10 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                                    placeholder="••••••••"
+                                />
                             </div>
                         </div>
+
+                        <Button type="submit" disabled={isLoading} className="w-full">
+                            <LogIn className="w-4 h-4" />
+                            {isLoading ? 'Logowanie...' : 'Zaloguj'}
+                        </Button>
+                    </form>
+
+                    <div className="pt-2 text-sm text-slate-500">
+                        Nie masz konta?{" "}
+                        <Link href="/register" className="text-indigo-600 hover:text-indigo-500 font-medium inline-flex items-center gap-1">
+                            Zarejestruj się
+                            <UserPlus className="w-3.5 h-3.5" />
+                        </Link>
                     </div>
-
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full bg-tech-primary text-black font-bold uppercase tracking-[0.2em] py-4 text-xs transition-all hover:shadow-[0_0_15px_rgba(163,255,191,0.4)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
-                    >
-                        {isLoading ? (
-                            <span className="animate-pulse">PROCESSING...</span>
-                        ) : (
-                            <>
-                                <LockOpen className="w-4 h-4 font-bold group-hover:translate-x-1 transition-transform"/>
-                                AUTHENTICATE
-                            </>
-                        )}
-                    </button>
-                </form>
-
-                <div
-                    className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-tech-border pt-6">
-                    <button type="button"
-                            className="text-[10px] text-tech-muted hover:text-tech-primary transition-colors uppercase tracking-widest flex items-center gap-1 group">
-                        <RefreshCw className="w-3 h-3 group-hover:rotate-180 transition-transform duration-500"/>
-                        Reset Key
-                    </button>
-
-                    <Link href="/register"
-                          className="text-[10px] text-tech-muted hover:text-tech-primary transition-colors uppercase tracking-widest flex items-center gap-1 group">
-                        <UserPlus className="w-3 h-3 group-hover:scale-110 transition-transform"/>
-                        Initialize User
-                    </Link>
-                </div>
-
-
-            </div>
+                </CardContent>
+            </Card>
         </main>
     );
 }
 
 export default function LoginPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-tech-bg flex items-center justify-center text-tech-primary">Loading...</div>}>
+        <Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-600">Loading...</div>}>
             <LoginForm />
         </Suspense>
     );

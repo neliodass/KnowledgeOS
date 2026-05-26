@@ -3,11 +3,14 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import {
-    Key, Save, FolderOpen, Plus, Trash2, Edit2,
-    Brain, Target, AlertTriangle, ShieldCheck, Folder, Palette, MessageSquare
+    Key, Save, FolderOpen, Plus, Trash2,
+    Brain, Target, AlertTriangle, ShieldCheck, Folder, Palette, MessageSquare, UserRound
 } from 'lucide-react';
 import type { ProfileRefineResponse } from '@/lib/types';
 import { useTheme, Theme } from '@/lib/ThemeProvider';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 interface Category {
     id: string;
@@ -157,362 +160,364 @@ export default function SettingsPage() {
     const handlePasswordChange = async () => {
         setSecurityMsg('');
         if (passwords.new !== passwords.confirm) {
-            setSecurityMsg('ERROR: Passwords do not match');
+            setSecurityMsg('Hasła nie są takie same.');
             return;
         }
         if (passwords.new.length < 6) {
-            setSecurityMsg('ERROR: Password too short');
+            setSecurityMsg('Hasło jest za krótkie (min. 6 znaków).');
             return;
         }
         try {
             const res = await api.changePassword(passwords.current, passwords.new);
             if (res.ok) {
-                setSecurityMsg('SUCCESS: Password updated.');
+                setSecurityMsg('Hasło zostało zaktualizowane.');
                 setPasswords({ current: '', new: '', confirm: '' });
             } else {
-                setSecurityMsg('ERROR: Password update failed.');
+                setSecurityMsg('Nie udało się zaktualizować hasła.');
             }
         } catch (error) {
-            setSecurityMsg('ERROR: Failed to connect to server.');
+            setSecurityMsg('Błąd połączenia z serwerem.');
             console.error(error);
         }
     };
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-7xl mx-auto">
+        <div className="space-y-8 max-w-7xl mx-auto">
+            <section>
+                <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                    <Brain className="w-5 h-5 text-indigo-600" />
+                    Profil i personalizacja AI
+                </h2>
+                <p className="text-sm text-slate-500 mt-1">
+                    Tu ustawiasz, co AI ma preferować oraz jak ma klasyfikować nowe zasoby.
+                </p>
+            </section>
 
-            <section className="flex flex-col gap-4">
-                <div className="border-b border-tech-border pb-2 flex items-center justify-between">
-                    <h3 className="text-xs font-bold text-tech-primary uppercase tracking-tighter flex items-center gap-2">
-                        <Key className="w-4 h-4" />
-                        [IDENTITY_CONFIG]
-                    </h3>
-                </div>
-                <div className="border border-tech-border bg-tech-surface p-6 flex flex-col gap-4">
-                    <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] text-tech-text-muted uppercase font-bold">System Nickname</label>
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                <Card className="xl:col-span-8">
+                    <CardHeader className="flex flex-row items-center justify-between gap-3">
+                        <div>
+                            <CardTitle className="flex items-center gap-2 text-slate-900">
+                                <Brain className="w-4 h-4 text-indigo-600" />
+                                Profil poznawczy
+                            </CardTitle>
+                            <CardDescription>Kontekst, cele nauki, hobby i tematy do unikania.</CardDescription>
+                        </div>
+                        <Button onClick={handleSavePreferences} disabled={prefLoading}>
+                            {prefLoading ? 'Zapisywanie...' : 'Zapisz'}
+                            <Save className="w-4 h-4" />
+                        </Button>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2 md:col-span-2">
+                            <label className="text-xs font-medium text-slate-600">Professional Context</label>
+                            <textarea
+                                className={`w-full rounded-md border bg-white p-3 text-sm h-28 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 ${
+                                    isFieldChanged('professionalContext') ? 'border-indigo-400' : 'border-slate-300'
+                                }`}
+                                spellCheck={false}
+                                placeholder="Opisz swoją rolę, obszary odpowiedzialności i poziom zaawansowania."
+                                value={refinePreview?.proposedPreferences.professionalContext ?? preferences.professionalContext}
+                                onChange={e => setPreferences({ ...preferences, professionalContext: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium text-slate-600 flex items-center gap-1">
+                                <Target className="w-3.5 h-3.5" />
+                                Learning Goals
+                            </label>
+                            <textarea
+                                className="w-full rounded-md border border-slate-300 bg-white p-3 text-sm h-28 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                                spellCheck={false}
+                                placeholder="Czego chcesz się teraz uczyć?"
+                                value={refinePreview?.proposedPreferences.learningGoals ?? preferences.learningGoals}
+                                onChange={e => setPreferences({ ...preferences, learningGoals: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium text-slate-600">Hobbies & Interests</label>
+                            <textarea
+                                className="w-full rounded-md border border-slate-300 bg-white p-3 text-sm h-28 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                                placeholder="Co Cię ciekawi prywatnie?"
+                                value={refinePreview?.proposedPreferences.hobbies ?? preferences.hobbies}
+                                onChange={e => setPreferences({ ...preferences, hobbies: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                            <label className="text-xs font-medium text-slate-600 flex items-center gap-1">
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                                Topics To Avoid
+                            </label>
+                            <textarea
+                                className="w-full rounded-md border border-slate-300 bg-white p-3 text-sm h-24 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                                spellCheck={false}
+                                placeholder="Jakie treści mają być obniżane albo pomijane?"
+                                value={refinePreview?.proposedPreferences.topicsToAvoid ?? preferences.topicsToAvoid}
+                                onChange={e => setPreferences({ ...preferences, topicsToAvoid: e.target.value })}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="xl:col-span-4">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-slate-900">
+                            <MessageSquare className="w-4 h-4 text-indigo-600" />
+                            Profile Refine
+                        </CardTitle>
+                        <CardDescription>
+                            Opisz zmianę preferencji, a AI zaproponuje aktualizację profilu.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        <textarea
+                            className="w-full rounded-md border border-slate-300 bg-white p-3 text-sm h-28 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                            spellCheck={false}
+                            placeholder='Np. "Mniej polityki, więcej gotowania i analiz biznesowych."'
+                            value={refineMessage}
+                            onChange={e => setRefineMessage(e.target.value)}
+                        />
+                        <div className="flex flex-wrap gap-2">
+                            <Button
+                                type="button"
+                                onClick={handleRefineProfile}
+                                disabled={refineLoading || !refineMessage.trim()}
+                                variant="outline"
+                            >
+                                {refineLoading ? 'Analizuję...' : 'Zaproponuj zmiany'}
+                            </Button>
+                            {refinePreview && (
+                                <>
+                                    <Button
+                                        type="button"
+                                        onClick={handleApplyRefine}
+                                        disabled={!refinePreview.hasChanges || prefLoading}
+                                    >
+                                        Zastosuj
+                                    </Button>
+                                    <Button type="button" variant="ghost" onClick={() => setRefinePreview(null)}>
+                                        Odrzuć
+                                    </Button>
+                                </>
+                            )}
+                        </div>
+                        {refineError && <p className="text-xs text-red-500">{refineError}</p>}
+                        {refinePreview && (
+                            <div className="rounded-md border border-slate-200 p-3 bg-slate-50 space-y-2">
+                                <Badge variant="outline">Podsumowanie AI</Badge>
+                                <p className="text-sm text-slate-600">{refinePreview.assistantSummary}</p>
+                                {!refinePreview.hasChanges && (
+                                    <p className="text-xs text-slate-500">Brak sugerowanych zmian.</p>
+                                )}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+
+            <section>
+                <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                    <UserRound className="w-5 h-5 text-indigo-600" />
+                    Konto i bezpieczeństwo
+                </h2>
+            </section>
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                <Card className="xl:col-span-5">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-slate-900">
+                            <Key className="w-4 h-4 text-indigo-600" />
+                            Tożsamość
+                        </CardTitle>
+                        <CardDescription>Nazwa widoczna w panelu i nagłówku.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        <label className="text-xs font-medium text-slate-600">Display Name</label>
                         <div className="flex gap-2">
                             <input
-                                className="flex-1 bg-black border border-tech-border px-3 py-2 text-xs focus:outline-none focus:border-tech-primary text-tech-primary font-mono"
+                                className="flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
                                 type="text"
                                 value={nickname}
                                 onChange={(e) => setNickname(e.target.value)}
-                                placeholder="Enter identifier..."
+                                placeholder="Twoja nazwa"
                             />
-                            <button
-                                onClick={handleUpdateNickname}
-                                disabled={nickLoading}
-                                className="px-4 border border-tech-primary text-tech-primary text-[10px] font-bold uppercase hover:bg-tech-primary hover:text-black transition-all disabled:opacity-50"
-                            >
-                                {nickLoading ? '...' : 'SAVE'}
-                            </button>
+                            <Button onClick={handleUpdateNickname} disabled={nickLoading} variant="outline">
+                                {nickLoading ? '...' : 'Zapisz'}
+                            </Button>
                         </div>
-                    </div>
-                </div>
-            </section>
+                    </CardContent>
+                </Card>
 
-            <section className="flex flex-col gap-4">
-                <div className="border-b border-tech-border pb-2 flex items-center justify-between">
-                    <h3 className="text-xs font-bold text-tech-primary uppercase tracking-tighter flex items-center gap-2">
-                        <ShieldCheck className="w-4 h-4" />
-                        [SECURITY_PROTOCOL]
-                    </h3>
-                </div>
-                <div className="border border-tech-border bg-tech-surface p-6 flex flex-col gap-6">
-                    <div className="space-y-4">
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-[10px] text-tech-text-muted uppercase font-bold">Current Password</label>
+                <Card className="xl:col-span-7">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-slate-900">
+                            <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                            Hasło
+                        </CardTitle>
+                        <CardDescription>Zmień hasło dostępu do konta.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <input
-                                className="bg-black border border-tech-border px-3 py-2 text-xs focus:outline-none focus:border-tech-primary text-tech-primary font-mono transition-colors"
+                                className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
                                 type="password"
                                 value={passwords.current}
-                                onChange={e => setPasswords({...passwords, current: e.target.value})}
+                                onChange={e => setPasswords({ ...passwords, current: e.target.value })}
+                                placeholder="Aktualne hasło"
                             />
-                        </div>
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-[10px] text-tech-text-muted uppercase font-bold">New Password</label>
                             <input
-                                className="bg-black border border-tech-border px-3 py-2 text-xs focus:outline-none focus:border-tech-primary text-tech-primary font-mono transition-colors"
+                                className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
                                 type="password"
                                 value={passwords.new}
-                                onChange={e => setPasswords({...passwords, new: e.target.value})}
+                                onChange={e => setPasswords({ ...passwords, new: e.target.value })}
+                                placeholder="Nowe hasło"
                             />
-                        </div>
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-[10px] text-tech-text-muted uppercase font-bold">Confirm New Password</label>
                             <input
-                                className={`bg-black border px-3 py-2 text-xs focus:outline-none font-mono transition-colors ${
+                                className={`rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 ${
                                     passwords.confirm && passwords.new !== passwords.confirm
-                                        ? 'border-red-500 text-red-400'
-                                        : 'border-tech-border focus:border-tech-primary text-tech-primary'
+                                        ? 'border-red-400 text-red-500'
+                                        : 'border-slate-300 bg-white'
                                 }`}
                                 type="password"
                                 value={passwords.confirm}
-                                onChange={e => setPasswords({...passwords, confirm: e.target.value})}
+                                onChange={e => setPasswords({ ...passwords, confirm: e.target.value })}
+                                placeholder="Potwierdź hasło"
                             />
                         </div>
-                    </div>
-                    {securityMsg && (
-                        <div className={`text-[10px] uppercase font-bold ${securityMsg.includes('ERROR') ? 'text-red-500' : 'text-tech-primary'}`}>
-                            &gt; {securityMsg}
-                        </div>
-                    )}
-                    <button
-                        onClick={handlePasswordChange}
-                        disabled={!passwords.current || !passwords.new || !passwords.confirm}
-                        className="w-full py-3 border border-tech-primary text-tech-primary text-xs font-bold uppercase flex items-center justify-center gap-2 hover:bg-tech-primary hover:text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <ShieldCheck className="w-4 h-4" />
-                        SAVE_CREDENTIALS
-                    </button>
-                </div>
-            </section>
+                        {securityMsg && (
+                            <p className={`text-xs ${securityMsg.includes('zostało') ? 'text-emerald-600' : 'text-red-500'}`}>
+                                {securityMsg}
+                            </p>
+                        )}
+                        <Button
+                            onClick={handlePasswordChange}
+                            disabled={!passwords.current || !passwords.new || !passwords.confirm}
+                            variant="outline"
+                        >
+                            <ShieldCheck className="w-4 h-4" />
+                            Zapisz nowe hasło
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
 
-            <section className="flex flex-col gap-4">
-                <div className="border-b border-tech-border pb-2 flex items-center justify-between">
-                    <h3 className="text-xs font-bold text-tech-primary uppercase tracking-tighter flex items-center gap-2">
-                        <FolderOpen className="w-4 h-4" />
-                        [CATEGORIES_DATABASE]
-                    </h3>
-                </div>
-                <div className="border border-tech-border bg-tech-surface flex flex-col h-auto min-h-[400px]">
-                    <div className="p-4 border-b border-tech-border bg-black/50">
+            <section>
+                <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                    <FolderOpen className="w-5 h-5 text-indigo-600" />
+                    Organizacja i wygląd
+                </h2>
+            </section>
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                <Card className="xl:col-span-7">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-slate-900">
+                            <FolderOpen className="w-4 h-4 text-indigo-600" />
+                            Kategorie
+                        </CardTitle>
+                        <CardDescription>Dodawaj i usuwaj kategorie dla elementów w Vault.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
                         <div className="flex gap-2">
                             <input
-                                className="flex-1 bg-black border border-tech-border px-3 py-2 text-[10px] focus:outline-none focus:border-tech-primary text-tech-primary font-mono uppercase placeholder:text-gray-700"
-                                placeholder="INITIALIZE_NEW..."
+                                className="flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                                placeholder="Nowa kategoria..."
                                 type="text"
                                 value={newCategory}
                                 onChange={(e) => setNewCategory(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
                             />
-                            <button
-                                onClick={handleAddCategory}
-                                disabled={catLoading}
-                                className="w-10 h-10 border border-tech-border flex items-center justify-center text-tech-primary hover:bg-tech-primary-dim transition-colors disabled:opacity-50"
-                            >
-                                <Plus className="w-5 h-5" />
-                            </button>
+                            <Button onClick={handleAddCategory} disabled={catLoading} variant="outline">
+                                <Plus className="w-4 h-4" />
+                            </Button>
                         </div>
-                    </div>
-                    <div className="flex-1 overflow-y-auto">
-                        <div className="divide-y divide-tech-border">
+                        <div className="rounded-md border border-slate-200 divide-y divide-slate-200 bg-white">
                             {categories.length === 0 ? (
-                                <div className="p-4 text-[10px] text-gray-600 text-center italic">NO_DATA_FOUND</div>
+                                <div className="p-4 text-sm text-slate-500 text-center">Brak kategorii.</div>
                             ) : (
                                 categories.map((cat) => (
-                                    <div key={cat.id} className="p-4 flex items-center justify-between group hover:bg-tech-primary-dim transition-colors">
-                                        <div className="flex items-center gap-3">
-                                            <Folder className="text-tech-text-muted w-5 h-5 group-hover:text-tech-primary transition-colors" />
-                                            <span className="text-xs font-bold text-gray-300 group-hover:text-white uppercase w-full">
-                                                {cat.name}
-                                            </span>
+                                    <div key={cat.id} className="p-3 flex items-center justify-between">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <Folder className="w-4 h-4 text-slate-400" />
+                                            <span className="text-sm text-slate-700 truncate">{cat.name}</span>
                                         </div>
-                                        <div className="flex items-center gap-4 opacity-100 xl:opacity-0 xl:group-hover:opacity-100 transition-opacity">
-                                            <button className="p-2 text-tech-text-muted hover:text-tech-primary transition-colors">
-                                                <Edit2 className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteCategory(cat.id)}
-                                                className="p-2 text-tech-text-muted hover:text-red-500 transition-colors"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
+                                        <Button
+                                            onClick={() => handleDeleteCategory(cat.id)}
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-red-500 hover:text-red-600"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
                                     </div>
                                 ))
                             )}
                         </div>
-                    </div>
-                </div>
-            </section>
+                    </CardContent>
+                </Card>
 
-            <section className="flex flex-col gap-4">
-                <div className="border-b border-tech-border pb-2">
-                    <h3 className="text-xs font-bold text-tech-primary uppercase tracking-tighter flex items-center gap-2">
-                        <MessageSquare className="w-4 h-4" />
-                        [PROFILE_REFINE]
-                    </h3>
-                    <p className="text-[10px] text-gray-500 mt-1">
-                        Opisz, co się u Ciebie zmieniło — AI zaproponuje aktualizację profilu (podgląd przed zapisem).
-                    </p>
-                </div>
-                <div className="border border-tech-border bg-tech-surface p-6 flex flex-col gap-4">
-                    <textarea
-                        className="w-full bg-black border border-tech-border p-3 text-xs leading-relaxed h-24 focus:outline-none focus:border-tech-primary text-gray-300 font-mono resize-none"
-                        spellCheck={false}
-                        placeholder='Np. „Mniej polityki, więcej gotowania i podróży. Nie interesuje mnie już gaming.”'
-                        value={refineMessage}
-                        onChange={e => setRefineMessage(e.target.value)}
-                    />
-                    <div className="flex flex-wrap gap-2">
-                        <button
-                            type="button"
-                            onClick={handleRefineProfile}
-                            disabled={refineLoading || !refineMessage.trim()}
-                            className="text-[10px] font-bold text-tech-primary border border-tech-primary px-3 py-1.5 hover:bg-tech-primary hover:text-black transition-all disabled:opacity-50"
-                        >
-                            {refineLoading ? 'ANALYZING...' : 'PROPOSE_CHANGES'}
-                        </button>
-                        {refinePreview && (
-                            <>
-                                <button
-                                    type="button"
-                                    onClick={handleApplyRefine}
-                                    disabled={!refinePreview.hasChanges || prefLoading}
-                                    className="text-[10px] font-bold text-black bg-tech-primary px-3 py-1.5 hover:opacity-90 disabled:opacity-50"
+                <Card className="xl:col-span-5">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-slate-900">
+                            <Palette className="w-4 h-4 text-indigo-600" />
+                            Motyw
+                        </CardTitle>
+                        <CardDescription>Wybierz styl interfejsu.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        {([
+                            {
+                                id: 'clean-light',
+                                label: 'Clean Light',
+                                desc: 'Jasny, minimalistyczny',
+                                accent: '#6366f1',
+                                bg: '#f8fafc',
+                            },
+                            {
+                                id: 'clean-dark',
+                                label: 'Clean Dark',
+                                desc: 'Nowoczesny ciemny',
+                                accent: '#818cf8',
+                                bg: '#020617',
+                            },
+                            {
+                                id: 'cyber-green',
+                                label: 'Cyber Green',
+                                desc: 'Klasyczny terminal',
+                                accent: '#a3ffbf',
+                                bg: '#050505',
+                            },
+                            {
+                                id: 'cyber-purple',
+                                label: 'Cyber Purple',
+                                desc: 'Dark z fioletem',
+                                accent: '#c084fc',
+                                bg: '#06000f',
+                            },
+                        ] as { id: Theme; label: string; desc: string; accent: string; bg: string }[]).map(t => (
+                            <button
+                                key={t.id}
+                                onClick={() => setTheme(t.id)}
+                                className={`w-full flex items-center gap-3 p-3 rounded-md border transition-all text-left ${
+                                    theme === t.id
+                                        ? 'border-indigo-400 bg-indigo-50'
+                                        : 'border-slate-200 hover:border-slate-300'
+                                }`}
+                            >
+                                <div
+                                    className="flex-shrink-0 w-8 h-8 border border-slate-300 overflow-hidden rounded-md flex items-center justify-center"
+                                    style={{ backgroundColor: t.bg }}
                                 >
-                                    APPLY_TO_PROFILE
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setRefinePreview(null)}
-                                    className="text-[10px] font-bold text-gray-400 border border-tech-border px-3 py-1.5 hover:text-white"
-                                >
-                                    DISCARD
-                                </button>
-                            </>
-                        )}
-                    </div>
-                    {refineError && (
-                        <p className="text-[10px] text-red-400 font-bold">{refineError}</p>
-                    )}
-                    {refinePreview && (
-                        <div className="border border-tech-primary/30 bg-black/50 p-4 space-y-2">
-                            <p className="text-[10px] text-tech-primary font-bold uppercase">AI summary</p>
-                            <p className="text-xs text-gray-300 leading-relaxed">{refinePreview.assistantSummary}</p>
-                            {!refinePreview.hasChanges && (
-                                <p className="text-[10px] text-gray-500 italic">No changes detected — try rephrasing.</p>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </section>
-
-            <section className="flex flex-col gap-4">
-                <div className="border-b border-tech-border pb-2 flex items-center justify-between">
-                    <h3 className="text-xs font-bold text-tech-primary uppercase tracking-tighter flex items-center gap-2">
-                        <Brain className="w-4 h-4" />
-                        [USER_COGNITIVE_PROFILE]
-                    </h3>
-                    <button
-                        onClick={handleSavePreferences}
-                        disabled={prefLoading}
-                        className="text-[10px] font-bold text-tech-primary border border-tech-primary px-3 py-1 hover:bg-tech-primary hover:text-black transition-all flex items-center gap-1 disabled:opacity-50"
-                    >
-                        {prefLoading ? 'SAVING...' : 'SAVE_CONFIG'} <Save className="w-3 h-3" />
-                    </button>
-                </div>
-                <div className="border border-tech-border bg-tech-surface p-6 flex flex-col gap-5">
-                    <div className="space-y-1.5">
-                        <div className="flex items-center gap-2 mb-1">
-                            <Brain className="w-3 h-3 text-tech-primary" />
-                            <span className="text-[10px] text-tech-text-muted uppercase font-bold">Professional Context</span>
-                        </div>
-                        <textarea
-                            className={`w-full bg-black border p-3 text-xs leading-relaxed h-28 focus:outline-none focus:border-tech-primary text-gray-300 font-mono resize-none transition-colors ${isFieldChanged('professionalContext') ? 'border-tech-primary' : 'border-tech-border'}`}
-                            spellCheck="false"
-                            placeholder="Describe your role and expertise..."
-                            value={refinePreview?.proposedPreferences.professionalContext ?? preferences.professionalContext}
-                            onChange={e => setPreferences({...preferences, professionalContext: e.target.value})}
-                        />
-                    </div>
-                    <div className="space-y-1.5">
-                        <div className="flex items-center gap-2 mb-1">
-                            <Target className="w-3 h-3 text-tech-primary" />
-                            <span className="text-[10px] text-tech-text-muted uppercase font-bold">Learning Goals</span>
-                        </div>
-                        <textarea
-                            className="w-full bg-black border border-tech-border p-3 text-xs leading-relaxed h-28 focus:outline-none focus:border-tech-primary text-gray-300 font-mono resize-none transition-colors"
-                            spellCheck="false"
-                            placeholder="What do you want to master?"
-                            value={refinePreview?.proposedPreferences.learningGoals ?? preferences.learningGoals}
-                            onChange={e => setPreferences({...preferences, learningGoals: e.target.value})}
-                        />
-                    </div>
-                    <div className="space-y-1.5">
-                        <div className="flex items-center gap-2 mb-1">
-                            <Plus className="w-3 h-3 text-tech-primary" />
-                            <span className="text-[10px] text-tech-text-muted uppercase font-bold">Hobbies & Interests</span>
-                        </div>
-                        <textarea
-                            className="w-full bg-black border border-tech-border p-3 text-xs leading-relaxed h-28 focus:outline-none focus:border-tech-primary text-gray-300 font-mono resize-none transition-colors"
-                            placeholder="What do you do for fun? (Help AI find creative analogies)"
-                            value={refinePreview?.proposedPreferences.hobbies ?? preferences.hobbies}
-                            onChange={e => setPreferences({...preferences, hobbies: e.target.value})}
-                        />
-                    </div>
-                    <div className="space-y-1.5">
-                        <div className="flex items-center gap-2 mb-1">
-                            <AlertTriangle className="w-3 h-3 text-tech-primary" />
-                            <span className="text-[10px] text-tech-text-muted uppercase font-bold">Topics to Avoid</span>
-                        </div>
-                        <textarea
-                            className="w-full bg-black border border-tech-border p-3 text-xs leading-relaxed h-28 focus:outline-none focus:border-tech-primary text-gray-300 font-mono resize-none transition-colors"
-                            spellCheck="false"
-                            placeholder="Content you want to filter out..."
-                            value={refinePreview?.proposedPreferences.topicsToAvoid ?? preferences.topicsToAvoid}
-                            onChange={e => setPreferences({...preferences, topicsToAvoid: e.target.value})}
-                        />
-                    </div>
-                </div>
-            </section>
-
-            <section className="flex flex-col gap-4">
-                <div className="border-b border-tech-border pb-2 flex items-center justify-between">
-                    <h3 className="text-xs font-bold text-tech-primary uppercase tracking-tighter flex items-center gap-2">
-                        <Palette className="w-4 h-4" />
-                        [SYSTEM_THEME]
-                    </h3>
-                </div>
-                <div className="border border-tech-border bg-tech-surface p-6 flex flex-col gap-3">
-                    {([
-                        {
-                            id: 'cyber-green',
-                            label: 'Cyber Green',
-                            desc: 'Default dark terminal',
-                            accent: '#a3ffbf',
-                            bg: '#050505',
-                        },
-                        {
-                            id: 'cyber-purple',
-                            label: 'Cyber Purple',
-                            desc: 'Dark with purple accent',
-                            accent: '#c084fc',
-                            bg: '#06000f',
-                        },
-                        {
-                            id: 'clean-light',
-                            label: 'Clean Light',
-                            desc: 'Light minimal interface',
-                            accent: '#6366f1',
-                            bg: '#f8fafc',
-                        },
-                    ] as { id: Theme; label: string; desc: string; accent: string; bg: string }[]).map(t => (
-                        <button
-                            key={t.id}
-                            onClick={() => setTheme(t.id)}
-                            className={`flex items-center gap-4 p-4 border transition-all text-left ${
-                                theme === t.id
-                                    ? 'border-tech-primary bg-tech-primary-dim'
-                                    : 'border-tech-border hover:border-tech-primary/50'
-                            }`}
-                        >
-                            <div className="flex-shrink-0 w-10 h-10 border border-tech-border overflow-hidden rounded-sm flex items-center justify-center" style={{ backgroundColor: t.bg }}>
-                                <div className="w-4 h-4 rounded-full" style={{ backgroundColor: t.accent }} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="text-xs font-bold text-white uppercase">{t.label}</div>
-                                <div className="text-[10px] text-tech-text-muted uppercase">{t.desc}</div>
-                            </div>
-                            {theme === t.id && (
-                                <div className="w-2 h-2 rounded-full bg-tech-primary flex-shrink-0" />
-                            )}
-                        </button>
-                    ))}
-                </div>
-            </section>
-
+                                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: t.accent }} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-medium text-slate-800">{t.label}</div>
+                                    <div className="text-xs text-slate-500">{t.desc}</div>
+                                </div>
+                                {theme === t.id && <div className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0" />}
+                            </button>
+                        ))}
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }
