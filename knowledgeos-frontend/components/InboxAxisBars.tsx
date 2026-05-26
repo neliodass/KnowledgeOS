@@ -14,6 +14,17 @@ interface InboxAxisBarsProps {
     compact?: boolean;
 }
 
+function AxisValue({ axis }: { axis: InboxAxisDisplay }) {
+    return (
+        <span className={inboxAxisBadgeClass(axis)}>
+            <span aria-hidden className="text-[12px] leading-none">
+                {axis.emoji}
+            </span>
+            <span>{axis.label}</span>
+        </span>
+    );
+}
+
 function AxisChip({
     title,
     axis,
@@ -31,7 +42,7 @@ function AxisChip({
             )}
         >
             <span className="text-[10px] uppercase tracking-wide text-tech-foreground-muted">{title}</span>
-            <span className={inboxAxisBadgeClass(axis.tone)}>{axis.label}</span>
+            <AxisValue axis={axis} />
         </div>
     );
 }
@@ -46,7 +57,7 @@ function AxisRow({
     return (
         <div className="flex items-center justify-between gap-3">
             <span className="text-xs text-tech-foreground-muted">{title}</span>
-            <span className={inboxAxisBadgeClass(axis.tone)}>{axis.label}</span>
+            <AxisValue axis={axis} />
         </div>
     );
 }
