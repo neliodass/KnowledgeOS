@@ -1,6 +1,8 @@
 import {InboxResource, ProfileRefineResponse} from '@/lib/types';
 import {X, PlayCircle, Sparkles, Archive, Trash2, Database, ExternalLink, RefreshCw, Loader2, MessageSquare, ChevronDown} from 'lucide-react';
 import {InboxAxisBars} from '@/components/InboxAxisBars';
+import {InboxProcessingIndicator} from '@/components/InboxProcessingIndicator';
+import {hasInboxAxes} from '@/lib/inboxTiers';
 import Image from "next/image";
 import Link from "next/link";
 import {useState} from "react";
@@ -28,6 +30,7 @@ export function InboxDetailModal({resource, onClose, onArchive, onDelete, onProm
     const [applyLoading, setApplyLoading] = useState(false);
     const [showWhy, setShowWhy] = useState(false);
     const isVideo = resource.resourceType === 'Video';
+    const showAxes = hasInboxAxes(resource);
     const handleRetry = async () => {
         setIsRetrying(true);
         try {
@@ -149,7 +152,11 @@ export function InboxDetailModal({resource, onClose, onArchive, onDelete, onProm
                                         <span>Źródło: {resource.siteName || 'Web'}</span>
                                     </div>
                                     <div className="mb-4 max-w-md">
-                                        <InboxAxisBars resource={resource} />
+                                        {showAxes ? (
+                                            <InboxAxisBars resource={resource} />
+                                        ) : (
+                                            <InboxProcessingIndicator />
+                                        )}
                                     </div>
                                     <h3 className="text-2xl font-semibold text-slate-900 leading-tight">
                                         <a href={resource.url} target="_blank" rel="noopener noreferrer"

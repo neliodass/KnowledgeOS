@@ -9,6 +9,7 @@ import { Search, Loader2, Inbox, ChevronLeft, ChevronRight, AlertCircle } from "
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useInboxAutoRefresh } from "@/lib/useInboxAutoRefresh";
+import { hasInboxAxes } from "@/lib/inboxTiers";
 
 export default function InboxPage() {
     const [items, setItems] = useState<InboxResource[]>([]);
@@ -44,6 +45,8 @@ export default function InboxPage() {
     }, [loadInboxData]);
 
     useInboxAutoRefresh(items, loadInboxData);
+
+    const pendingCount = items.filter(item => !hasInboxAxes(item)).length;
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -116,6 +119,17 @@ export default function InboxPage() {
                     <button type="submit" className="hidden">Submit</button>
                 </form>
             </div>
+
+            {pendingCount > 0 && !isLoading && (
+                <div className="flex items-center gap-3 rounded-lg border border-dashed border-tech-primary/35 bg-tech-primary-dim/50 px-4 py-3 text-sm text-tech-foreground-muted">
+                    <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-tech-primary" />
+                    <span>
+                        {pendingCount === 1
+                            ? '1 element w analizie AI — odświeżam listę automatycznie…'
+                            : `${pendingCount} elementów w analizie AI — odświeżam listę automatycznie…`}
+                    </span>
+                </div>
+            )}
 
             <div className="min-h-[400px]">
                 {isLoading ? (

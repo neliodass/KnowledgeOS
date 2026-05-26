@@ -5,10 +5,12 @@ import { api } from "@/lib/api";
 import { useState } from "react";
 import Link from "next/link";
 import { InboxAxisBars } from '@/components/InboxAxisBars';
+import { InboxProcessingIndicator } from '@/components/InboxProcessingIndicator';
 import { hasInboxAxes } from '@/lib/inboxTiers';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface InboxCardProps {
     resource: InboxResource;
@@ -84,7 +86,10 @@ export function InboxCard({ resource, onArchive, onClick }: InboxCardProps) {
     return (
         <Card
             onClick={onClick}
-            className="group cursor-pointer overflow-hidden border-slate-200 transition-all hover:shadow-md"
+            className={cn(
+                'group cursor-pointer overflow-hidden transition-all hover:shadow-md',
+                showAxes ? 'border-slate-200' : 'border-tech-primary/30 bg-tech-primary-dim/20'
+            )}
         >
             {resource.imageUrl && config.hasBigPreview && (
                 <div className={`relative ${config.previewHeightClass} w-full bg-slate-100 overflow-hidden`}>
@@ -147,7 +152,7 @@ export function InboxCard({ resource, onArchive, onClick }: InboxCardProps) {
                 {showAxes ? (
                     <InboxAxisBars resource={resource} compact />
                 ) : (
-                    <p className="text-xs text-slate-500 italic">Analiza w toku…</p>
+                    <InboxProcessingIndicator compact />
                 )}
 
                 {resource.tags && resource.tags.length > 0 && (

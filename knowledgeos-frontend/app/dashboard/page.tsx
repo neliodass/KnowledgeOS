@@ -11,6 +11,7 @@ import {VaultDetailModal} from "@/components/VaultDetailModal";
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useInboxAutoRefresh } from '@/lib/useInboxAutoRefresh';
+import { hasInboxAxes } from '@/lib/inboxTiers';
 export default function Dashboard() {
     const [inboxItems, setInboxItems] = useState<InboxResource[]>([]);
     const [vaultItems, setVaultItems] = useState<VaultResource[]>([]);
@@ -90,6 +91,8 @@ export default function Dashboard() {
 
     useInboxAutoRefresh(inboxItems, fetchInbox);
 
+    const pendingInboxCount = inboxItems.filter(item => !hasInboxAxes(item)).length;
+
     return (
         <div>
             {!hasPreferences && (
@@ -125,6 +128,13 @@ export default function Dashboard() {
                         Inbox
                     </h3>
                     <div className="flex items-center gap-2">
+
+                        {pendingInboxCount > 0 && (
+                            <span className="hidden sm:flex items-center gap-1.5 text-xs text-tech-foreground-muted">
+                                <RefreshCw className="h-3 w-3 animate-spin text-tech-primary" />
+                                Analiza ({pendingInboxCount})
+                            </span>
+                        )}
 
                         <Button
                             onClick={() => void fetchInbox()}
