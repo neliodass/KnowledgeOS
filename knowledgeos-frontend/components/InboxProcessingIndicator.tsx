@@ -6,20 +6,21 @@ interface InboxProcessingIndicatorProps {
     className?: string;
 }
 
-function SkeletonBars({ compact }: { compact?: boolean }) {
+function SkeletonChips({ compact }: { compact?: boolean }) {
     const labels = ['Głębia', 'Charakter', 'Dla Ciebie'];
 
     return (
-        <div className={cn('space-y-2', compact && 'space-y-1.5')}>
+        <div className={cn('flex flex-wrap gap-1.5', !compact && 'gap-2')}>
             {labels.map(label => (
-                <div key={label} className={compact ? 'space-y-0.5' : 'space-y-1'}>
-                    <div className="flex justify-between gap-2">
-                        <span className="text-[11px] text-tech-foreground-muted">{label}</span>
-                        <span className="text-[11px] text-tech-foreground-muted/60 animate-pulse">…</span>
-                    </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-tech-border">
-                        <div className="h-full w-1/3 rounded-full bg-tech-primary/40 animate-pulse" />
-                    </div>
+                <div
+                    key={label}
+                    className={cn(
+                        'inline-flex items-center gap-1.5 rounded-md border border-dashed border-tech-border bg-tech-surface/50 animate-pulse',
+                        compact ? 'px-2 py-1' : 'px-2.5 py-1.5'
+                    )}
+                >
+                    <span className="text-[10px] uppercase tracking-wide text-tech-foreground-muted">{label}</span>
+                    <span className="h-4 w-14 rounded bg-tech-border" />
                 </div>
             ))}
         </div>
@@ -56,7 +57,7 @@ export function InboxProcessingIndicator({ compact, className }: InboxProcessing
                     )}
                 </div>
             </div>
-            <SkeletonBars compact={compact} />
+            <SkeletonChips compact={compact} />
         </div>
     );
 }

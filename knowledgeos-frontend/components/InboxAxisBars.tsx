@@ -1,29 +1,52 @@
 import { InboxResource } from '@/lib/types';
-import { intentAxis, relevanceAxis, substanceAxis } from '@/lib/inboxTiers';
-import { Progress } from '@/components/ui/progress';
+import {
+    intentAxis,
+    inboxAxisBadgeClass,
+    relevanceAxis,
+    substanceAxis,
+    type InboxAxisDisplay,
+} from '@/lib/inboxTiers';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface InboxAxisBarsProps {
     resource: Pick<InboxResource, 'substanceDepth' | 'contentIntent' | 'relevance' | 'takeaway' | 'scoredFromMetadataOnly'>;
     compact?: boolean;
 }
 
-function AxisRow({
+function AxisChip({
     title,
     axis,
     compact,
 }: {
     title: string;
-    axis: { label: string; fillPercent: number };
+    axis: InboxAxisDisplay;
     compact?: boolean;
 }) {
     return (
-        <div className={compact ? 'space-y-0.5' : 'space-y-1'}>
-            <div className="flex justify-between items-baseline gap-2">
-                <span className="text-[11px] text-slate-500">{title}</span>
-                <span className="text-[11px] text-slate-700 truncate">{axis.label}</span>
-            </div>
-            <Progress value={Math.max(axis.fillPercent, 4)} className="h-1.5 bg-slate-200" />
+        <div
+            className={cn(
+                'inline-flex items-center gap-1.5 rounded-md border border-tech-border bg-tech-surface/80',
+                compact ? 'px-2 py-1' : 'px-2.5 py-1.5'
+            )}
+        >
+            <span className="text-[10px] uppercase tracking-wide text-tech-foreground-muted">{title}</span>
+            <span className={inboxAxisBadgeClass(axis.tone)}>{axis.label}</span>
+        </div>
+    );
+}
+
+function AxisRow({
+    title,
+    axis,
+}: {
+    title: string;
+    axis: InboxAxisDisplay;
+}) {
+    return (
+        <div className="flex items-center justify-between gap-3">
+            <span className="text-xs text-tech-foreground-muted">{title}</span>
+            <span className={inboxAxisBadgeClass(axis.tone)}>{axis.label}</span>
         </div>
     );
 }
@@ -34,17 +57,31 @@ export function InboxAxisBars({ resource, compact }: InboxAxisBarsProps) {
     const relevance = relevanceAxis(resource.relevance);
 
     return (
-        <div className={compact ? 'space-y-2' : 'space-y-2.5'}>
+        <div className={compact ? 'space-y-2' : 'space-y-3'}>
             {resource.takeaway && (
                 <Badge variant="secondary" className="rounded-md text-[11px] font-medium">
                     {resource.takeaway}
                 </Badge>
             )}
-            <AxisRow title="Głębia" axis={substance} compact={compact} />
-            <AxisRow title="Charakter" axis={intent} compact={compact} />
-            <AxisRow title="Dla Ciebie" axis={relevance} compact={compact} />
+
+            {compact ? (
+                <div className="flex flex-wrap gap-1.5">
+                    <AxisChip title="Głębia" axis={substance} compact />
+                    <AxisChip title="Charakter" axis={intent} compact />
+                    <AxisChip title="Dla Ciebie" axis={relevance} compact />
+                </div>
+            ) : (
+                <div className="rounded-lg border border-tech-border bg-tech-surface/50 p-3 space-y-2.5">
+                    <AxisRow title="Głębia treści" axis={substance} />
+                    <AxisRow title="Charakter" axis={intent} />
+                    <AxisRow title="Dopasowanie do Ciebie" axis={relevance} />
+                </div>
+            )}
+
             {resource.scoredFromMetadataOnly && (
-                <p className="text-[11px] text-slate-500">Ocena na podstawie metadanych — brak fragmentu treści.</p>
+                <p className="text-[11px] text-tech-foreground-muted">
+                    Ocena na podstawie metadanych — brak fragmentu treści.
+                </p>
             )}
         </div>
     );
