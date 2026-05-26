@@ -19,9 +19,13 @@ export interface ResourceBase {
 
 // Inbox (InboxResourceDto)
 export interface InboxResource extends ResourceBase {
-    aiScore?: number;
     aiVerdict?: string;
     correctedTitle?: string;
+    substanceDepth?: string;
+    contentIntent?: string;
+    relevance?: string;
+    takeaway?: string;
+    scoredFromMetadataOnly?: boolean;
 }
 
 // Vault (VaultResourceDto)

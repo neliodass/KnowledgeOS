@@ -50,7 +50,11 @@ public static class ProfileRefinePromptBuilder
                 {
                     scoringContext.Title,
                     scoringContext.Url,
-                    scoringContext.AiScore,
+                    scoringContext.SubstanceDepth,
+                    scoringContext.ContentIntent,
+                    scoringContext.Relevance,
+                    scoringContext.Takeaway,
+                    scoringContext.SortPriority,
                     scoringContext.AiVerdict,
                     scoringContext.UserComment
                 }

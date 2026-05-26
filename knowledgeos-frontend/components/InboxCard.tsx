@@ -4,6 +4,8 @@ import Image from "next/image";
 import { api } from "@/lib/api";
 import { useState } from "react";
 import Link from "next/link";
+import { InboxAxisBars } from '@/components/InboxAxisBars';
+import { hasInboxAxes } from '@/lib/inboxTiers';
 
 interface InboxCardProps {
     resource: InboxResource;
@@ -23,7 +25,7 @@ interface ResourceTypeConfig {
 const RESOURCE_CONFIG: Record<string, ResourceTypeConfig> = {
     Video: {
         icon: PlayCircle,
-        label: 'VIDEO_STREAM',
+        label: 'Wideo',
         borderColor: 'border-tech-primary',
         hasBigPreview: true,
         previewWidth: 'w-32 sm:w-48',
@@ -31,7 +33,7 @@ const RESOURCE_CONFIG: Record<string, ResourceTypeConfig> = {
     },
     Article: {
         icon: FileText,
-        label: 'ARTICLE',
+        label: 'Artykuł',
         borderColor: 'border-tech-primary',
         hasBigPreview: true,
         previewWidth: 'w-24 sm:w-32',
@@ -39,7 +41,7 @@ const RESOURCE_CONFIG: Record<string, ResourceTypeConfig> = {
     },
     Podcast: {
         icon: Mic,
-        label: 'AUDIO_LOG',
+        label: 'Podcast',
         borderColor: 'border-purple-500',
         hasBigPreview: true,
         previewWidth: 'w-32 sm:w-48',
@@ -47,7 +49,7 @@ const RESOURCE_CONFIG: Record<string, ResourceTypeConfig> = {
     },
     Default: {
         icon: Hash,
-        label: 'UNKNOWN_DATA',
+        label: 'Link',
         borderColor: 'border-tech-border',
         hasBigPreview: false,
         previewWidth: 'w-32',
@@ -70,6 +72,7 @@ export function InboxCard({ resource, onArchive, onClick }: InboxCardProps) {
     const config = RESOURCE_CONFIG[resource.resourceType] || RESOURCE_CONFIG.Default;
     const TypeIcon = config.icon;
     const faviconUrl = getFaviconUrl(resource.url);
+    const showAxes = hasInboxAxes(resource);
 
     const handleArchiveClick = async (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -110,7 +113,7 @@ export function InboxCard({ resource, onArchive, onClick }: InboxCardProps) {
             <div className="p-4 flex-1 min-w-0 flex flex-col gap-2">
                 <div className="flex justify-between items-start gap-4">
                     <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-bold text-white uppercase leading-tight break-words">
+                        <h4 className="text-sm font-semibold text-white leading-tight break-words">
                             <Link
                                 href={resource.url}
                                 target="_blank"
@@ -129,43 +132,36 @@ export function InboxCard({ resource, onArchive, onClick }: InboxCardProps) {
                     <button
                         disabled={isArchiving}
                         onClick={handleArchiveClick}
+                        title="Archiwizuj"
                         className="p-1.5 border border-tech-border text-gray-500 hover:text-white hover:border-white transition-all z-10 relative flex-shrink-0">
                         <Archive className="w-4 h-4"/>
                     </button>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 border ${
-                        (resource.aiScore ?? 0) > 74 ? 'text-tech-primary border-tech-primary bg-tech-primary-dim' :
-                            (resource.aiScore ?? 0) > 49 ? 'text-orange-400 border-orange-900/50 bg-orange-900/10' :
-                                (resource.aiScore ?? 0) > 19 ? 'text-yellow-400 border-yellow-900/50 bg-yellow-900/10' :
-                                    'text-red-400 border-red-900/50 bg-red-900/10'
-                    }`}>
-                        SCORE: {resource.aiScore ?? 'N/A'}
-                    </span>
-                    <span className="text-[9px] text-gray-500 uppercase flex items-center gap-1 font-bold tracking-tighter">
-                        <TypeIcon className="w-3 h-3"/> {config.label}
-                    </span>
+                <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                    <TypeIcon className="w-3 h-3 text-tech-primary/70"/>
+                    <span>{config.label}</span>
                     {resource.siteName && (
-                        <span className="text-[9px] text-gray-600 uppercase font-bold tracking-tighter ml-auto">
-                            {resource.siteName}
-                        </span>
+                        <span className="text-gray-600 ml-auto truncate">{resource.siteName}</span>
                     )}
                 </div>
 
-                <div className="text-[11px] text-gray-400 leading-relaxed font-mono italic border-l border-tech-border/30 pl-2">
-                    <span className="text-tech-primary/50 mr-1">&gt; AI_VERDICT:</span>
-                    {resource.aiVerdict || "Analyzing..."}
-                </div>
+                {showAxes ? (
+                    <InboxAxisBars resource={resource} compact />
+                ) : (
+                    <p className="text-xs text-gray-500 italic">Analiza w toku…</p>
+                )}
 
-                <div className="flex flex-wrap gap-1.5 mt-auto pt-2">
-                    {resource.tags?.slice(0, 3).map(tag => (
-                        <span key={tag}
-                              className="text-[8px] text-tech-text-muted border border-tech-border px-1 py-0.5 uppercase">
-                            #{tag}
-                        </span>
-                    ))}
-                </div>
+                {resource.tags && resource.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-auto pt-1">
+                        {resource.tags.slice(0, 3).map(tag => (
+                            <span key={tag}
+                                  className="text-[9px] text-tech-text-muted border border-tech-border/80 px-1.5 py-0.5 rounded-sm">
+                                #{tag}
+                            </span>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );

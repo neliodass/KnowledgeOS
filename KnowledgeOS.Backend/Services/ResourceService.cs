@@ -90,7 +90,8 @@ public class ResourceService : IResourceService
         var totalItems = await query.CountAsync();
 
         var resources = await query
-            .OrderByDescending(r => r.CreatedAt)
+            .OrderByDescending(r => r.InboxMeta != null ? r.InboxMeta.SortPriority : 0)
+            .ThenByDescending(r => r.CreatedAt)
             .Skip((pagination.PageNumber - 1) * pagination.PageSize)
             .Take(pagination.PageSize)
             .ToListAsync();
@@ -180,8 +181,12 @@ public class ResourceService : IResourceService
 
         dto.CorrectedTitle = r.CorrectedTitle;
         dto.AiSummary = r.InboxMeta?.AiSummary;
-        dto.AiScore = r.InboxMeta?.AiScore;
         dto.AiVerdict = r.InboxMeta?.AiVerdict;
+        dto.SubstanceDepth = r.InboxMeta?.SubstanceDepth;
+        dto.ContentIntent = r.InboxMeta?.ContentIntent;
+        dto.Relevance = r.InboxMeta?.Relevance;
+        dto.Takeaway = r.InboxMeta?.Takeaway;
+        dto.ScoredFromMetadataOnly = r.InboxMeta?.ScoredFromMetadataOnly ?? false;
 
         return dto;
     }
@@ -262,19 +267,30 @@ public class ResourceService : IResourceService
         // 3 items with high, mid, low relevancy
 
         var high = await baseQuery
-            .Where(r => r.InboxMeta != null && r.InboxMeta.AiScore >= 75)
+            .Where(r => r.InboxMeta != null && !r.InboxMeta.MatchesAvoidance && (
+                r.InboxMeta.SortPriority >= 400 ||
+                r.InboxMeta.Relevance == "professional" || r.InboxMeta.Relevance == "hobby" ||
+                (r.InboxMeta.Relevance == "discovery" &&
+                 (r.InboxMeta.SubstanceDepth == "deep" || r.InboxMeta.SubstanceDepth == "moderate"))))
             .OrderBy(r => Guid.NewGuid())
             .Take(1)
             .ToListAsync();
 
         var mid = await baseQuery
-            .Where(r => r.InboxMeta != null && r.InboxMeta.AiScore >= 40 && r.InboxMeta.AiScore < 75)
+            .Where(r => r.InboxMeta != null && !r.InboxMeta.MatchesAvoidance && (
+                (r.InboxMeta.SortPriority >= 200 && r.InboxMeta.SortPriority < 400) ||
+                r.InboxMeta.Relevance == "standard" ||
+                (r.InboxMeta.Relevance == "discovery" && r.InboxMeta.SubstanceDepth == "shallow")))
             .OrderBy(r => Guid.NewGuid())
             .Take(1)
             .ToListAsync();
 
         var low = await baseQuery
-            .Where(r => r.InboxMeta == null || r.InboxMeta.AiScore < 40)
+            .Where(r => r.InboxMeta == null ||
+                        r.InboxMeta.MatchesAvoidance ||
+                        r.InboxMeta.Relevance == "none" ||
+                        r.InboxMeta.SubstanceDepth == "insufficient_data" ||
+                        (r.InboxMeta.SortPriority > 0 && r.InboxMeta.SortPriority < 200))
             .OrderBy(r => Guid.NewGuid())
             .Take(1)
             .ToListAsync();

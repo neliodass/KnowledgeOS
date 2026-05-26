@@ -9,31 +9,34 @@ public class InboxAnalysisJsonDtoTests
     {
         var dto = new InboxAnalysisJsonDto
         {
-            IntrinsicQuality = "high",
+            SubstanceDepth = "deep",
+            ContentIntent = "entertain",
             Relevance = "hobby",
             MatchesAvoidance = false
         };
 
         var tiers = dto.ToTiers(hasContentSnippet: false);
 
-        Assert.Equal(IntrinsicQualityTier.InsufficientData, tiers.IntrinsicQuality);
+        Assert.Equal(SubstanceDepthTier.InsufficientData, tiers.SubstanceDepth);
+        Assert.Equal(ContentIntentTier.Mixed, tiers.ContentIntent);
         Assert.Equal(RelevanceTier.None, tiers.Relevance);
         Assert.True(tiers.ScoredFromMetadataOnly);
     }
 
     [Fact]
-    public void ToTiers_with_insufficient_data_quality_sets_none_relevance()
+    public void ToTiers_with_insufficient_data_sets_none_relevance()
     {
         var dto = new InboxAnalysisJsonDto
         {
-            IntrinsicQuality = "insufficient_data",
+            SubstanceDepth = "insufficient_data",
+            ContentIntent = "mixed",
             Relevance = "professional",
             MatchesAvoidance = false
         };
 
         var tiers = dto.ToTiers(hasContentSnippet: true);
 
-        Assert.Equal(IntrinsicQualityTier.InsufficientData, tiers.IntrinsicQuality);
+        Assert.Equal(SubstanceDepthTier.InsufficientData, tiers.SubstanceDepth);
         Assert.Equal(RelevanceTier.None, tiers.Relevance);
         Assert.True(tiers.ScoredFromMetadataOnly);
     }
@@ -43,14 +46,16 @@ public class InboxAnalysisJsonDtoTests
     {
         var dto = new InboxAnalysisJsonDto
         {
-            IntrinsicQuality = "high",
+            SubstanceDepth = "deep",
+            ContentIntent = "learn",
             Relevance = "discovery",
             MatchesAvoidance = false
         };
 
         var tiers = dto.ToTiers(hasContentSnippet: true);
 
-        Assert.Equal(IntrinsicQualityTier.High, tiers.IntrinsicQuality);
+        Assert.Equal(SubstanceDepthTier.Deep, tiers.SubstanceDepth);
+        Assert.Equal(ContentIntentTier.Learn, tiers.ContentIntent);
         Assert.Equal(RelevanceTier.Discovery, tiers.Relevance);
         Assert.False(tiers.ScoredFromMetadataOnly);
     }
@@ -59,9 +64,14 @@ public class InboxAnalysisJsonDtoTests
     [InlineData("invalid")]
     [InlineData("")]
     [InlineData(null)]
-    public void ToTiers_throws_on_invalid_intrinsic_quality(string? quality)
+    public void ToTiers_throws_on_invalid_substance_depth(string? depth)
     {
-        var dto = new InboxAnalysisJsonDto { IntrinsicQuality = quality, Relevance = "none" };
+        var dto = new InboxAnalysisJsonDto
+        {
+            SubstanceDepth = depth,
+            ContentIntent = "mixed",
+            Relevance = "none"
+        };
 
         Assert.Throws<InvalidOperationException>(() => dto.ToTiers(hasContentSnippet: true));
     }

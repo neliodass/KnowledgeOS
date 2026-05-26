@@ -1,5 +1,6 @@
 import {InboxResource, ProfileRefineResponse} from '@/lib/types';
-import {X, PlayCircle, Eye, Sparkles, Archive, Trash2, Database, ExternalLink, RefreshCw, Loader2, MessageSquare} from 'lucide-react';
+import {X, PlayCircle, Eye, Sparkles, Archive, Trash2, Database, ExternalLink, RefreshCw, Loader2, MessageSquare, ChevronDown} from 'lucide-react';
+import {InboxAxisBars} from '@/components/InboxAxisBars';
 import Image from "next/image";
 import Link from "next/link";
 import {useState} from "react";
@@ -23,6 +24,7 @@ export function InboxDetailModal({resource, onClose, onArchive, onDelete, onProm
     const [feedbackError, setFeedbackError] = useState('');
     const [refinePreview, setRefinePreview] = useState<ProfileRefineResponse | null>(null);
     const [applyLoading, setApplyLoading] = useState(false);
+    const [showWhy, setShowWhy] = useState(false);
     const isVideo = resource.resourceType === 'Video';
     const handleRetry = async () => {
         setIsRetrying(true);
@@ -157,10 +159,9 @@ export function InboxDetailModal({resource, onClose, onArchive, onDelete, onProm
                     <span className="text-[10px] font-bold bg-tech-primary text-black px-1.5 py-0.5 uppercase">
                         SOURCE: {resource.siteName || 'WEB'}
                     </span>
-                                        <span
-                                            className="text-[10px] font-bold border border-tech-primary text-tech-primary px-1.5 py-0.5">
-                        SCORE: {resource.aiScore || 0}/100
-                    </span>
+                                    </div>
+                                    <div className="mb-4 max-w-md">
+                                        <InboxAxisBars resource={resource} />
                                     </div>
                                     <h3 className="text-2xl font-bold text-white uppercase leading-tight font-mono">
                                         <a href={resource.url} target="_blank" rel="noopener noreferrer"
@@ -171,20 +172,27 @@ export function InboxDetailModal({resource, onClose, onArchive, onDelete, onProm
                                     </h3>
                                 </div>
                                 <div className="border-l-2 border-tech-primary pl-6 space-y-4">
-                                    <h4 className="text-xs font-bold text-tech-primary uppercase tracking-[0.2em] mb-2">
-                                        &gt; AI_VERDICT
-                                    </h4>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowWhy(v => !v)}
+                                        className="flex items-center gap-2 text-xs font-bold text-tech-primary uppercase tracking-[0.15em]"
+                                    >
+                                        <ChevronDown className={`w-4 h-4 transition-transform ${showWhy ? 'rotate-180' : ''}`}/>
+                                        Dlaczego?
+                                    </button>
+                                    {showWhy && (
                                     <div
-                                        className="text-sm text-gray-300 leading-relaxed font-mono whitespace-pre-line">
-                                        {resource.aiVerdict || "No detailed verdict available for this node."}
+                                        className="text-sm text-gray-300 leading-relaxed whitespace-pre-line">
+                                        {resource.aiVerdict || "Brak uzasadnienia dla tego wpisu."}
                                     </div>
+                                    )}
                                     <button
                                         type="button"
                                         onClick={() => setShowScoreFeedback(v => !v)}
                                         className="text-[10px] font-bold text-tech-primary border border-tech-primary/50 px-2 py-1 hover:bg-tech-primary-dim flex items-center gap-1"
                                     >
                                         <MessageSquare className="w-3 h-3"/>
-                                        {showScoreFeedback ? 'HIDE_SCORE_FEEDBACK' : 'SCORE_DOESNT_FIT'}
+                                        {showScoreFeedback ? 'Ukryj feedback' : 'Ocena nie pasuje'}
                                     </button>
                                     {showScoreFeedback && (
                                         <div className="border border-tech-border bg-black/40 p-4 space-y-3">

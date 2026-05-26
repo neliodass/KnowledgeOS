@@ -6,8 +6,11 @@ public class InboxAnalysisJsonDto
 {
     public string? CorrectedTitle { get; set; }
 
-    [JsonPropertyName("intrinsicQuality")]
-    public string? IntrinsicQuality { get; set; }
+    [JsonPropertyName("substanceDepth")]
+    public string? SubstanceDepth { get; set; }
+
+    [JsonPropertyName("contentIntent")]
+    public string? ContentIntent { get; set; }
 
     [JsonPropertyName("relevance")]
     public string? Relevance { get; set; }
@@ -15,39 +18,53 @@ public class InboxAnalysisJsonDto
     [JsonPropertyName("matchesAvoidance")]
     public bool MatchesAvoidance { get; set; }
 
+    [JsonPropertyName("takeaway")]
+    public string? Takeaway { get; set; }
+
     public string? Verdict { get; set; }
     public string? Summary { get; set; }
     public string[]? SuggestedTags { get; set; }
 
     public InboxAnalysisTiers ToTiers(bool hasContentSnippet)
     {
-        var quality = ParseIntrinsicQuality(IntrinsicQuality);
+        var substance = ParseSubstanceDepth(SubstanceDepth);
+        var intent = ParseContentIntent(ContentIntent);
         var relevance = ParseRelevance(Relevance);
 
         if (!hasContentSnippet)
         {
-            quality = IntrinsicQualityTier.InsufficientData;
+            substance = SubstanceDepthTier.InsufficientData;
+            intent = ContentIntentTier.Mixed;
             relevance = RelevanceTier.None;
         }
-        else if (quality == IntrinsicQualityTier.InsufficientData)
+        else if (substance == SubstanceDepthTier.InsufficientData)
         {
             relevance = RelevanceTier.None;
         }
 
-        return new InboxAnalysisTiers(
-            quality,
-            relevance,
-            MatchesAvoidance,
-            ScoredFromMetadataOnly: !hasContentSnippet || quality == IntrinsicQualityTier.InsufficientData);
+        return new InboxAnalysisTiers(substance, intent, relevance, MatchesAvoidance,
+            ScoredFromMetadataOnly: !hasContentSnippet || substance == SubstanceDepthTier.InsufficientData);
     }
 
-    private static IntrinsicQualityTier ParseIntrinsicQuality(string? value) =>
+    private static SubstanceDepthTier ParseSubstanceDepth(string? value) =>
         value?.Trim().ToLowerInvariant() switch
         {
-            "high" => IntrinsicQualityTier.High,
-            "low" => IntrinsicQualityTier.Low,
-            "insufficient_data" => IntrinsicQualityTier.InsufficientData,
-            _ => throw new InvalidOperationException($"Invalid intrinsicQuality: '{value}'")
+            "deep" => SubstanceDepthTier.Deep,
+            "moderate" => SubstanceDepthTier.Moderate,
+            "shallow" => SubstanceDepthTier.Shallow,
+            "insufficient_data" => SubstanceDepthTier.InsufficientData,
+            _ => throw new InvalidOperationException($"Invalid substanceDepth: '{value}'")
+        };
+
+    private static ContentIntentTier ParseContentIntent(string? value) =>
+        value?.Trim().ToLowerInvariant() switch
+        {
+            "learn" => ContentIntentTier.Learn,
+            "entertain" => ContentIntentTier.Entertain,
+            "inspire" => ContentIntentTier.Inspire,
+            "news" => ContentIntentTier.News,
+            "mixed" => ContentIntentTier.Mixed,
+            _ => throw new InvalidOperationException($"Invalid contentIntent: '{value}'")
         };
 
     private static RelevanceTier ParseRelevance(string? value) =>

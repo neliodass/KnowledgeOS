@@ -35,19 +35,21 @@ public class OpenRouterProvider : IAiProvider
         var content = await CallAiWithRetryAsync(systemPrompt, userPrompt, options);
         var dto = AiAnalysisResponseParser.ParseInbox(content);
         var tiers = dto.ToTiers(hasSnippet);
-        var score = ScoreCalculator.Compute(tiers);
+        var sortPriority = InboxSortPriority.Compute(tiers);
 
         _logger.LogInformation(
-            "Inbox scoring {ResourceId} model={Model}: quality={Quality} relevance={Relevance} avoidance={Avoidance} score={Score} metadataOnly={MetadataOnly}",
-            resource.Id, _modelId, tiers.IntrinsicQuality, tiers.Relevance, tiers.MatchesAvoidance, score,
-            tiers.ScoredFromMetadataOnly);
+            "Inbox scoring {ResourceId} model={Model}: substance={Substance} intent={Intent} relevance={Relevance} avoidance={Avoidance} sort={Sort} metadataOnly={MetadataOnly}",
+            resource.Id, _modelId, tiers.SubstanceDepth, tiers.ContentIntent, tiers.Relevance,
+            tiers.MatchesAvoidance, sortPriority, tiers.ScoredFromMetadataOnly);
 
         return new InboxAnalysisResult(
             dto.CorrectedTitle!,
-            score,
             dto.Verdict!,
             dto.Summary!,
             dto.SuggestedTags!,
+            tiers,
+            dto.Takeaway ?? string.Empty,
+            sortPriority,
             tiers.ScoredFromMetadataOnly);
     }
 
@@ -109,10 +111,15 @@ public class OpenRouterProvider : IAiProvider
                     properties = new
                     {
                         correctedTitle = new { type = "string" },
-                        intrinsicQuality = new
+                        substanceDepth = new
                         {
                             type = "string",
-                            @enum = new[] { "high", "low", "insufficient_data" }
+                            @enum = new[] { "deep", "moderate", "shallow", "insufficient_data" }
+                        },
+                        contentIntent = new
+                        {
+                            type = "string",
+                            @enum = new[] { "learn", "entertain", "inspire", "news", "mixed" }
                         },
                         relevance = new
                         {
@@ -120,6 +127,11 @@ public class OpenRouterProvider : IAiProvider
                             @enum = new[] { "professional", "hobby", "discovery", "standard", "none" }
                         },
                         matchesAvoidance = new { type = "boolean" },
+                        takeaway = new
+                        {
+                            type = "string",
+                            description = "One short Polish hook line, max 80 characters."
+                        },
                         verdict = new { type = "string", description = "Two sentences, max 500 characters." },
                         summary = new
                         {
@@ -136,8 +148,8 @@ public class OpenRouterProvider : IAiProvider
                     },
                     required = new[]
                     {
-                        "correctedTitle", "intrinsicQuality", "relevance", "matchesAvoidance", "verdict", "summary",
-                        "suggestedTags"
+                        "correctedTitle", "substanceDepth", "contentIntent", "relevance", "matchesAvoidance",
+                        "takeaway", "verdict", "summary", "suggestedTags"
                     },
                     additionalProperties = false
                 }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }),

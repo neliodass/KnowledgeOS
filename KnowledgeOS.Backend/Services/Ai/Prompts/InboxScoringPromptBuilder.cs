@@ -18,42 +18,42 @@ public static class InboxScoringPromptBuilder
         var systemPrompt = """
             You are a personalized knowledge curator API. Output ONLY valid JSON matching the schema.
 
-            Evaluate in two steps:
-            1) intrinsicQuality — substance of the content itself (not user fit).
-            2) relevance — fit to the user's profile in the JSON payload.
+            Evaluate three independent axes (do not collapse them into one score):
 
-            intrinsicQuality values:
-            - high: genuine craft, depth, expertise, real effort, or substantive long-form conversation.
-            - low: reaction bait, hype listicles, drama/spectacle, keyword stuffing without substance.
-            - insufficient_data: contentSnippet is null or too thin to judge substance; use only title/description/metadata.
+            1) substanceDepth — craft, effort, and depth of the content itself (NOT user fit, NOT entertainment vs education).
+               - deep: substantive expertise, long-form craft, real technique or analysis.
+               - moderate: solid but not exceptional depth.
+               - shallow: thin, listicle, reaction bait, spectacle without substance.
+               - insufficient_data: contentSnippet is null or too thin; judge only from title/description/metadata.
 
-            relevance values (only when intrinsicQuality is high or low, NOT insufficient_data):
-            - professional: clearly serves professionalContext or learningGoals.
-            - hobby: content genuinely IS or deeply engages a stated hobby (not a keyword in the title alone).
-            - discovery: no profile match but objectively compelling craftsmanship or achievement.
-            - standard: decent general content, weak or no profile tie.
-            - none: use when intrinsicQuality is insufficient_data.
+            2) contentIntent — primary character of the piece (entertainment can be high substance; cooking hobby video can be entertain + deep).
+               - learn, entertain, inspire, news, mixed
 
-            matchesAvoidance: true only if content clearly matches topicsToAvoid in the profile.
+            3) relevance — fit to the user's profile JSON (only when substanceDepth is deep, moderate, or shallow — NOT insufficient_data):
+               - professional, hobby, discovery, standard, none (use none when substanceDepth is insufficient_data)
+
+            matchesAvoidance: true only if content clearly matches topicsToAvoid.
+
+            takeaway: ONE short line in Polish (max 80 chars) for a card hook, e.g. "Pomysł na obiad · Rozrywka" — no score, no verdict copy.
 
             SHORT OR SPARSE PROFILE RULES:
-            - If profile.hasSparseProfile is true, do NOT assign professional or hobby unless the match is obvious from the snippet, not from title keywords alone.
+            - If profile.hasSparseProfile is true, do NOT assign professional or hobby unless the match is obvious from the snippet, not title keywords alone.
             - Prefer standard or discovery over guessing.
 
             OTHER RULES:
-            - Language of content does not matter.
-            - Entertainment and hobbies are valid high-quality content.
-            - verdict: exactly two sentences naming the quality and relevance (or avoidance) reason.
-            - summary: 6-8 sentences about the content only; do not explain why it mismatches the user.
-            - suggestedTags: 3-8 tags describing the content topic, not the score.
+            - Language of content does not matter; takeaway and verdict may be Polish.
+            - Entertainment and hobbies are valid; do not mark entertain as shallow by default.
+            - verdict: exactly two sentences explaining substance, intent, and relevance (or avoidance).
+            - summary: 6-8 sentences about the content only.
+            - suggestedTags: 3-8 topic tags, not axis labels.
 
-            EXAMPLES (do not copy profile fields from examples):
+            EXAMPLES:
 
-            Example A — high + hobby: User hobbies include cooking. Snippet shows a detailed recipe walkthrough with technique. Result: intrinsicQuality high, relevance hobby.
+            Example A — deep + entertain + hobby: User hobbies include cooking. Snippet is a detailed sourdough technique walkthrough presented casually. substanceDepth deep, contentIntent entertain, relevance hobby.
 
-            Example B — low + none: Title says "AI tools you NEED!!!" Snippet is a shallow listicle. Result: intrinsicQuality low, relevance none.
+            Example B — shallow + learn + none: AI tools listicle with hype title, no real teaching. substanceDepth shallow, contentIntent learn, relevance none.
 
-            Example C — insufficient_data: contentSnippet null, only title and description. Result: intrinsicQuality insufficient_data, relevance none, cautious verdict noting limited evidence.
+            Example C — insufficient_data: contentSnippet null. substanceDepth insufficient_data, contentIntent mixed, relevance none, cautious verdict.
             """;
 
         var resourcePayload = BuildResourcePayload(resource);

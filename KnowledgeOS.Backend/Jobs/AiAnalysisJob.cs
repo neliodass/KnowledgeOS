@@ -3,6 +3,7 @@ using KnowledgeOS.Backend.Data;
 using KnowledgeOS.Backend.Entities.Resources;
 using KnowledgeOS.Backend.Entities.Tagging;
 using KnowledgeOS.Backend.Jobs.Abstractions;
+using KnowledgeOS.Backend.Services;
 using KnowledgeOS.Backend.Services.Abstractions;
 using KnowledgeOS.Backend.Services.Ai.Abstractions;
 using Microsoft.EntityFrameworkCore;
@@ -125,20 +126,10 @@ public class AiAnalysisJob : IAiAnalysisJob
 
                 if (resource.InboxMeta == null)
                 {
-                    resource.InboxMeta = new InboxMetadata
-                    {
-                        ResourceId = resource.Id,
-                        AiScore = result.Score,
-                        AiVerdict = result.Verdict,
-                        AiSummary = result.Summary
-                    };
+                    resource.InboxMeta = new InboxMetadata { ResourceId = resource.Id };
                 }
-                else
-                {
-                    resource.InboxMeta.AiScore = result.Score;
-                    resource.InboxMeta.AiVerdict = result.Verdict;
-                    resource.InboxMeta.AiSummary = result.Summary;
-                }
+
+                InboxMetadataMapper.ApplyAnalysis(resource.InboxMeta, result);
 
                 resource.Status = ResourceStatus.Inbox;
             }
