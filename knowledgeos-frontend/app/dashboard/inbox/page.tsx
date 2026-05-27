@@ -5,7 +5,7 @@ import { api } from "@/lib/api";
 import { InboxResource } from "@/lib/types";
 import { InboxCard } from "@/components/InboxCard";
 import { InboxDetailModal } from "@/components/InboxDetailModal";
-import { Search, Loader2, Inbox, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
+import { Search, Loader2, Inbox, ChevronLeft, ChevronRight, AlertCircle, ExternalLink, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useInboxAutoRefresh } from "@/lib/useInboxAutoRefresh";
@@ -23,6 +23,7 @@ export default function InboxPage() {
     const [searchTerm, setSearchTerm] = useState("");
 
     const [selectedResource, setSelectedResource] = useState<InboxResource | null>(null);
+    const [promoteNoticeOpen, setPromoteNoticeOpen] = useState(false);
 
     const loadInboxData = useCallback(async (options?: { silent?: boolean }) => {
         if (!options?.silent) setIsLoading(true);
@@ -90,6 +91,7 @@ export default function InboxPage() {
             if (res.ok) {
                 setItems((prev) => prev.filter((item) => item.id !== id));
                 if (selectedResource?.id === id) setSelectedResource(null);
+                setPromoteNoticeOpen(true);
             }
         } catch (error) {
             console.error("Failed to promote", error);
@@ -135,6 +137,32 @@ export default function InboxPage() {
                             : `${pendingCount} elementów w analizie AI — odświeżam listę automatycznie…`}
                     </span>
                 </div>
+            )}
+
+            {promoteNoticeOpen && (
+                <Card className="border-dashed border-tech-primary/35 bg-tech-primary-dim/50 p-4 flex items-start justify-between gap-4">
+                    <div className="text-sm text-tech-foreground-muted">
+                        <p className="text-tech-foreground font-medium">Przeniesiono do Vault.</p>
+                        <p className="mt-0.5">
+                            Analiza AI trwa — zobaczysz zasób w bibliotece Vault.
+                            <a
+                                href="/dashboard/vault"
+                                className="ml-2 inline-flex items-center gap-1 text-tech-primary hover:underline"
+                            >
+                                Zobacz Vault <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                        </p>
+                    </div>
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 flex-shrink-0"
+                        onClick={() => setPromoteNoticeOpen(false)}
+                        aria-label="Zamknij powiadomienie"
+                    >
+                        <X className="w-4 h-4" />
+                    </Button>
+                </Card>
             )}
 
             <div className="min-h-[400px]">

@@ -8,6 +8,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/lib/api';
 import { categoryBadgeClass } from '@/lib/categoryColor';
 import { getResourceTypeConfig } from '@/lib/resourceCardUtils';
+import { isVaultProcessing } from '@/lib/vaultProcessing';
+import { VaultProcessingIndicator } from '@/components/VaultProcessingIndicator';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -32,6 +34,7 @@ export function VaultDetailModal({ resource, onClose, onDelete, onUpdated }: Vau
     const config = getResourceTypeConfig(resource.resourceType);
     const TypeIcon = config.icon;
     const isVideo = resource.resourceType === 'Video';
+    const processing = isVaultProcessing(resource);
 
     useEffect(() => {
         setSelectedCategoryId(resource.categoryId ?? null);
@@ -56,7 +59,7 @@ export function VaultDetailModal({ resource, onClose, onDelete, onUpdated }: Vau
         return categories.find((c) => c.id === selectedCategoryId)?.name ?? resource.categoryName;
     }, [categories, resource.categoryName, selectedCategoryId]);
 
-    const suggestedCategoryName = resource.suggestedCategoryName?.trim() || undefined;
+    const suggestedCategoryName = !processing ? (resource.suggestedCategoryName?.trim() || undefined) : undefined;
     const suggestedMatch = useMemo(() => {
         if (!suggestedCategoryName) return undefined;
         const normalized = suggestedCategoryName.toLowerCase();
@@ -143,7 +146,7 @@ export function VaultDetailModal({ resource, onClose, onDelete, onUpdated }: Vau
 
                 <div className="overflow-y-auto flex-1">
                     <div className="p-6 md:p-8">
-                        {resource.imageUrl && (
+                        {!processing && resource.imageUrl && (
                             <div className="relative w-full aspect-video border border-slate-200 mb-8 group cursor-pointer bg-slate-100 overflow-hidden rounded-lg">
                                 <Link href={resource.url} target="_blank" rel="noopener noreferrer">
                                     <Image
@@ -174,7 +177,7 @@ export function VaultDetailModal({ resource, onClose, onDelete, onUpdated }: Vau
                                             <span className="text-xs text-slate-500">{resource.siteName}</span>
                                         )}
                                         {selectedCategoryName ? (
-                                            <span className={categoryBadgeClass(selectedCategoryName)}>
+                                            <span className={categoryBadgeClass(selectedCategoryId ?? undefined, selectedCategoryName)}>
                                                 {selectedCategoryName}
                                             </span>
                                         ) : (
@@ -196,14 +199,16 @@ export function VaultDetailModal({ resource, onClose, onDelete, onUpdated }: Vau
                                     </h3>
                                 </div>
 
-                                {resource.aiSummary && (
+                                {processing ? (
+                                    <VaultProcessingIndicator />
+                                ) : resource.aiSummary ? (
                                     <div className="border-l-2 border-slate-200 pl-6 space-y-2">
                                         <h4 className="text-xs font-semibold text-slate-700">Podsumowanie AI</h4>
                                         <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
                                             {resource.aiSummary}
                                         </p>
                                     </div>
-                                )}
+                                ) : null}
 
                                 {resource.userNote && (
                                     <div className="border-l-2 border-slate-200 pl-6 space-y-2">

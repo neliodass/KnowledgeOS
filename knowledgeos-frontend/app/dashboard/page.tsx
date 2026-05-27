@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useInboxAutoRefresh } from '@/lib/useInboxAutoRefresh';
 import { hasInboxAxes } from '@/lib/inboxTiers';
+import { useVaultAutoRefresh } from '@/lib/useVaultAutoRefresh';
+import { isVaultProcessing } from '@/lib/vaultProcessing';
 export default function Dashboard() {
     const [inboxItems, setInboxItems] = useState<InboxResource[]>([]);
     const [vaultItems, setVaultItems] = useState<VaultResource[]>([]);
@@ -33,8 +35,8 @@ export default function Dashboard() {
             if (!options?.silent) setLoadingInbox(false);
         }
     }, []);
-    const fetchVault = async () => {
-        setLoadingVault(true);
+    const fetchVault = async (options?: { silent?: boolean }) => {
+        if (!options?.silent) setLoadingVault(true);
         try {
             const res = await api.getVaultMix();
             if (res.ok) {
@@ -44,7 +46,7 @@ export default function Dashboard() {
         } catch (e) {
             console.error(e);
         } finally {
-            setLoadingVault(false);
+            if (!options?.silent) setLoadingVault(false);
         }
     };
     const handleArchiveFromModal = async (id: string) => {
@@ -90,8 +92,10 @@ export default function Dashboard() {
     }, [fetchInbox]);
 
     useInboxAutoRefresh(inboxItems, fetchInbox);
+    useVaultAutoRefresh(vaultItems, fetchVault);
 
     const pendingInboxCount = inboxItems.filter(item => !hasInboxAxes(item)).length;
+    const pendingVaultCount = vaultItems.filter(item => isVaultProcessing(item)).length;
 
     return (
         <div>
@@ -170,14 +174,22 @@ export default function Dashboard() {
                         <Database className="text-tech-primary w-5 h-5"/>
                         Vault
                     </h3>
-                    <Button
-                        onClick={fetchVault}
-                        variant="outline"
-                        size="icon"
-                        className={`${loadingVault ? 'animate-spin' : ''}`}
-                    >
-                        <RefreshCw className="w-3 h-3"/>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        {pendingVaultCount > 0 && (
+                            <span className="hidden sm:flex items-center gap-1.5 text-xs text-tech-foreground-muted">
+                                <RefreshCw className="h-3 w-3 animate-spin text-tech-primary" />
+                                Analiza ({pendingVaultCount})
+                            </span>
+                        )}
+                        <Button
+                            onClick={() => void fetchVault()}
+                            variant="outline"
+                            size="icon"
+                            className={`${loadingVault ? 'animate-spin' : ''}`}
+                        >
+                            <RefreshCw className="w-3 h-3"/>
+                        </Button>
+                    </div>
                 </div>
 
                 {loadingVault ? (

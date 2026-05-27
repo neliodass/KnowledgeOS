@@ -10,6 +10,8 @@ import { getCategoryColor } from '@/lib/categoryColor';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { useVaultAutoRefresh } from '@/lib/useVaultAutoRefresh';
+import { isVaultProcessing } from '@/lib/vaultProcessing';
 
 export default function VaultPage() {
     const [items, setItems] = useState<VaultResource[]>([]);
@@ -36,8 +38,8 @@ export default function VaultPage() {
         void loadData();
     }, [page, searchTerm, selectedCategoryId, uncategorizedOnly]);
 
-    const loadData = async () => {
-        setIsLoading(true);
+    const loadData = async (options?: { silent?: boolean }) => {
+        if (!options?.silent) setIsLoading(true);
         try {
             const data = await api.getVault(page, pageSize, searchTerm, selectedCategoryId, uncategorizedOnly);
             setItems(data.items || []);
@@ -47,9 +49,13 @@ export default function VaultPage() {
         } catch (error) {
             console.error(error);
         } finally {
-            setIsLoading(false);
+            if (!options?.silent) setIsLoading(false);
         }
     };
+
+    useVaultAutoRefresh(items, loadData);
+
+    const pendingCount = items.filter((i) => isVaultProcessing(i)).length;
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -109,6 +115,17 @@ export default function VaultPage() {
                 </form>
             </div>
 
+            {pendingCount > 0 && !isLoading && (
+                <div className="flex items-center gap-3 rounded-lg border border-dashed border-tech-primary/35 bg-tech-primary-dim/50 px-4 py-3 text-sm text-tech-foreground-muted">
+                    <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-tech-primary" />
+                    <span>
+                        {pendingCount === 1
+                            ? '1 zasób w analizie AI — odświeżam listę automatycznie…'
+                            : `${pendingCount} zasobów w analizie AI — odświeżam listę automatycznie…`}
+                    </span>
+                </div>
+            )}
+
             <div className="flex flex-wrap gap-2">
                     <button
                         type="button"
@@ -135,7 +152,7 @@ export default function VaultPage() {
                         Uncategorized
                     </button>
                     {categories.map(cat => {
-                        const c = getCategoryColor(cat.name);
+                        const c = getCategoryColor(cat.id);
                         const isActive = selectedCategoryId === cat.id;
                         return (
                             <button

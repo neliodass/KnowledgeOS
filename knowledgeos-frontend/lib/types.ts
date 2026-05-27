@@ -30,6 +30,7 @@ export interface InboxResource extends ResourceBase {
 
 // Vault (VaultResourceDto)
 export interface VaultResource extends ResourceBase {
+    status: string;
     categoryId?: string;
     categoryName?: string;
     suggestedCategoryName?: string;
