@@ -24,6 +24,7 @@ export default function VaultPage() {
 
     const [categories, setCategories] = useState<Category[]>([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
+    const [uncategorizedOnly, setUncategorizedOnly] = useState(false);
 
     const [selectedResource, setSelectedResource] = useState<VaultResource | null>(null);
 
@@ -33,12 +34,12 @@ export default function VaultPage() {
 
     useEffect(() => {
         void loadData();
-    }, [page, searchTerm, selectedCategoryId]);
+    }, [page, searchTerm, selectedCategoryId, uncategorizedOnly]);
 
     const loadData = async () => {
         setIsLoading(true);
         try {
-            const data = await api.getVault(page, pageSize, searchTerm, selectedCategoryId);
+            const data = await api.getVault(page, pageSize, searchTerm, selectedCategoryId, uncategorizedOnly);
             setItems(data.items || []);
             setTotalItems(data.totalItems || 0);
             const calc = Math.ceil((data.totalItems || 0) / pageSize);
@@ -58,6 +59,19 @@ export default function VaultPage() {
 
     const handleCategorySelect = (id: string | undefined) => {
         setSelectedCategoryId(id);
+        setUncategorizedOnly(false);
+        setPage(1);
+    };
+
+    const handleUncategorizedSelect = () => {
+        setSelectedCategoryId(undefined);
+        setUncategorizedOnly(true);
+        setPage(1);
+    };
+
+    const handleShowAll = () => {
+        setSelectedCategoryId(undefined);
+        setUncategorizedOnly(false);
         setPage(1);
     };
 
@@ -95,19 +109,30 @@ export default function VaultPage() {
                 </form>
             </div>
 
-            {categories.length > 0 && (
-                <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2">
                     <button
                         type="button"
-                        onClick={() => handleCategorySelect(undefined)}
+                        onClick={handleShowAll}
                         className={cn(
                             'rounded-md border px-3 py-1.5 text-xs font-medium transition-all',
-                            !selectedCategoryId
+                            !selectedCategoryId && !uncategorizedOnly
                                 ? 'border-tech-primary/40 bg-tech-primary-dim text-tech-primary'
                                 : 'border-tech-border text-tech-foreground-muted hover:bg-tech-surface-hover hover:text-tech-foreground'
                         )}
                     >
                         Wszystkie
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleUncategorizedSelect}
+                        className={cn(
+                            'rounded-md border px-3 py-1.5 text-xs font-medium transition-all',
+                            uncategorizedOnly
+                                ? 'border-tech-primary/40 bg-tech-primary-dim text-tech-primary'
+                                : 'border-tech-border text-tech-foreground-muted hover:bg-tech-surface-hover hover:text-tech-foreground'
+                        )}
+                    >
+                        Uncategorized
                     </button>
                     {categories.map(cat => {
                         const c = getCategoryColor(cat.name);
@@ -130,7 +155,6 @@ export default function VaultPage() {
                         );
                     })}
                 </div>
-            )}
 
             <div className="min-h-[400px]">
                 {isLoading ? (
@@ -142,7 +166,7 @@ export default function VaultPage() {
                     <Card className="h-64 flex flex-col items-center justify-center gap-4 border-dashed">
                         <AlertCircle className="w-8 h-8 text-tech-foreground-muted" />
                         <span className="text-sm text-tech-foreground-muted">
-                            {searchTerm || selectedCategoryId ? 'Brak wyników' : 'Vault jest pusty'}
+                            {searchTerm || selectedCategoryId || uncategorizedOnly ? 'Brak wyników' : 'Vault jest pusty'}
                         </span>
                     </Card>
                 ) : (
@@ -189,6 +213,10 @@ export default function VaultPage() {
                     resource={selectedResource}
                     onClose={() => setSelectedResource(null)}
                     onDelete={() => handleDelete(selectedResource.id)}
+                    onUpdated={(patch) => {
+                        setSelectedResource((prev) => (prev ? ({ ...prev, ...patch }) : prev));
+                        setItems((prev) => prev.map((it) => (it.id === selectedResource.id ? ({ ...it, ...patch }) : it)));
+                    }}
                 />
             )}
         </div>

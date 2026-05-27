@@ -56,6 +56,21 @@ public class ResourcesController : ControllerBase
         }
     }
 
+    [HttpPost("{id}/promote")]
+    public async Task<IActionResult> Promote(Guid id)
+    {
+        var userId = _currentUserService.UserId;
+        try
+        {
+            await _resourceService.PromoteToVaultAsync(id, userId!);
+            return Accepted();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
     [HttpPost("{id}/retry")]
     public async Task<IActionResult> Retry(Guid id)
     {

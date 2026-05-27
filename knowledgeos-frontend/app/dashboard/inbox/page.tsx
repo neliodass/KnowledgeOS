@@ -84,10 +84,16 @@ export default function InboxPage() {
         }
     };
 
-    const handlePromote = (id: string) => {
-      //TODO - Implement handle promote
-        alert("TODO -Implement handle promote");
-        if (selectedResource?.id === id) setSelectedResource(null);
+    const handlePromote = async (id: string) => {
+        try {
+            const res = await api.promoteResource(id);
+            if (res.ok) {
+                setItems((prev) => prev.filter((item) => item.id !== id));
+                if (selectedResource?.id === id) setSelectedResource(null);
+            }
+        } catch (error) {
+            console.error("Failed to promote", error);
+        }
     };
 
     return (

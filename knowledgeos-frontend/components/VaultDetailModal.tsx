@@ -23,6 +23,9 @@ interface VaultDetailModalProps {
 export function VaultDetailModal({ resource, onClose, onDelete, onUpdated }: VaultDetailModalProps) {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isSavingCategory, setIsSavingCategory] = useState(false);
+    const [isApplyingSuggestion, setIsApplyingSuggestion] = useState(false);
+    const [isCreatingSuggestedCategory, setIsCreatingSuggestedCategory] = useState(false);
+    const [isSuggestionIgnored, setIsSuggestionIgnored] = useState(false);
     const [categories, setCategories] = useState<Category[]>([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(resource.categoryId ?? null);
 
@@ -32,6 +35,7 @@ export function VaultDetailModal({ resource, onClose, onDelete, onUpdated }: Vau
 
     useEffect(() => {
         setSelectedCategoryId(resource.categoryId ?? null);
+        setIsSuggestionIgnored(false);
     }, [resource.categoryId]);
 
     useEffect(() => {
@@ -52,6 +56,13 @@ export function VaultDetailModal({ resource, onClose, onDelete, onUpdated }: Vau
         return categories.find((c) => c.id === selectedCategoryId)?.name ?? resource.categoryName;
     }, [categories, resource.categoryName, selectedCategoryId]);
 
+    const suggestedCategoryName = resource.suggestedCategoryName?.trim() || undefined;
+    const suggestedMatch = useMemo(() => {
+        if (!suggestedCategoryName) return undefined;
+        const normalized = suggestedCategoryName.toLowerCase();
+        return categories.find((c) => c.name.trim().toLowerCase() === normalized);
+    }, [categories, suggestedCategoryName]);
+
     const handleSaveCategory = async (categoryId: string | null) => {
         setIsSavingCategory(true);
         try {
@@ -67,6 +78,32 @@ export function VaultDetailModal({ resource, onClose, onDelete, onUpdated }: Vau
             console.error(error);
         } finally {
             setIsSavingCategory(false);
+        }
+    };
+
+    const handleUseSuggestedCategory = async () => {
+        if (!suggestedMatch) return;
+        setIsApplyingSuggestion(true);
+        try {
+            setSelectedCategoryId(suggestedMatch.id);
+            await handleSaveCategory(suggestedMatch.id);
+        } finally {
+            setIsApplyingSuggestion(false);
+        }
+    };
+
+    const handleCreateAndAssignSuggestedCategory = async () => {
+        if (!suggestedCategoryName) return;
+        setIsCreatingSuggestedCategory(true);
+        try {
+            const created = await api.createCategory(suggestedCategoryName);
+            setCategories((prev) => [...prev, created]);
+            setSelectedCategoryId(created.id);
+            await handleSaveCategory(created.id);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsCreatingSuggestedCategory(false);
         }
     };
 
@@ -179,6 +216,59 @@ export function VaultDetailModal({ resource, onClose, onDelete, onUpdated }: Vau
                             </div>
 
                             <div className="space-y-6">
+                                {suggestedCategoryName && !selectedCategoryId && !isSuggestionIgnored && (
+                                    <Card className="p-4 border-slate-200 bg-slate-50 space-y-3">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <h4 className="text-xs font-semibold text-slate-600">Sugestia AI</h4>
+                                            {(isApplyingSuggestion || isCreatingSuggestedCategory) && (
+                                                <span className="text-xs text-slate-500 inline-flex items-center gap-1">
+                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                    Stosuję...
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div className="flex items-center justify-between gap-3">
+                                            <Badge variant="outline" className="text-slate-700">
+                                                {suggestedCategoryName}
+                                            </Badge>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsSuggestionIgnored(true)}
+                                                className="text-xs text-slate-500 hover:text-slate-700"
+                                            >
+                                                Ignoruj
+                                            </button>
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-2">
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                disabled={!suggestedMatch || isApplyingSuggestion || isCreatingSuggestedCategory || isSavingCategory}
+                                                onClick={() => void handleUseSuggestedCategory()}
+                                            >
+                                                Użyj
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                disabled={isApplyingSuggestion || isCreatingSuggestedCategory || isSavingCategory}
+                                                onClick={() => void handleCreateAndAssignSuggestedCategory()}
+                                            >
+                                                Utwórz i przypisz
+                                            </Button>
+                                            {!suggestedMatch && (
+                                                <span className="text-xs text-slate-500 self-center">
+                                                    (Brak takiej kategorii — użyj „Utwórz i przypisz”)
+                                                </span>
+                                            )}
+                                        </div>
+                                    </Card>
+                                )}
+
                                 <Card className="p-4 border-slate-200 bg-slate-50 space-y-3">
                                     <div className="flex items-center justify-between gap-3">
                                         <h4 className="text-xs font-semibold text-slate-600">Kategoria</h4>
