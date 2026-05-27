@@ -1,10 +1,10 @@
 'use client';
 
-import { VaultResource } from '@/lib/types';
+import { Category, VaultResource } from '@/lib/types';
 import { X, PlayCircle, Trash2, ExternalLink, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/lib/api';
 import { categoryBadgeClass } from '@/lib/categoryColor';
 import { getResourceTypeConfig } from '@/lib/resourceCardUtils';
@@ -17,13 +17,58 @@ interface VaultDetailModalProps {
     onClose: () => void;
     onDelete: () => void;
     onReanalyze?: () => void;
+    onUpdated?: (patch: Partial<VaultResource>) => void;
 }
 
-export function VaultDetailModal({ resource, onClose, onDelete }: VaultDetailModalProps) {
+export function VaultDetailModal({ resource, onClose, onDelete, onUpdated }: VaultDetailModalProps) {
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isSavingCategory, setIsSavingCategory] = useState(false);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(resource.categoryId ?? null);
+
     const config = getResourceTypeConfig(resource.resourceType);
     const TypeIcon = config.icon;
     const isVideo = resource.resourceType === 'Video';
+
+    useEffect(() => {
+        setSelectedCategoryId(resource.categoryId ?? null);
+    }, [resource.categoryId]);
+
+    useEffect(() => {
+        let cancelled = false;
+        api.getCategories()
+            .then((data) => {
+                if (cancelled) return;
+                setCategories(data);
+            })
+            .catch(console.error);
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const selectedCategoryName = useMemo(() => {
+        if (!selectedCategoryId) return undefined;
+        return categories.find((c) => c.id === selectedCategoryId)?.name ?? resource.categoryName;
+    }, [categories, resource.categoryName, selectedCategoryId]);
+
+    const handleSaveCategory = async (categoryId: string | null) => {
+        setIsSavingCategory(true);
+        try {
+            await api.updateVaultResourceCategory(resource.id, categoryId);
+
+            const patch: Partial<VaultResource> = {
+                categoryId: categoryId ?? undefined,
+                categoryName: categoryId ? (categories.find((c) => c.id === categoryId)?.name ?? resource.categoryName) : undefined,
+                suggestedCategoryName: undefined,
+            };
+            onUpdated?.(patch);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsSavingCategory(false);
+        }
+    };
 
     const handleDelete = async () => {
         if (!window.confirm('Na pewno przenieść ten zasób do kosza?')) return;
@@ -91,9 +136,9 @@ export function VaultDetailModal({ resource, onClose, onDelete }: VaultDetailMod
                                         {resource.siteName && (
                                             <span className="text-xs text-slate-500">{resource.siteName}</span>
                                         )}
-                                        {resource.categoryName ? (
-                                            <span className={categoryBadgeClass(resource.categoryName)}>
-                                                {resource.categoryName}
+                                        {selectedCategoryName ? (
+                                            <span className={categoryBadgeClass(selectedCategoryName)}>
+                                                {selectedCategoryName}
                                             </span>
                                         ) : (
                                             <Badge variant="secondary" className="rounded-md text-[11px]">
@@ -134,6 +179,36 @@ export function VaultDetailModal({ resource, onClose, onDelete }: VaultDetailMod
                             </div>
 
                             <div className="space-y-6">
+                                <Card className="p-4 border-slate-200 bg-slate-50 space-y-3">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <h4 className="text-xs font-semibold text-slate-600">Kategoria</h4>
+                                        {isSavingCategory && (
+                                            <span className="text-xs text-slate-500 inline-flex items-center gap-1">
+                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                Zapisuję...
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <select
+                                        value={selectedCategoryId ?? ''}
+                                        onChange={(e) => {
+                                            const next = e.target.value || null;
+                                            setSelectedCategoryId(next);
+                                            void handleSaveCategory(next);
+                                        }}
+                                        disabled={isSavingCategory}
+                                        className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:opacity-60"
+                                    >
+                                        <option value="">Bez kategorii</option>
+                                        {categories.map((c) => (
+                                            <option key={c.id} value={c.id}>
+                                                {c.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </Card>
+
                                 <Card className="p-4 border-slate-200 bg-slate-50">
                                     <h4 className="text-xs font-semibold text-slate-600 mb-3">Tagi</h4>
                                     <div className="flex flex-wrap gap-2">
