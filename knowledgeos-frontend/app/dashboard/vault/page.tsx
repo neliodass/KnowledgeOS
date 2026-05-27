@@ -189,6 +189,10 @@ export default function VaultPage() {
                     resource={selectedResource}
                     onClose={() => setSelectedResource(null)}
                     onDelete={() => handleDelete(selectedResource.id)}
+                    onUpdated={(patch) => {
+                        setSelectedResource((prev) => (prev ? ({ ...prev, ...patch }) : prev));
+                        setItems((prev) => prev.map((it) => (it.id === selectedResource.id ? ({ ...it, ...patch }) : it)));
+                    }}
                 />
             )}
         </div>
