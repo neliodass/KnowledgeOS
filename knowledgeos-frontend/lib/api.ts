@@ -43,13 +43,20 @@ export const api = {
     // --- Resources ---
     getInboxMix: () => fetchWithAuth('/inbox/mix'),
     getVaultMix: () => fetchWithAuth('/vault/mix'),
-    getVault: async (pageNumber: number = 1, pageSize: number = 12, searchTerm: string = '', categoryId?: string) => {
+    getVault: async (
+        pageNumber: number = 1,
+        pageSize: number = 12,
+        searchTerm: string = '',
+        categoryId?: string,
+        uncategorizedOnly?: boolean
+    ) => {
         const query = new URLSearchParams({
             PageNumber: pageNumber.toString(),
             PageSize: pageSize.toString(),
         });
         if (searchTerm) query.append('SearchTerm', searchTerm);
         if (categoryId) query.append('CategoryId', categoryId);
+        if (uncategorizedOnly) query.append('UncategorizedOnly', 'true');
 
         const res = await fetchWithAuth(`/vault?${query.toString()}`);
         if (!res.ok) throw new Error("Failed to fetch vault");
@@ -72,6 +79,9 @@ export const api = {
 
     retryResource: (id: string) =>
         fetchWithAuth(`/resources/${id}/retry`, { method: 'POST' }),
+
+    promoteResource: (id: string) =>
+        fetchWithAuth(`/resources/${id}/promote`, { method: 'POST' }),
 
     deleteResource: (id: string) =>
         fetchWithAuth(`/resources/${id}`, { method: 'DELETE' }),

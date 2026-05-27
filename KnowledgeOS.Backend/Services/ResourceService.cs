@@ -1,4 +1,5 @@
 using Hangfire;
+using KnowledgeOS.Backend.Jobs.Abstractions;
 using KnowledgeOS.Backend.Data;
 using KnowledgeOS.Backend.DTOs.Common;
 using KnowledgeOS.Backend.DTOs.Resources;
@@ -109,7 +110,14 @@ public class ResourceService : IResourceService
                 .ThenInclude(v => v!.Category)
             .Where(r => r.UserId == userId && r.Status == ResourceStatus.Vault);
 
-        if (filter.CategoryId.HasValue) query = query.Where(r => r.VaultMeta != null && r.VaultMeta.CategoryId == filter.CategoryId.Value);
+        if (filter.UncategorizedOnly)
+        {
+            query = query.Where(r => r.VaultMeta == null || r.VaultMeta.CategoryId == null);
+        }
+        else if (filter.CategoryId.HasValue)
+        {
+            query = query.Where(r => r.VaultMeta != null && r.VaultMeta.CategoryId == filter.CategoryId.Value);
+        }
 
         if (!string.IsNullOrWhiteSpace(search.SearchTerm))
         {
@@ -376,6 +384,36 @@ public class ResourceService : IResourceService
         await _context.SaveChangesAsync();
 
         _backgroundJobClient.Enqueue<IUrlIngestionJob>(job => job.ProcessAsync(resource.Id));
+    }
+
+    public async Task PromoteToVaultAsync(Guid id, string userId)
+    {
+        var resource = await _context.Resources
+            .Include(r => r.InboxMeta)
+            .Include(r => r.VaultMeta)
+            .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
+
+        if (resource == null) throw new KeyNotFoundException("Resource not found");
+
+        resource.IsVaultTarget = true;
+
+        if (resource.VaultMeta == null)
+        {
+            resource.VaultMeta = new VaultMetadata
+            {
+                ResourceId = resource.Id,
+                PromotedToVaultAt = DateTime.UtcNow
+            };
+        }
+        else if (resource.VaultMeta.PromotedToVaultAt == null)
+        {
+            resource.VaultMeta.PromotedToVaultAt = DateTime.UtcNow;
+        }
+
+        resource.Status = ResourceStatus.AiAnalysing;
+        await _context.SaveChangesAsync();
+
+        _backgroundJobClient.Enqueue<IAiAnalysisJob>(job => job.ProcessAsync(resource.Id));
     }
 
     public async Task AssignCategoryAsync(Guid resourceId, string userId, Guid? categoryId)
