@@ -77,10 +77,11 @@ public class ResourceService : IResourceService
         var query = _context.Resources
             .Include(r => r.Tags)
             .Include(r => r.InboxMeta)
-            .Where(r => r.UserId == userId &&
-                        (r.Status == ResourceStatus.Inbox ||
-                         r.Status == ResourceStatus.Processing ||
-                         r.Status == ResourceStatus.AiAnalysing));
+            .Where(r => r.UserId == userId
+                        && !r.IsVaultTarget
+                        && (r.Status == ResourceStatus.Inbox
+                            || r.Status == ResourceStatus.Processing
+                            || r.Status == ResourceStatus.AiAnalysing));
         if (!string.IsNullOrWhiteSpace(search.SearchTerm))
         {
             var term = search.SearchTerm.ToLower();
@@ -108,7 +109,10 @@ public class ResourceService : IResourceService
             .Include(r => r.Tags)
             .Include(r => r.VaultMeta)
                 .ThenInclude(v => v!.Category)
-            .Where(r => r.UserId == userId && r.Status == ResourceStatus.Vault);
+            .Where(r => r.UserId == userId
+                        && r.IsVaultTarget
+                        && r.Status != ResourceStatus.Trash
+                        && r.Status != ResourceStatus.Archived);
 
         if (filter.UncategorizedOnly)
         {
@@ -178,6 +182,7 @@ public class ResourceService : IResourceService
         dto.SuggestedCategoryName = r.VaultMeta?.SuggestedCategoryName;
         dto.UserNote = r.VaultMeta?.UserNote;
         dto.PromotedToVaultAt = r.VaultMeta?.PromotedToVaultAt;
+        dto.Status = r.Status.ToString();
 
         return dto;
     }
@@ -206,7 +211,10 @@ public class ResourceService : IResourceService
             .Include(r => r.VaultMeta)
             .ThenInclude(v => v!.Category)
             .Include(r => r.Tags)
-            .Where(r => r.UserId == userId && r.Status == ResourceStatus.Vault)
+            .Where(r => r.UserId == userId
+                        && r.IsVaultTarget
+                        && r.Status != ResourceStatus.Trash
+                        && r.Status != ResourceStatus.Archived)
             .OrderBy(r => Guid.NewGuid())
             .Take(15)
             .ToListAsync();
@@ -270,7 +278,7 @@ public class ResourceService : IResourceService
         var baseQuery = _context.Resources
             .Include(r => r.Tags)
             .Include(r => r.InboxMeta)
-            .Where(r => r.UserId == userId && r.Status == ResourceStatus.Inbox);
+            .Where(r => r.UserId == userId && !r.IsVaultTarget && r.Status == ResourceStatus.Inbox);
 
         // 3 items with high, mid, low relevancy
 
@@ -329,7 +337,7 @@ public class ResourceService : IResourceService
 
         if (resource == null) return null;
 
-        if (resource.Status == ResourceStatus.Vault) return null;
+        if (resource.IsVaultTarget || resource.Status == ResourceStatus.Vault) return null;
 
         return MapToInboxDto(resource);
     }
@@ -344,7 +352,10 @@ public class ResourceService : IResourceService
 
         if (resource == null) return null;
 
-        if (resource.Status == ResourceStatus.Inbox) return null;
+        if (!resource.IsVaultTarget
+            || resource.Status == ResourceStatus.Trash
+            || resource.Status == ResourceStatus.Archived)
+            return null;
 
         return MapToVaultDto(resource);
     }
