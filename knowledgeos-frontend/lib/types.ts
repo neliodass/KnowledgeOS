@@ -19,13 +19,18 @@ export interface ResourceBase {
 
 // Inbox (InboxResourceDto)
 export interface InboxResource extends ResourceBase {
-    aiScore?: number;
     aiVerdict?: string;
     correctedTitle?: string;
+    substanceDepth?: string;
+    contentIntent?: string;
+    relevance?: string;
+    takeaway?: string;
+    scoredFromMetadataOnly?: boolean;
 }
 
 // Vault (VaultResourceDto)
 export interface VaultResource extends ResourceBase {
+    status: string;
     categoryId?: string;
     categoryName?: string;
     suggestedCategoryName?: string;
@@ -43,6 +48,13 @@ export interface UserPreferences {
     learningGoals?: string;
     hobbies?: string;
     topicsToAvoid?: string;
+}
+
+export interface ProfileRefineResponse {
+    assistantSummary: string;
+    proposedPreferences: UserPreferences;
+    changedFields: string[];
+    hasChanges: boolean;
 }
 export interface Category {
     id: string;

@@ -1,4 +1,5 @@
 using Hangfire;
+using KnowledgeOS.Backend.Jobs.Abstractions;
 using KnowledgeOS.Backend.Data;
 using KnowledgeOS.Backend.DTOs.Common;
 using KnowledgeOS.Backend.DTOs.Resources;
@@ -11,6 +12,14 @@ namespace KnowledgeOS.Backend.Services;
 
 public class ResourceService : IResourceService
 {
+    private static readonly ResourceStatus[] InboxPipelineStatuses =
+    [
+        ResourceStatus.New,
+        ResourceStatus.Processing,
+        ResourceStatus.AiAnalysing,
+        ResourceStatus.Inbox
+    ];
+
     private readonly AppDbContext _context;
     private readonly IBackgroundJobClient _backgroundJobClient;
 
@@ -76,10 +85,9 @@ public class ResourceService : IResourceService
         var query = _context.Resources
             .Include(r => r.Tags)
             .Include(r => r.InboxMeta)
-            .Where(r => r.UserId == userId &&
-                        (r.Status == ResourceStatus.Inbox ||
-                         r.Status == ResourceStatus.Processing ||
-                         r.Status == ResourceStatus.AiAnalysing));
+            .Where(r => r.UserId == userId
+                        && !r.IsVaultTarget
+                        && InboxPipelineStatuses.Contains(r.Status));
         if (!string.IsNullOrWhiteSpace(search.SearchTerm))
         {
             var term = search.SearchTerm.ToLower();
@@ -90,7 +98,8 @@ public class ResourceService : IResourceService
         var totalItems = await query.CountAsync();
 
         var resources = await query
-            .OrderByDescending(r => r.CreatedAt)
+            .OrderByDescending(r => r.InboxMeta != null ? r.InboxMeta.SortPriority : 0)
+            .ThenByDescending(r => r.CreatedAt)
             .Skip((pagination.PageNumber - 1) * pagination.PageSize)
             .Take(pagination.PageSize)
             .ToListAsync();
@@ -106,9 +115,19 @@ public class ResourceService : IResourceService
             .Include(r => r.Tags)
             .Include(r => r.VaultMeta)
                 .ThenInclude(v => v!.Category)
-            .Where(r => r.UserId == userId && r.Status == ResourceStatus.Vault);
+            .Where(r => r.UserId == userId
+                        && r.IsVaultTarget
+                        && r.Status != ResourceStatus.Trash
+                        && r.Status != ResourceStatus.Archived);
 
-        if (filter.CategoryId.HasValue) query = query.Where(r => r.VaultMeta != null && r.VaultMeta.CategoryId == filter.CategoryId.Value);
+        if (filter.UncategorizedOnly)
+        {
+            query = query.Where(r => r.VaultMeta == null || r.VaultMeta.CategoryId == null);
+        }
+        else if (filter.CategoryId.HasValue)
+        {
+            query = query.Where(r => r.VaultMeta != null && r.VaultMeta.CategoryId == filter.CategoryId.Value);
+        }
 
         if (!string.IsNullOrWhiteSpace(search.SearchTerm))
         {
@@ -169,6 +188,7 @@ public class ResourceService : IResourceService
         dto.SuggestedCategoryName = r.VaultMeta?.SuggestedCategoryName;
         dto.UserNote = r.VaultMeta?.UserNote;
         dto.PromotedToVaultAt = r.VaultMeta?.PromotedToVaultAt;
+        dto.Status = r.Status.ToString();
 
         return dto;
     }
@@ -180,8 +200,12 @@ public class ResourceService : IResourceService
 
         dto.CorrectedTitle = r.CorrectedTitle;
         dto.AiSummary = r.InboxMeta?.AiSummary;
-        dto.AiScore = r.InboxMeta?.AiScore;
         dto.AiVerdict = r.InboxMeta?.AiVerdict;
+        dto.SubstanceDepth = r.InboxMeta?.SubstanceDepth;
+        dto.ContentIntent = r.InboxMeta?.ContentIntent;
+        dto.Relevance = r.InboxMeta?.Relevance;
+        dto.Takeaway = r.InboxMeta?.Takeaway;
+        dto.ScoredFromMetadataOnly = r.InboxMeta?.ScoredFromMetadataOnly ?? false;
 
         return dto;
     }
@@ -193,7 +217,10 @@ public class ResourceService : IResourceService
             .Include(r => r.VaultMeta)
             .ThenInclude(v => v!.Category)
             .Include(r => r.Tags)
-            .Where(r => r.UserId == userId && r.Status == ResourceStatus.Vault)
+            .Where(r => r.UserId == userId
+                        && r.IsVaultTarget
+                        && r.Status != ResourceStatus.Trash
+                        && r.Status != ResourceStatus.Archived)
             .OrderBy(r => Guid.NewGuid())
             .Take(15)
             .ToListAsync();
@@ -254,46 +281,42 @@ public class ResourceService : IResourceService
 
     public async Task<List<InboxResourceDto>> GetSmartMixAsync(string userId)
     {
-        var baseQuery = _context.Resources
+        const int mixSize = 3;
+        const int poolSize = 15;
+
+        // Dashboard preview: only analysed inbox items (not pipeline / vault-target).
+        var randomPool = await _context.Resources
             .Include(r => r.Tags)
             .Include(r => r.InboxMeta)
-            .Where(r => r.UserId == userId && r.Status == ResourceStatus.Inbox);
-
-        // 3 items with high, mid, low relevancy
-
-        var high = await baseQuery
-            .Where(r => r.InboxMeta != null && r.InboxMeta.AiScore >= 75)
+            .Where(r => r.UserId == userId
+                        && !r.IsVaultTarget
+                        && r.Status == ResourceStatus.Inbox)
             .OrderBy(r => Guid.NewGuid())
-            .Take(1)
+            .Take(poolSize)
             .ToListAsync();
 
-        var mid = await baseQuery
-            .Where(r => r.InboxMeta != null && r.InboxMeta.AiScore >= 40 && r.InboxMeta.AiScore < 75)
-            .OrderBy(r => Guid.NewGuid())
-            .Take(1)
-            .ToListAsync();
+        if (!randomPool.Any())
+            return new List<InboxResourceDto>();
 
-        var low = await baseQuery
-            .Where(r => r.InboxMeta == null || r.InboxMeta.AiScore < 40)
-            .OrderBy(r => Guid.NewGuid())
-            .Take(1)
-            .ToListAsync();
+        // Prefer one item per content character (learn, entertain, news, inspire, mixed).
+        var selected = randomPool
+            .Where(r => !string.IsNullOrWhiteSpace(r.InboxMeta?.ContentIntent))
+            .GroupBy(r => r.InboxMeta!.ContentIntent!)
+            .OrderBy(_ => Guid.NewGuid())
+            .Select(g => g.First())
+            .Take(mixSize)
+            .ToList();
 
-        var mixedList = high.Concat(mid).Concat(low).ToList();
-
-        // Fallback if cant find 3 items with diffrent relevancy
-        if (mixedList.Count < 3)
+        if (selected.Count < mixSize)
         {
-            var existingIds = mixedList.Select(x => x.Id).ToList();
-            var filler = await baseQuery
-                .Where(r => !existingIds.Contains(r.Id))
-                .OrderBy(r => Guid.NewGuid())
-                .Take(3 - mixedList.Count)
-                .ToListAsync();
-            mixedList.AddRange(filler);
+            var selectedIds = selected.Select(r => r.Id).ToHashSet();
+            var filler = randomPool
+                .Where(r => !selectedIds.Contains(r.Id))
+                .Take(mixSize - selected.Count);
+            selected.AddRange(filler);
         }
 
-        return mixedList.Select(MapToInboxDto).ToList();
+        return selected.Select(MapToInboxDto).ToList();
     }
 
     public async Task<InboxResourceDto?> GetInboxResourceByIdAsync(Guid id, string userId)
@@ -305,7 +328,7 @@ public class ResourceService : IResourceService
 
         if (resource == null) return null;
 
-        if (resource.Status == ResourceStatus.Vault) return null;
+        if (resource.IsVaultTarget || resource.Status == ResourceStatus.Vault) return null;
 
         return MapToInboxDto(resource);
     }
@@ -320,7 +343,10 @@ public class ResourceService : IResourceService
 
         if (resource == null) return null;
 
-        if (resource.Status == ResourceStatus.Inbox) return null;
+        if (!resource.IsVaultTarget
+            || resource.Status == ResourceStatus.Trash
+            || resource.Status == ResourceStatus.Archived)
+            return null;
 
         return MapToVaultDto(resource);
     }
@@ -360,6 +386,36 @@ public class ResourceService : IResourceService
         await _context.SaveChangesAsync();
 
         _backgroundJobClient.Enqueue<IUrlIngestionJob>(job => job.ProcessAsync(resource.Id));
+    }
+
+    public async Task PromoteToVaultAsync(Guid id, string userId)
+    {
+        var resource = await _context.Resources
+            .Include(r => r.InboxMeta)
+            .Include(r => r.VaultMeta)
+            .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
+
+        if (resource == null) throw new KeyNotFoundException("Resource not found");
+
+        resource.IsVaultTarget = true;
+
+        if (resource.VaultMeta == null)
+        {
+            resource.VaultMeta = new VaultMetadata
+            {
+                ResourceId = resource.Id,
+                PromotedToVaultAt = DateTime.UtcNow
+            };
+        }
+        else if (resource.VaultMeta.PromotedToVaultAt == null)
+        {
+            resource.VaultMeta.PromotedToVaultAt = DateTime.UtcNow;
+        }
+
+        resource.Status = ResourceStatus.AiAnalysing;
+        await _context.SaveChangesAsync();
+
+        _backgroundJobClient.Enqueue<IAiAnalysisJob>(job => job.ProcessAsync(resource.Id));
     }
 
     public async Task AssignCategoryAsync(Guid resourceId, string userId, Guid? categoryId)

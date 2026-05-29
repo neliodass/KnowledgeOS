@@ -23,4 +23,5 @@ public interface IResourceService
     Task DeleteResourceAsync(Guid id, string userId);
     Task RetryProcessingAsync(Guid id, string userId);
     Task AssignCategoryAsync(Guid resourceId, string userId, Guid? categoryId);
+    Task PromoteToVaultAsync(Guid id, string userId);
 }

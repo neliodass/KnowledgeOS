@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 
-export type Theme = 'cyber-green' | 'cyber-purple' | 'clean-light';
+export type Theme = 'cyber-green' | 'cyber-purple' | 'clean-light' | 'clean-dark';
 
 interface ThemeContextType {
     theme: Theme;
@@ -10,18 +10,19 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-    theme: 'cyber-green',
+    theme: 'clean-light',
     setTheme: () => {},
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-    const [theme, setThemeState] = useState<Theme>('cyber-green');
+    const [theme, setThemeState] = useState<Theme>(() => {
+        if (typeof window === 'undefined') return 'clean-light';
+        return (localStorage.getItem('theme') as Theme) || 'clean-light';
+    });
 
     useEffect(() => {
-        const saved = (localStorage.getItem('theme') as Theme) || 'cyber-green';
-        setThemeState(saved);
-        document.documentElement.setAttribute('data-theme', saved);
-    }, []);
+        document.documentElement.setAttribute('data-theme', theme);
+    }, [theme]);
 
     const setTheme = (t: Theme) => {
         setThemeState(t);

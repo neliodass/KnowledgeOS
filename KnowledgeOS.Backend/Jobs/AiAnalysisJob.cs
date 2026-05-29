@@ -1,8 +1,10 @@
 using Hangfire;
+using Hangfire.Server;
 using KnowledgeOS.Backend.Data;
 using KnowledgeOS.Backend.Entities.Resources;
 using KnowledgeOS.Backend.Entities.Tagging;
 using KnowledgeOS.Backend.Jobs.Abstractions;
+using KnowledgeOS.Backend.Services;
 using KnowledgeOS.Backend.Services.Abstractions;
 using KnowledgeOS.Backend.Services.Ai.Abstractions;
 using Microsoft.EntityFrameworkCore;
@@ -32,7 +34,17 @@ public class AiAnalysisJob : IAiAnalysisJob
     }
 
     [AutomaticRetry(Attempts = 3, OnAttemptsExceeded = AttemptsExceededAction.Fail)]
-    public async Task ProcessAsync(Guid resourceId)
+    public Task ProcessAsync(Guid resourceId)
+    {
+        return ProcessInternalAsync(resourceId, null);
+    }
+
+    internal Task ProcessInternalAsync(Guid resourceId, PerformContext? context)
+    {
+        return ProcessInternalCoreAsync(resourceId, context);
+    }
+
+    private async Task ProcessInternalCoreAsync(Guid resourceId, PerformContext? context)
     {
         _logger.LogInformation($"Starting AI Analysis for resource: {resourceId}");
         var resource = await _context.Resources
@@ -125,20 +137,10 @@ public class AiAnalysisJob : IAiAnalysisJob
 
                 if (resource.InboxMeta == null)
                 {
-                    resource.InboxMeta = new InboxMetadata
-                    {
-                        ResourceId = resource.Id,
-                        AiScore = result.Score,
-                        AiVerdict = result.Verdict,
-                        AiSummary = result.Summary
-                    };
+                    resource.InboxMeta = new InboxMetadata { ResourceId = resource.Id };
                 }
-                else
-                {
-                    resource.InboxMeta.AiScore = result.Score;
-                    resource.InboxMeta.AiVerdict = result.Verdict;
-                    resource.InboxMeta.AiSummary = result.Summary;
-                }
+
+                InboxMetadataMapper.ApplyAnalysis(resource.InboxMeta, result);
 
                 resource.Status = ResourceStatus.Inbox;
             }
@@ -150,7 +152,20 @@ public class AiAnalysisJob : IAiAnalysisJob
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"AI Analysis failed for resource {resourceId}");
+            _logger.LogError(ex, "AI Analysis failed for resource {ResourceId}", resourceId);
+
+            if (resource.IsVaultTarget)
+            {
+                var retryCount = context?.GetJobParameter<int>("RetryCount") ?? 0;
+                if (retryCount >= 2)
+                {
+                    await ApplyVaultFallbackAsync(resource, ex);
+                    return;
+                }
+
+                throw;
+            }
+
             resource.Status = ResourceStatus.Error;
             try
             {
@@ -164,10 +179,49 @@ public class AiAnalysisJob : IAiAnalysisJob
         }
     }
 
+    internal async Task ApplyVaultFallbackAsync(Resource resource, Exception ex)
+    {
+        _logger.LogError(ex,
+            "Vault-target AI analysis exhausted retries for {ResourceId}; applying minimal vault metadata",
+            resource.Id);
+
+        if (resource.VaultMeta == null)
+        {
+            resource.VaultMeta = new VaultMetadata
+            {
+                ResourceId = resource.Id,
+                PromotedToVaultAt = DateTime.UtcNow
+            };
+        }
+        else if (resource.VaultMeta.PromotedToVaultAt == null)
+        {
+            resource.VaultMeta.PromotedToVaultAt = DateTime.UtcNow;
+        }
+
+        var summary = resource.Description;
+        if (string.IsNullOrWhiteSpace(summary) || summary == resource.Title)
+        {
+            summary = !string.IsNullOrWhiteSpace(resource.Title) &&
+                      resource.Title != "Waiting for analysis..."
+                ? resource.Title
+                : resource.Url;
+        }
+
+        resource.VaultMeta.AiSummary = summary.Length > 500 ? summary[..500] : summary;
+        resource.VaultMeta.SuggestedCategoryName = null;
+
+        if (resource.InboxMeta != null)
+        {
+            _context.InboxMetadata.Remove(resource.InboxMeta);
+            resource.InboxMeta = null;
+        }
+
+        resource.Status = ResourceStatus.Vault;
+        await _context.SaveChangesAsync();
+    }
+
     private async Task UpdateTagsAsync(Resource resource, string[] tags)
     {
-        resource.Tags.Clear();
-
         foreach (var tagName in tags)
         {
             var normalizedTagName = tagName.Trim().ToLowerInvariant();

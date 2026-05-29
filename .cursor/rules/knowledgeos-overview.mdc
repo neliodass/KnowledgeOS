@@ -1,0 +1,37 @@
+---
+description: KnowledgeOS project overview, architecture, and run instructions
+alwaysApply: true
+---
+
+# KnowledgeOS Overview
+
+Personal AI knowledge vault: URL → Hangfire ingestion → OpenRouter AI score → Inbox → Vault.
+
+## Stack & paths
+
+- **Backend**: `KnowledgeOS.Backend/` — .NET 10, EF Core + PostgreSQL (TPT), Identity + JWT, Hangfire
+- **Frontend**: `knowledgeos-frontend/` — Next.js 16, React 19, Tailwind 4
+- **Run**: `docker compose up -d --build` from repo root; UI at `:3000`, API at `:5000`
+
+## Resource pipeline
+
+`POST /api/resources` → `UrlIngestionJob` (metadata) → `AiAnalysisJob` (score/tags) → status `Inbox` or `Vault`.
+
+Statuses (`ResourceStatus`): `New`, `Processing`, `AiAnalysing`, `Inbox`, `Vault`, `Archived`, `Trash`, `Error`.
+
+## Key design
+
+- TPT: `VideoResource`, `ArticleResource` extend `Resource`
+- Separate `InboxMetadata` / `VaultMetadata` tables (not columns on Resource)
+- All queries filtered by current user in `AppDbContext`
+- AI: multiple `IAiProvider` beans from `Ai:Model_*` config, OpenRouter endpoint
+
+## Frontend API
+
+- All calls: `knowledgeos-frontend/lib/api.ts`
+- Types: `lib/types.ts`
+- `/api` proxied to backend via `next.config.ts` → `INTERNAL_API_URL`
+
+## Full reference
+
+See `AGENTS.md` at repo root for API table, file map, and change guide.

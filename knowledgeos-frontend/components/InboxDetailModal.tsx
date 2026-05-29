@@ -1,9 +1,14 @@
-import {InboxResource} from '@/lib/types';
-import {X, PlayCircle, Eye, Sparkles, Archive, Trash2, Database, ExternalLink, RefreshCw, Loader2} from 'lucide-react';
+import {InboxResource, ProfileRefineResponse} from '@/lib/types';
+import {X, PlayCircle, Sparkles, Archive, Trash2, Database, ExternalLink, RefreshCw, Loader2, MessageSquare, ChevronDown} from 'lucide-react';
+import {InboxAxisBars} from '@/components/InboxAxisBars';
+import {InboxProcessingIndicator} from '@/components/InboxProcessingIndicator';
+import {hasInboxAxes} from '@/lib/inboxTiers';
 import Image from "next/image";
 import Link from "next/link";
 import {useState} from "react";
 import {api} from "@/lib/api";
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
 interface InboxDetailModalProps {
     resource: InboxResource;
@@ -17,7 +22,15 @@ interface InboxDetailModalProps {
 export function InboxDetailModal({resource, onClose, onArchive, onDelete, onPromote,onRetry}: InboxDetailModalProps) {
     const [isRetrying, setIsRetrying] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [showScoreFeedback, setShowScoreFeedback] = useState(false);
+    const [feedbackMessage, setFeedbackMessage] = useState('');
+    const [feedbackLoading, setFeedbackLoading] = useState(false);
+    const [feedbackError, setFeedbackError] = useState('');
+    const [refinePreview, setRefinePreview] = useState<ProfileRefineResponse | null>(null);
+    const [applyLoading, setApplyLoading] = useState(false);
+    const [showWhy, setShowWhy] = useState(false);
     const isVideo = resource.resourceType === 'Video';
+    const showAxes = hasInboxAxes(resource);
     const handleRetry = async () => {
         setIsRetrying(true);
         try {
@@ -32,6 +45,40 @@ export function InboxDetailModal({resource, onClose, onArchive, onDelete, onProm
             setIsRetrying(false);
         }
     };
+    const handleScoreFeedback = async () => {
+        if (!feedbackMessage.trim()) return;
+        setFeedbackLoading(true);
+        setFeedbackError('');
+        setRefinePreview(null);
+        try {
+            await api.submitScoringFeedback(resource.id, feedbackMessage.trim());
+            const result: ProfileRefineResponse = await api.refinePreferences(
+                feedbackMessage.trim(),
+                resource.id
+            );
+            setRefinePreview(result);
+        } catch (e) {
+            setFeedbackError(e instanceof Error ? e.message : 'Profile update failed');
+        } finally {
+            setFeedbackLoading(false);
+        }
+    };
+
+    const handleApplyProfileFix = async () => {
+        if (!refinePreview?.hasChanges) return;
+        setApplyLoading(true);
+        try {
+            await api.updatePreferences(refinePreview.proposedPreferences);
+            setShowScoreFeedback(false);
+            setFeedbackMessage('');
+            setRefinePreview(null);
+        } catch (e) {
+            setFeedbackError(e instanceof Error ? e.message : 'Failed to save profile');
+        } finally {
+            setApplyLoading(false);
+        }
+    };
+
     const handleDelete = async () => {
         if (!window.confirm("Are you sure you want to move this item to trash?")) return;
 
@@ -50,25 +97,26 @@ export function InboxDetailModal({resource, onClose, onArchive, onDelete, onProm
         }
     };
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-8 modal-overlay"
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-8 bg-slate-900/50"
              onClick={onClose}>
             <div
-                className="relative w-full max-w-4xl bg-tech-bg border-2 border-tech-primary shadow-[0_0_30px_rgba(163,255,191,0.15)] flex flex-col max-h-[90vh]"
+                className="relative w-full max-w-4xl bg-white border border-slate-200 shadow-xl rounded-xl flex flex-col max-h-[90vh]"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="flex items-center justify-between border-b border-tech-primary p-4 bg-tech-primary-dim">
+                <div className="flex items-center justify-between border-b border-slate-200 p-4">
                     <div className="flex items-center gap-3">
-                        <Eye className="w-5 h-5 text-tech-primary"/>
-                        <h2 className="text-sm font-bold text-tech-primary uppercase tracking-widest">
-                            Protocol_ID: {resource.id.substring(0, 8)}
+                        <h2 className="text-sm font-semibold text-slate-900">
+                            Resource ID: {resource.id.substring(0, 8)}
                         </h2>
                     </div>
-                    <button
+                    <Button
                         onClick={onClose}
-                        className="w-8 h-8 border border-tech-primary flex items-center justify-center text-tech-primary hover:bg-tech-primary hover:text-black transition-colors"
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
                     >
                         <X className="w-5 h-5"/>
-                    </button>
+                    </Button>
                 </div>
 
                 <div className="overflow-y-auto flex-1">
@@ -76,7 +124,7 @@ export function InboxDetailModal({resource, onClose, onArchive, onDelete, onProm
                         {resource.imageUrl && (
 
                             <div
-                                className="relative w-full aspect-video border border-tech-border mb-8 group cursor-pointer bg-black/50 overflow-hidden">
+                                className="relative w-full aspect-video border border-slate-200 mb-8 group cursor-pointer bg-slate-100 overflow-hidden rounded-lg">
                                 <Link href={resource.url} target="_blank" rel="noopener noreferrer">
                                     <Image
                                         src={resource.imageUrl}
@@ -89,79 +137,122 @@ export function InboxDetailModal({resource, onClose, onArchive, onDelete, onProm
                                     {isVideo && (
                                         <div className="absolute inset-0 flex items-center justify-center">
                                             <PlayCircle
-                                                className="w-20 h-20 text-tech-primary drop-shadow-[0_0_10px_rgba(0,0,0,0.8)]"/>
+                                                className="w-20 h-20 text-white drop-shadow-[0_0_10px_rgba(0,0,0,0.8)]"/>
                                         </div>
                                     )
                                     }
                                 </Link>
-                                <div
-                                    className="absolute bottom-4 left-4 bg-black/90 border border-tech-primary px-3 py-1 flex items-center gap-4">
-                                    <div className="flex items-center gap-1">
-                                        <Eye className="w-3 h-3 text-tech-primary"/>
-                                        <span
-                                            className="text-[10px] text-tech-primary font-bold uppercase">PREVIEW_MODE</span>
-                                    </div>
-                                    <div className="w-px h-3 bg-tech-border"></div>
-                                    <span
-                                        className="text-[10px] text-tech-primary font-bold uppercase tracking-tighter">
-                        {resource.resourceType.toUpperCase()}_STREAM
-                    </span>
-                                </div>
                             </div>
                         )}
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             <div className="md:col-span-2 space-y-6">
                                 <div>
-                                    <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[10px] font-bold bg-tech-primary text-black px-1.5 py-0.5 uppercase">
-                        SOURCE: {resource.siteName || 'WEB'}
-                    </span>
-                                        <span
-                                            className="text-[10px] font-bold border border-tech-primary text-tech-primary px-1.5 py-0.5">
-                        SCORE: {resource.aiScore || 0}/100
-                    </span>
+                                    <div className="flex items-center gap-2 mb-2 text-xs text-slate-500">
+                                        <span>Źródło: {resource.siteName || 'Web'}</span>
                                     </div>
-                                    <h3 className="text-2xl font-bold text-white uppercase leading-tight font-mono">
+                                    <div className="mb-4 max-w-md">
+                                        {showAxes ? (
+                                            <InboxAxisBars resource={resource} />
+                                        ) : (
+                                            <InboxProcessingIndicator />
+                                        )}
+                                    </div>
+                                    <h3 className="text-2xl font-semibold text-slate-900 leading-tight">
                                         <a href={resource.url} target="_blank" rel="noopener noreferrer"
-                                           className="hover:text-tech-primary flex items-start gap-2">
+                                           className="hover:text-indigo-600 flex items-start gap-2">
                                             {resource.correctedTitle || resource.title}
                                             <ExternalLink className="w-4 h-4 mt-1 opacity-50"/>
                                         </a>
                                     </h3>
                                 </div>
-                                <div className="border-l-2 border-tech-primary pl-6 space-y-4">
-                                    <h4 className="text-xs font-bold text-tech-primary uppercase tracking-[0.2em] mb-2">
-                                        &gt; AI_VERDICT
-                                    </h4>
+                                <div className="border-l-2 border-slate-200 pl-6 space-y-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowWhy(v => !v)}
+                                        className="flex items-center gap-2 text-xs font-semibold text-slate-700"
+                                    >
+                                        <ChevronDown className={`w-4 h-4 transition-transform ${showWhy ? 'rotate-180' : ''}`}/>
+                                        Dlaczego?
+                                    </button>
+                                    {showWhy && (
                                     <div
-                                        className="text-sm text-gray-300 leading-relaxed font-mono whitespace-pre-line">
-                                        {resource.aiVerdict || "No detailed verdict available for this node."}
+                                        className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
+                                        {resource.aiVerdict || "Brak uzasadnienia dla tego wpisu."}
                                     </div>
+                                    )}
+                                    <Button
+                                        type="button"
+                                        onClick={() => setShowScoreFeedback(v => !v)}
+                                        variant="outline"
+                                        className="text-xs"
+                                    >
+                                        <MessageSquare className="w-3 h-3"/>
+                                        {showScoreFeedback ? 'Ukryj feedback' : 'Ocena nie pasuje'}
+                                    </Button>
+                                    {showScoreFeedback && (
+                                        <Card className="border border-slate-200 bg-slate-50 p-4 space-y-3">
+                                            <textarea
+                                                className="w-full bg-white border border-slate-300 rounded-md p-2 text-sm text-slate-700 h-20 resize-none focus:outline-none focus:border-indigo-500"
+                                                spellCheck={false}
+                                                placeholder="Np. za wysoko — nie interesuje mnie polityka, to tylko clickbait..."
+                                                value={feedbackMessage}
+                                                onChange={e => setFeedbackMessage(e.target.value)}
+                                            />
+                                            <div className="flex flex-wrap gap-2">
+                                                <Button
+                                                    type="button"
+                                                    onClick={handleScoreFeedback}
+                                                    disabled={feedbackLoading || !feedbackMessage.trim()}
+                                                    size="sm"
+                                                    variant="outline"
+                                                >
+                                                    {feedbackLoading ? 'Analizuję...' : 'Popraw mój profil'}
+                                                </Button>
+                                                {refinePreview?.hasChanges && (
+                                                    <Button
+                                                        type="button"
+                                                        onClick={handleApplyProfileFix}
+                                                        disabled={applyLoading}
+                                                        size="sm"
+                                                    >
+                                                        {applyLoading ? 'Zapisuję...' : 'Zastosuj profil'}
+                                                    </Button>
+                                                )}
+                                            </div>
+                                            {feedbackError && (
+                                                <p className="text-xs text-red-500">{feedbackError}</p>
+                                            )}
+                                            {refinePreview && (
+                                                <p className="text-xs text-slate-600 leading-relaxed">
+                                                    {refinePreview.assistantSummary}
+                                                </p>
+                                            )}
+                                        </Card>
+                                    )}
                                 </div>
-                                <div className="border-l-2 border-tech-primary pl-6 space-y-4">
-                                    <h4 className="text-xs font-bold text-tech-primary uppercase tracking-[0.2em] mb-2">
-                                        &gt; AI_SUMMARY_MODULE
+                                <div className="border-l-2 border-slate-200 pl-6 space-y-4">
+                                    <h4 className="text-xs font-semibold text-slate-700">
+                                        Podsumowanie AI
                                     </h4>
                                     <div
-                                        className="text-sm text-gray-300 leading-relaxed font-mono whitespace-pre-line">
+                                        className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
                                         {resource.aiSummary || "No detailed summary available for this node."}
                                     </div>
                                 </div>
                             </div>
 
                             <div className="space-y-6">
-                                <div className="p-4 border border-tech-border bg-tech-surface">
-                                    <h4 className="text-[10px] font-bold text-tech-text-muted uppercase mb-4 tracking-widest">Metadata
-                                        Tags</h4>
+                                <div className="p-4 border border-slate-200 rounded-lg bg-slate-50">
+                                    <h4 className="text-xs font-semibold text-slate-600 mb-4">Tagi</h4>
                                     <div className="flex flex-wrap gap-2">
                                         {resource.tags && resource.tags.length > 0 ? resource.tags.map(tag => (
                                                 <span key={tag}
-                                                      className="text-[10px] text-tech-primary border border-tech-primary/30 px-2 py-1 uppercase">
+                                                      className="text-xs text-slate-700 border border-slate-300 px-2 py-1 rounded-md">
                             #{tag}
                         </span>
                                             )) :
-                                            <span className="text-[10px] text-gray-600">NO_TAGS_DETECTED</span>}
+                                            <span className="text-xs text-slate-500">Brak tagów</span>}
                                     </div>
                                 </div>
 
@@ -171,47 +262,50 @@ export function InboxDetailModal({resource, onClose, onArchive, onDelete, onProm
                 </div>
 
                 <div
-                    className="p-6 border-t border-tech-border bg-tech-surface grid grid-cols-4 gap-4 sticky bottom-0 z-10">
-                    <button
+                    className="p-6 border-t border-slate-200 bg-white grid grid-cols-2 md:grid-cols-4 gap-3 sticky bottom-0 z-10">
+                    <Button
                         onClick={() => onPromote && onPromote(resource.id)}
-                        className="flex items-center justify-center gap-3 py-3 border border-tech-primary bg-tech-primary-dim text-tech-primary hover:bg-tech-primary hover:text-black transition-all font-bold text-xs uppercase tracking-widest"
+                        variant="outline"
+                        className="justify-center"
                     >
                         <Database className="w-4 h-4"/>
-                        <span className="hidden sm:inline">Promote to Vault</span>
-                        <span className="sm:hidden">Promote</span>
-                    </button>
+                        <span>Do Vault</span>
+                    </Button>
 
-                    <button
+                    <Button
                         onClick={() => onArchive(resource.id)}
-                        className="flex items-center justify-center gap-3 py-3 border border-tech-border text-gray-400 hover:border-white hover:text-white transition-all font-bold text-xs uppercase tracking-widest"
+                        variant="outline"
+                        className="justify-center"
                     >
                         <Archive className="w-4 h-4"/>
-                        Archive
-                    </button>
-                    <button
+                        Archiwizuj
+                    </Button>
+                    <Button
                         onClick={handleRetry}
                         disabled={isRetrying}
-                        className="flex items-center justify-center gap-3 py-3 border border-tech-border text-gray-400 hover:border-tech-primary hover:text-tech-primary transition-all font-bold text-xs uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
+                        variant="outline"
+                        className="justify-center"
                     >
                         {isRetrying ? (
                             <RefreshCw className="w-4 h-4 animate-spin"/>
                         ) : (
                             <Sparkles className="w-4 h-4"/>
                         )}
-                        {isRetrying ? "Processing..." : "Reanalyze"}
-                    </button>
-                    <button
+                        {isRetrying ? "Przetwarzam..." : "Analizuj ponownie"}
+                    </Button>
+                    <Button
                         onClick={handleDelete}
                         disabled={isDeleting || isRetrying}
-                        className="flex items-center justify-center gap-3 py-3 border border-red-900 bg-red-900/10 text-red-500 hover:bg-red-500 hover:text-white transition-all font-bold text-xs uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
+                        variant="destructive"
+                        className="justify-center"
                     >
                         {isDeleting ? (
                             <Loader2 className="w-4 h-4 animate-spin"/>
                         ) : (
                             <Trash2 className="w-4 h-4"/>
                         )}
-                        {isDeleting ? "Deleting..." : "Trash"}
-                    </button>
+                        {isDeleting ? "Usuwam..." : "Przenieś do kosza"}
+                    </Button>
                 </div>
 
             </div>

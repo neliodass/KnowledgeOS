@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using KnowledgeOS.Backend.Entities.Abstractions;
+using Pgvector;
 
 namespace KnowledgeOS.Backend.Entities.Users;
 
@@ -19,10 +20,14 @@ public class UserPreference : IUserOwnedResource
     // "Czego unikać" (np. "Polityka, Clickbait, Filmy powyżej 1h bez spisu treści")
     [MaxLength(1000)] public string? TopicsToAvoid { get; set; }
 
+    public Vector? ProfileEmbedding { get; set; }
+    public DateTime? ProfileEmbeddingUpdatedAt { get; set; }
+
     public string ToAiPromptContext()
     {
         return $"""
                 MY CONTEXT: {ProfessionalContext ?? "General Audience"}
+                HOBBIES: {Hobbies ?? "Not specified"}
                 INTERESTS/GOALS: {LearningGoals ?? "General Knowledge"}
                 AVOID: {TopicsToAvoid ?? "Nothing specific"}
                 """;

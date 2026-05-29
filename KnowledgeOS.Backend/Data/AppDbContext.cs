@@ -1,3 +1,5 @@
+using KnowledgeOS.Backend.Constants;
+using KnowledgeOS.Backend.Entities.Feedback;
 using KnowledgeOS.Backend.Entities.Resources;
 using KnowledgeOS.Backend.Entities.Resources.ConcreteResources;
 using KnowledgeOS.Backend.Entities.Tagging;
@@ -5,6 +7,7 @@ using KnowledgeOS.Backend.Entities.Users;
 using KnowledgeOS.Backend.Services.Abstractions;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Pgvector;
 
 namespace KnowledgeOS.Backend.Data;
 
@@ -25,7 +28,6 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 
     // Concrete Resources
     public DbSet<VideoResource> Videos { get; set; }
-
     public DbSet<ArticleResource> Articles { get; set; }
 
     // Resource Metadata
@@ -38,6 +40,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 
     //Users stuff
     public DbSet<UserPreference> UserPreferences { get; set; }
+    public DbSet<ScoringFeedback> ScoringFeedbacks { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -52,7 +55,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .WithOne(m => m.Resource)
             .HasForeignKey<InboxMetadata>(m => m.ResourceId)
             .OnDelete(DeleteBehavior.Cascade);
-
+        
         modelBuilder.Entity<InboxMetadata>().ToTable("ResourceInboxDetails");
 
         modelBuilder.Entity<Resource>()
@@ -68,21 +71,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<VaultMetadata>().ToTable("ResourceVaultDetails");
-
-        modelBuilder.Entity<Resource>()
-            .HasQueryFilter(r => r.UserId == _currentUserService.UserId);
         
-        modelBuilder.Entity<InboxMetadata>()
-            .HasQueryFilter(m => m.Resource.UserId == _currentUserService.UserId);
-
-        modelBuilder.Entity<VaultMetadata>()
-            .HasQueryFilter(m => m.Resource.UserId == _currentUserService.UserId);
-        
-        modelBuilder.Entity<Category>()
-            .HasQueryFilter(c => c.UserId == _currentUserService.UserId);
-        modelBuilder.Entity<Tag>()
-            .HasQueryFilter(t => t.Resources.Any(r => r.UserId == _currentUserService.UserId));
-
         modelBuilder.Entity<Category>()
             .HasIndex(c => new { c.Name, c.UserId })
             .IsUnique();
@@ -94,5 +83,46 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<UserPreference>()
             .HasIndex(up => up.UserId)
             .IsUnique();
+
+        modelBuilder.HasPostgresExtension("vector");
+        modelBuilder.Entity<UserPreference>()
+            .Property(p => p.ProfileEmbedding)
+            .HasColumnType("vector(1536)");
+
+        modelBuilder.Entity<ScoringFeedback>()
+            .HasOne(f => f.Resource)
+            .WithMany()
+            .HasForeignKey(f => f.ResourceId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ScoringFeedback>()
+            .HasIndex(f => new { f.UserId, f.ResourceId, f.CreatedAt });
+
+        //Filters
+
+        // Ownership filters must reference the DbContext instance field (_currentUserService)
+        // directly. EF Core caches the model app-wide; a filter that closes over a captured
+        // local/parameter bakes the first request's user id into the compiled query as a
+        // constant and reuses it for every user. Referencing the context member lets EF
+        // re-evaluate it per request (rendered as an @ef_filter__ parameter).
+        modelBuilder.Entity<Resource>()
+            .HasQueryFilter(r => _currentUserService.HasPermission(Permissions.BypassResourceOwnership) ||
+                                 r.UserId == _currentUserService.UserId);
+        modelBuilder.Entity<Category>()
+            .HasQueryFilter(c => _currentUserService.HasPermission(Permissions.BypassResourceOwnership) ||
+                                 c.UserId == _currentUserService.UserId);
+        modelBuilder.Entity<ScoringFeedback>()
+            .HasQueryFilter(f => _currentUserService.HasPermission(Permissions.BypassResourceOwnership) ||
+                                 f.UserId == _currentUserService.UserId);
+
+        
+        //dependent entities
+        modelBuilder.Entity<InboxMetadata>()
+            .HasQueryFilter(m=> _currentUserService.HasPermission(Permissions.BypassResourceOwnership)||
+                                m.Resource.UserId == _currentUserService.UserId);
+        modelBuilder.Entity<VaultMetadata>()
+            .HasQueryFilter(m=> _currentUserService.HasPermission(Permissions.BypassResourceOwnership)||
+                                m.Resource.UserId == _currentUserService.UserId);
+        
     }
 }

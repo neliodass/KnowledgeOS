@@ -1,13 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { InboxResource } from "@/lib/types";
 import { InboxCard } from "@/components/InboxCard";
 import { InboxDetailModal } from "@/components/InboxDetailModal";
-import { Search, Loader2, Inbox, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
+import { Search, Loader2, Inbox, ChevronLeft, ChevronRight, AlertCircle, ExternalLink, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { useInboxAutoRefresh } from "@/lib/useInboxAutoRefresh";
+import { hasInboxAxes } from "@/lib/inboxTiers";
 
-export default function InboxPage() {
+function InboxPageContent() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const justAdded = searchParams.get("added") === "1";
+
     const [items, setItems] = useState<InboxResource[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -19,13 +28,10 @@ export default function InboxPage() {
     const [searchTerm, setSearchTerm] = useState("");
 
     const [selectedResource, setSelectedResource] = useState<InboxResource | null>(null);
+    const [promoteNoticeOpen, setPromoteNoticeOpen] = useState(false);
 
-    useEffect(() => {
-        loadInboxData();
-    }, [page, searchTerm]);
-
-    const loadInboxData = async () => {
-        setIsLoading(true);
+    const loadInboxData = useCallback(async (options?: { silent?: boolean }) => {
+        if (!options?.silent) setIsLoading(true);
         try {
             const data = await api.getInbox(page, pageSize, searchTerm);
             setItems(data.items || []);
@@ -36,9 +42,26 @@ export default function InboxPage() {
         } catch (error) {
             console.error("Failed to fetch inbox items", error);
         } finally {
-            setIsLoading(false);
+            if (!options?.silent) setIsLoading(false);
         }
-    };
+    }, [page, pageSize, searchTerm]);
+
+    useEffect(() => {
+        void loadInboxData();
+    }, [loadInboxData]);
+
+    useInboxAutoRefresh(items, loadInboxData);
+
+    useEffect(() => {
+        if (justAdded && items.length > 0) {
+            router.replace("/dashboard/inbox", { scroll: false });
+        }
+    }, [justAdded, items.length, router]);
+
+    const pendingCount = items.filter(item => !hasInboxAxes(item)).length;
+    const showProcessingBanner =
+        (pendingCount > 0 && !isLoading) ||
+        (justAdded && (isLoading || items.length === 0));
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -76,26 +99,32 @@ export default function InboxPage() {
         }
     };
 
-    const handlePromote = (id: string) => {
-      //TODO - Implement handle promote
-        alert("TODO -Implement handle promote");
-        if (selectedResource?.id === id) setSelectedResource(null);
+    const handlePromote = async (id: string) => {
+        try {
+            const res = await api.promoteResource(id);
+            if (res.ok) {
+                setItems((prev) => prev.filter((item) => item.id !== id));
+                if (selectedResource?.id === id) setSelectedResource(null);
+                setPromoteNoticeOpen(true);
+            }
+        } catch (error) {
+            console.error("Failed to promote", error);
+        }
     };
 
     return (
         <div className="space-y-8 max-w-7xl mx-auto">
-            {/* Header i Wyszukiwarka */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-tech-border pb-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-tech-primary/10 border border-tech-primary flex items-center justify-center">
-                        <Inbox className="w-6 h-6 text-tech-primary" />
+                    <div className="w-12 h-12 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center">
+                        <Inbox className="w-6 h-6 text-indigo-600" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-white uppercase tracking-widest font-mono">
-                            Inbox Protocol
+                        <h1 className="text-2xl font-semibold text-slate-900">
+                            Inbox
                         </h1>
-                        <p className="text-xs text-tech-primary font-mono uppercase tracking-widest">
-                            {totalItems} Nodes detected
+                        <p className="text-sm text-slate-500">
+                            {totalItems} elementów do przejrzenia
                         </p>
                     </div>
                 </div>
@@ -105,35 +134,73 @@ export default function InboxPage() {
                         type="text"
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
-                        placeholder="SEARCH_DATA_NODES..."
-                        className="w-full bg-black/50 border border-tech-border p-3 pl-10 text-sm text-white focus:border-tech-primary focus:outline-none transition-colors font-mono uppercase placeholder:text-gray-600"
+                        placeholder="Szukaj po tytule lub tagach..."
+                        className="w-full rounded-md border border-slate-300 bg-white p-3 pl-10 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none transition-colors placeholder:text-slate-400"
                     />
-                    <Search className="absolute left-3 top-3 w-4 h-4 text-tech-text-muted group-focus-within:text-tech-primary transition-colors" />
+                    <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
                     <button type="submit" className="hidden">Submit</button>
                 </form>
             </div>
 
-            {/* Główna zawartość */}
+            {showProcessingBanner && (
+                <div className="flex items-center gap-3 rounded-lg border border-dashed border-tech-primary/35 bg-tech-primary-dim/50 px-4 py-3 text-sm text-tech-foreground-muted">
+                    <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-tech-primary" />
+                    <span>
+                        {pendingCount === 0 && justAdded
+                            ? 'Dodano link — pobieram i analizuję…'
+                            : pendingCount === 1
+                              ? '1 element w analizie AI — odświeżam listę automatycznie…'
+                              : `${pendingCount} elementów w analizie AI — odświeżam listę automatycznie…`}
+                    </span>
+                </div>
+            )}
+
+            {promoteNoticeOpen && (
+                <Card className="border-dashed border-tech-primary/35 bg-tech-primary-dim/50 p-4 flex items-start justify-between gap-4">
+                    <div className="text-sm text-tech-foreground-muted">
+                        <p className="text-tech-foreground font-medium">Przeniesiono do Vault.</p>
+                        <p className="mt-0.5">
+                            Analiza AI trwa — zobaczysz zasób w bibliotece Vault.
+                            <a
+                                href="/dashboard/vault"
+                                className="ml-2 inline-flex items-center gap-1 text-tech-primary hover:underline"
+                            >
+                                Zobacz Vault <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                        </p>
+                    </div>
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 flex-shrink-0"
+                        onClick={() => setPromoteNoticeOpen(false)}
+                        aria-label="Zamknij powiadomienie"
+                    >
+                        <X className="w-4 h-4" />
+                    </Button>
+                </Card>
+            )}
+
             <div className="min-h-[400px]">
                 {isLoading ? (
-                    <div className="h-64 flex flex-col items-center justify-center gap-4 border border-dashed border-tech-border">
-                        <Loader2 className="w-8 h-8 text-tech-primary animate-spin" />
-                        <span className="text-xs text-tech-text-muted uppercase font-bold tracking-widest">Fetching Data...</span>
-                    </div>
+                    <Card className="h-64 flex flex-col items-center justify-center gap-4 border-dashed">
+                        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+                        <span className="text-sm text-slate-500">Pobieram zasoby...</span>
+                    </Card>
                 ) : items.length === 0 ? (
-                    <div className="h-64 flex flex-col items-center justify-center gap-4 border border-dashed border-tech-border bg-tech-surface/30">
-                        <AlertCircle className="w-8 h-8 text-gray-500" />
-                        <span className="text-xs text-gray-500 uppercase font-bold tracking-widest">
-                            {searchTerm ? "NO_RESULTS_FOUND" : "INBOX_IS_EMPTY"}
+                    <Card className="h-64 flex flex-col items-center justify-center gap-4 border-dashed">
+                        <AlertCircle className="w-8 h-8 text-slate-400" />
+                        <span className="text-sm text-slate-500">
+                            {searchTerm ? "Brak wyników" : "Inbox jest pusty"}
                         </span>
-                    </div>
+                    </Card>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         {items.map((item) => (
                             <InboxCard
                                 key={item.id}
                                 resource={item}
-                                onArchive={()=>handleArchive}
+                                onArchive={loadInboxData}
                                 onClick={() => setSelectedResource(item)}
                             />
                         ))}
@@ -141,32 +208,32 @@ export default function InboxPage() {
                 )}
             </div>
 
-            {/* Paginacja */}
             {!isLoading && totalPages > 1 && (
-                <div className="flex items-center justify-between border-t border-tech-border pt-6">
-                    <div className="text-xs text-tech-text-muted font-mono uppercase">
-                        Page <span className="text-tech-primary">{page}</span> of {totalPages}
+                <div className="flex items-center justify-between border-t border-slate-200 pt-6">
+                    <div className="text-sm text-slate-500">
+                        Strona <span className="text-slate-900 font-medium">{page}</span> z {totalPages}
                     </div>
                     <div className="flex items-center gap-2">
-                        <button
+                        <Button
                             onClick={() => setPage((p) => Math.max(1, p - 1))}
                             disabled={page === 1}
-                            className="p-2 border border-tech-border text-tech-text-muted hover:text-white hover:border-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                            variant="outline"
+                            size="icon"
                         >
                             <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                             disabled={page === totalPages}
-                            className="p-2 border border-tech-border text-tech-text-muted hover:text-white hover:border-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                            variant="outline"
+                            size="icon"
                         >
                             <ChevronRight className="w-4 h-4" />
-                        </button>
+                        </Button>
                     </div>
                 </div>
             )}
 
-            {/* Modal ze szczegółami */}
             {selectedResource && (
                 <InboxDetailModal
                     resource={selectedResource}
@@ -180,5 +247,19 @@ export default function InboxPage() {
                 />
             )}
         </div>
+    );
+}
+
+export default function InboxPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="max-w-7xl mx-auto flex justify-center py-16">
+                    <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+                </div>
+            }
+        >
+            <InboxPageContent />
+        </Suspense>
     );
 }

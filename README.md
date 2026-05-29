@@ -27,17 +27,17 @@ Instead of mindlessly saving bookmarks you never revisit, KnowledgeOS uses a **p
 ### Core flow
 
 ```
-URL saved by user
+URL saved by user (Inbox or Vault target)
       │
       ▼
 [Ingestion Job] ──► Fetch metadata (title, image, description)
-      │               YouTube API / Reddit JSON / OpenGraph
+      │               YouTube API / website OpenGraph
       ▼
-[AI Analysis Job] ──► Score 0–100, verdict, summary, tags
-      │                Based on your personal profile
+[AI Analysis Job] ──► Multi-axis tiers, verdict, summary, tags
+      │                Substance · intent · relevance (+ avoidance)
       ▼
-[Inbox] ──► Review ──► [Vault] (permanent archive)
-                  └──► [Trash]
+[Inbox] ──► Review (tier chips, feedback) ──► [Vault]
+                  └──► [Trash] / [Archive]
 ```
 
 ---
@@ -45,16 +45,29 @@ URL saved by user
 ## ✨ Features
 
 ### 🤖 AI-Powered Inbox
-- Every saved resource is scored **0–100** based on your personal profile
-- AI generates a **verdict**, **summary**, and **tags**
-- Scoring uses a two-axis system: **Intrinsic Quality** × **Relevance to your profile**
-- Protects against keyword hallucination — "AI" in title ≠ match if content is a gimmick
+- Every saved resource is analyzed on **three axes**: **Substance depth**, **Content intent**, and **Relevance** to your profile
+- The model returns **discrete tiers** (not a raw 0–100 guess); the backend computes **sort priority** and stores axis labels for a stable, explainable UI
+- **Tier chips** with per-tier colors and icons — no misleading progress bars
+- AI generates a **verdict**, **summary**, **takeaway**, and **tags**
+- Protects against keyword hallucination — "AI" in the title ≠ match if the content is shallow or off-topic
+- Short or sparse profiles use **conservative relevance** rules (no guessing from title keywords alone)
+- **Topics to avoid** hard-cap relevance when matched
+- Visible **processing state** while ingestion / AI analysis runs; inbox **auto-refreshes** when jobs finish
+
+### 🔄 Profile evolution
+- **Profile refine chat** in Settings — describe what changed; AI proposes updates to your four preference fields with a preview before save
+- **Scoring feedback** from Inbox detail — disagree with a score, send a comment; the same refine flow can use that resource as context
+- **Profile embeddings (pgvector)** — preferences are embedded via OpenRouter on save; cosine similarity nudges relevance scoring
+- After preference changes, up to **20 inbox items** are scheduled for **re-analysis** automatically
 
 ### 📥 Inbox & 🏛️ Vault
-- **Inbox** — staging area for new resources, shows AI score and verdict
-- **Vault** — permanent curated archive with categories, notes, and detailed AI summaries
-- One-click promotion from Inbox → Vault with automatic re-analysis
-- Smart Mix — surfaces forgotten Vault items across different categories
+- **Inbox** — staging area with multi-axis tiers, verdict, and one-click promote to Vault
+- **Vault** — curated archive with categories, notes, and detailed summaries
+- **Add flow** — choose Inbox (review first) or Vault (library immediately); redirects to the right list after submit
+- **Vault processing** — resources still being ingested / analysed appear in Vault with a processing indicator; list **auto-refreshes** like Inbox
+- **Uncategorized filter** on Vault; **AI category suggestions** in resource detail (apply, create new, or ignore)
+- **Always-editable category** picker in Vault detail
+- **Smart Mix** — surfaces forgotten Vault items across categories
 
 ### 🌐 Multi-source ingestion
 | Source | What gets fetched |
@@ -62,58 +75,47 @@ URL saved by user
 | **YouTube** | Title, channel, duration, views, transcript excerpt |
 | **Articles / Websites** | Title, description, author, `og:image`, favicon fallback |
 
+> Reddit is planned; the factory currently creates **Video** and **Article** resources only.
+
 ### 🗂️ Categories & Tags
 - User-defined categories for Vault organization
-- AI suggests category based on existing ones (or proposes new)
+- AI suggests a category from your existing list (or proposes a new name)
 - Auto-tagging with niche, profile-relevant vocabulary
 
-### 👤 User Profile
+### 👤 User Profile & Settings
 - `ProfessionalContext` — who you are, what you do
 - `LearningGoals` — what you want to learn
-- `Hobbies` — your interests (genuinely used for scoring, not decoration)
-- `TopicsToAvoid` — hard filter, caps score at 0–10
+- `Hobbies` — genuinely used for scoring, not decoration
+- `TopicsToAvoid` — hard filter when content matches
+- **Theme switcher** (light / dark / system) and account settings on one page
+
+### 🔐 Auth & admin
+- **JWT** in `localStorage` and **httpOnly-style cookie** (`token`) for SSR-friendly auth
+- Dashboard routes are **protected by default**; login supports **callback URL** to return where you left off
+- On first startup, an **Admin** role and default admin user are seeded (see `Data/DbSeeder.cs` — change the password in production)
 
 ### ⚙️ Background Jobs
-- Hangfire-powered async processing pipeline
-- Automatic retry with error recovery job
-- `ErrorRecoveryJob` — periodically rescues stuck resources
+- Hangfire-powered async pipeline: ingestion → AI analysis
+- Automatic retry; **`ErrorRecoveryJob`** rescues stuck resources on a schedule
 
 ---
-## 🖼️ See in action
-### Login and Register
-![Register and Login](./promo/register_n_login.gif)
+## 🖼️ Screenshots & demos (coming soon)
 
-### Dashboard & Navigation
-![Dashboard](./promo/dashboard.png)
-![Modal](./promo/modal.png)
+This section will include short GIF demos and screenshots for:
 
-### Features
-* **Adding to Vault:**
-  ![Adding to Vault](./promo/adding_to_vault.gif)
-* **Inbox Management:**
-  ![Good Example Inbox](./promo/good_example_inbox.gif)
-  *Avoid mistakes like this:*
-  ![Bad Example Inbox](./promo/bad_example_onbox.gif)
+- Login / Register
+- Dashboard navigation
+- Inbox (multi-axis tiers + feedback)
+- Vault (processing indicator + category suggestion)
+- Settings (profile refine + themes)
 
-### Settings & Customization
-* **Themes:**
-  ![Themes](./promo/themes.gif)
-* **Preferences:**
-  ![Setting Preferences](./promo/setting_preferences.gif)
-
-### Static Views
-![Add](./promo/add.png)
-![Add Category](./promo/add_category.png)
-![Inbox Static](./promo/inbox.png)
-![Vault Static](./promo/vault.png)
-![Settings Static](./promo/settings.png)
 ---
 ## 🧩 Extension
 
 There is an official browser extension in development to enhance your workflow by saving resources with a single click.
 
-> IMPORTANT
-> The extension is currently **under development (WIP)** and not yet fully functional, but you can check the progress here: <br>
+> **IMPORTANT**  
+> The extension is currently **under development (WIP)** and not yet fully functional. Progress:  
 > 👉 [KnowledgeOS Extension Repository](https://github.com/neliodass/KnowledgeOS.BrowserExtension)
 
 ---
@@ -123,22 +125,21 @@ There is an official browser extension in development to enhance your workflow b
 
 ```
 KnowledgeOS.Backend/
-├── Controllers/          # REST API endpoints
+├── Controllers/          # REST API (auth, resources, inbox, vault, preferences, categories)
 ├── Services/
-│   ├── Ai/               # OpenRouter provider, AI service, prompt builder
-│   ├── Content/          # YouTube, Reddit, Website content fetchers
-│   ├── Processors/       # Resource processors
-│   └── Abstractions/     # Interfaces
-├── Jobs/                 # Hangfire background jobs (Ingestion, AI Analysis, Error Recovery)
+│   ├── Ai/
+│   │   ├── Scoring/      # Tier enums, sort priority, JSON parsing
+│   │   └── Prompts/      # Inbox analysis, profile refine, category suggestion
+│   ├── Content/          # YouTube, Website content fetchers
+│   └── Abstractions/
+├── Jobs/                 # UrlIngestionJob, AiAnalysisJob, ErrorRecoveryJob, embedding sync
 ├── Entities/
-│   ├── Resources/        # Resource (base), VideoResource, ArticleResource, RedditResource
-│   │   ├── InboxMetadata # AI score, verdict, inbox summary
-│   │   └── VaultMetadata # Detailed summary, category, user notes
-│   ├── Tagging/          # Tag, Category
-│   └── Users/            # ApplicationUser, UserPreference
-├── DTOs/                 # Data Transfer Objects
-├── Data/                 # AppDbContext, EF Core (TPT strategy)
-└── Migrations/           # EF Core migrations
+│   ├── Resources/        # Resource (TPT), VideoResource, ArticleResource, Inbox/Vault metadata
+│   ├── Tagging/
+│   └── Users/            # ApplicationUser, UserPreferences (+ pgvector embedding)
+├── DTOs/
+├── Data/                 # AppDbContext, global ownership filters, DbSeeder (roles/admin)
+└── Migrations/
 ```
 
 ### Frontend
@@ -146,34 +147,35 @@ KnowledgeOS.Backend/
 ```
 knowledgeos-frontend/
 ├── app/
-│   ├── (auth)/
-│   │   ├── login/        # Login page
-│   │   └── register/     # Registration page
-│   └── dashboard/
-│       ├── inbox/        # Inbox view — scored resources awaiting review
-│       ├── vault/        # Vault view — curated archive with filters
-│       ├── add/          # Add new resource by URL
-│       ├── settings/     # User preferences & account settings
-│       └── layout.tsx    # Dashboard shell with navigation
+│   ├── (auth)/login, register
+│   └── dashboard/        # inbox, vault, add, settings
 ├── components/
-│   ├── InboxCard.tsx     # Resource card for inbox (score, verdict, tags)
-│   ├── InboxDetailModal.tsx  # Full resource detail view for inbox
-│   ├── VaultCard.tsx     # Resource card for vault (category, notes)
-│   └── VaultDetailModal.tsx  # Full resource detail view for vault
+│   ├── ui/               # shadcn-style primitives (Button, Card, Badge, …)
+│   ├── InboxCard.tsx, InboxDetailModal.tsx, InboxAxisBars.tsx
+│   ├── VaultCard.tsx, VaultDetailModal.tsx
+│   └── *ProcessingIndicator.tsx
 └── lib/
-    ├── api.ts            # All API calls (typed fetch wrappers)
-    ├── types.ts          # Shared TypeScript types
-    ├── categoryColor.ts  # Category color mapping utility
-    └── ThemeProvider.tsx # Dark/light theme context
+    ├── api.ts, types.ts, inboxTiers.ts, vaultProcessing.ts
+    └── ThemeProvider.tsx, useVaultAutoRefresh.ts
 ```
 
 ### Key design decisions
 
-- **Table Per Type (TPT)** — `VideoResource`, `ArticleResource`, `RedditResource` each have their own table, sharing the base `Resources` table
-- **1:1 Metadata composition** — `InboxMetadata` and `VaultMetadata` are separate tables linked by FK, not flat columns on `Resource`
-- **Global query filters** — all queries are automatically scoped to `CurrentUser.UserId`
-- **AI provider abstraction** — multiple models registered as `IAiProvider`, `AiService` tries them in order with fallback
-- **Next.js App Router** — full server/client component split, JWT stored in `localStorage`, all API calls typed via shared `lib/types.ts`
+- **Table Per Type (TPT)** — `VideoResource` and `ArticleResource` extend `Resource` with separate tables
+- **1:1 metadata** — `InboxMetadata` (axes, verdict, summary) and `VaultMetadata` (category, notes) as linked tables
+- **Global query filters** — queries scoped to `CurrentUser.UserId`; Admin role can bypass ownership via permission claims
+- **AI provider abstraction** — multiple `IAiProvider` beans from `Ai:Model_*` config; `AiService` tries them in order
+- **Deterministic ordering** — tier parsing + `InboxSortPriority` from substance, intent, relevance, and avoidance
+- **Profile embeddings** — OpenRouter embeddings on `PUT /api/preferences`; cosine hint in scoring; batch re-score after profile update
+- **Next.js App Router** — JWT in `localStorage` + cookie; typed API via `lib/types.ts`; `/api` proxied to backend in Docker
+
+### API highlights (JWT required except auth)
+
+| Area | Notable endpoints |
+|------|-------------------|
+| Resources | `POST /`, `PATCH {id}/status`, `POST {id}/promote`, `POST {id}/retry`, `POST {id}/scoring-feedback` |
+| Preferences | `GET /`, `PUT /`, `POST /refine` |
+| Inbox / Vault | `GET /`, `GET mix`, `GET {id}`; Vault `PATCH {id}/category` |
 
 ---
 
@@ -181,99 +183,92 @@ knowledgeos-frontend/
 
 ### 🐳 Docker Deployment
 
-The entire stack (PostgreSQL, Go backend, and Next.js frontend) is managed via Docker Compose. This is the official way to run the application.
+The stack (PostgreSQL, **ASP.NET Core** backend, Next.js frontend) runs via Docker Compose. This is the official way to run the app.
 
-#### 1. Configure Environment
-Create your .env file from the template:
+#### 1. Configure environment
 
-```
+```bash
 cp .env.example .env
 ```
 
-Open .env and fill in the required variables. The frontend uses Next.js rewrites to communicate with the backend internally via the /api route.
+Fill in required variables. The frontend reaches the backend via Next.js rewrites on `/api`.
 
-**Key Network Configuration:**
-* **INTERNAL_API_URL**: The address Next.js uses server-side to reach the backend (uses the Docker service name).
-* **JWT_KEY**: Must be at least 32 characters long.
+| Variable | Purpose |
+|----------|---------|
+| `INTERNAL_API_URL` | Server-side backend URL (`http://backend:8080` in Docker) |
+| `JWT_KEY` | ≥ 32 characters |
+| `OPENROUTER_API_KEY` | OpenRouter API key |
+| `AI_MODEL_1` … `AI_MODEL_3` | Models tried in order for JSON tier responses |
 
-``` 
-# Network (Internal Docker communication)
-INTERNAL_API_URL=http://backend:8080
+#### Backend tests
 
-# Ports (External access)
-FRONTEND_PORT=3000
-BACKEND_PORT=5000
+From `KnowledgeOS.Backend/`:
 
-# Secrets
-JWT_KEY=your_min_32_char_secret_here
-OPENROUTER_API_KEY=sk-or-...
+```bash
+dotnet test ../KnowledgeOS.Backend.Tests/KnowledgeOS.Backend.Tests.csproj
 ```
 
-#### 2. Launch the Stack
-Run the following command to build and start all services:
+Covers tier parsing, inbox JSON mapping, sort priority, transcript excerpts, and related scoring helpers.
 
-```
+#### 2. Launch
+
+```bash
 docker compose up -d --build
 ```
 
-#### 3. Access the Services
+#### 3. Access
 
-| Service | Address | Description |
-| :--- | :--- | :--- |
-| **Frontend** | http://localhost:3000 | Main Web Application |
-| **Backend API** | http://localhost:5000 | REST API Root |
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:3000 |
+| Backend API | http://localhost:5000 |
+| Swagger (dev) | http://localhost:5000/swagger |
 
 ---
 
 ## 🛣️ Roadmap
 
-### 🔧 In Progress
+### 🔧 In progress
 
-- [ ] **Browser extension** — save to KnowledgeOS directly from any webpage with one click
-- [ ] **Extension for Shortcut app for iOS** — add to KnowledgeOS from iPhone share sheet
+- [ ] **Browser extension** — save from any webpage in one click
+- [ ] **iOS Shortcuts** — share sheet → KnowledgeOS
+
 ### 📋 Planned
 
-#### Core Features
+#### Core
+- [ ] **PWA** — installable app, offline shell
+- [ ] **Full vector search** — semantic search across all vault content (profile embeddings exist today)
+- [ ] **Reddit ingestion** — posts/comments with dedicated metadata
 
-- [ ] **PWA (Progressive Web App)** — installable mobile/desktop app with offline support and home screen shortcut
-- [ ] **Vector search** — semantic similarity search across saved resources using embeddings
-- [ ] **Reddit as a source** — support saving Reddit posts and comments with appropriate metadata and AI analysis
-
-#### AI & Intelligence
-- [ ] **AI re-analysis** — manually trigger re-analysis after updating your profile
-- [ ] **Duplicate detection** — warn when saving content already in vault (semantic, not just URL match)
-- [ ] **Trend surfacing** — detect recurring themes across saved resources
+#### AI
+- [ ] **Manual re-analysis** trigger per resource from UI (batch re-score after profile edit exists)
+- [ ] **Duplicate detection** — semantic, not URL-only
+- [ ] **Trend surfacing** — recurring themes across saves
 
 #### Organization
-- [ ] **Nested categories** — subcategories for deeper organization
-- [ ] **Collections / reading lists** — group resources manually across categories
-- [ ] **Resource relations** — link related resources together
+- [ ] **Nested categories**
+- [ ] **Collections / reading lists**
+- [ ] **Resource relations**
 
-#### UX & Settings
-- [ ] **Settings page** — manage account, preferences, AI model choice, and danger zone
-- [ ] **Admin panel** — user management, job queue monitoring, system health
-- [ ] **Password reset via email** — forgot password flow with email token
-- [ ] **Email verification** — verify email on registration
-
-#### Integrations
-- [ ] **Pocket / Readwise import** — migrate existing bookmarks
-- [ ] **Obsidian export** — export vault as Obsidian-compatible Markdown vault
-- [ ] **RSS / Atom feed ingestion** — auto-import from feeds
+#### Platform
+- [ ] **Admin panel UI** — users, jobs, health (backend Admin role + claims exist)
+- [ ] **Password reset / email verification**
+- [ ] **Pocket / Readwise import**, **Obsidian export**, **RSS ingestion**
 
 ---
 
 ## 🧰 Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
-| **Frontend** | Next.js 16, React 19, TypeScript, Tailwind CSS 4 |
+|-------|------------|
+| **Frontend** | Next.js 16, React 19, TypeScript, Tailwind CSS 4, shadcn-style UI |
 | **Backend** | ASP.NET Core 10, C# |
-| **Database** | PostgreSQL + EF Core 10 (TPT) |
-| **Auth** | ASP.NET Core Identity + JWT |
-| **AI** | OpenRouter API (multi-model with fallback) |
-| **Background Jobs** | Hangfire + PostgreSQL storage |
-| **Content Fetching** | YoutubeExplode, HtmlAgilityPack, Reddit JSON API |
-| **API Docs** | Swagger / OpenAPI |
+| **Database** | PostgreSQL, EF Core 10 (TPT), **pgvector** for profile embeddings |
+| **Auth** | ASP.NET Core Identity, JWT, role claims |
+| **AI** | OpenRouter (multi-model fallback, embeddings) |
+| **Jobs** | Hangfire + PostgreSQL |
+| **Fetching** | YoutubeExplode, HtmlAgilityPack |
+| **API docs** | Swagger / OpenAPI |
 
 ---
 

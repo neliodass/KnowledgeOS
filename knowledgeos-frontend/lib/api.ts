@@ -5,7 +5,7 @@ import {Category, CreateResourceRequest} from "@/lib/types";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '/api';
 
 async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const token = getCookie('token') || (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
 
     const headers = {
         'Content-Type': 'application/json',
@@ -27,6 +27,14 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     return response;
 }
 
+function getCookie(name: string) {
+    if(typeof document === 'undefined') return null;
+    const value =`; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+    return null;
+}
+
 export const api = {
     // --- Auth ---
     register: (body: unknown) => fetchWithAuth('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
@@ -35,13 +43,20 @@ export const api = {
     // --- Resources ---
     getInboxMix: () => fetchWithAuth('/inbox/mix'),
     getVaultMix: () => fetchWithAuth('/vault/mix'),
-    getVault: async (pageNumber: number = 1, pageSize: number = 12, searchTerm: string = '', categoryId?: string) => {
+    getVault: async (
+        pageNumber: number = 1,
+        pageSize: number = 12,
+        searchTerm: string = '',
+        categoryId?: string,
+        uncategorizedOnly?: boolean
+    ) => {
         const query = new URLSearchParams({
             PageNumber: pageNumber.toString(),
             PageSize: pageSize.toString(),
         });
         if (searchTerm) query.append('SearchTerm', searchTerm);
         if (categoryId) query.append('CategoryId', categoryId);
+        if (uncategorizedOnly) query.append('UncategorizedOnly', 'true');
 
         const res = await fetchWithAuth(`/vault?${query.toString()}`);
         if (!res.ok) throw new Error("Failed to fetch vault");
@@ -64,6 +79,9 @@ export const api = {
 
     retryResource: (id: string) =>
         fetchWithAuth(`/resources/${id}/retry`, { method: 'POST' }),
+
+    promoteResource: (id: string) =>
+        fetchWithAuth(`/resources/${id}/promote`, { method: 'POST' }),
 
     deleteResource: (id: string) =>
         fetchWithAuth(`/resources/${id}`, { method: 'DELETE' }),
@@ -114,6 +132,29 @@ export const api = {
     getPreferences: () => fetchWithAuth('/preferences'),
     updatePreferences: (body: unknown) =>
         fetchWithAuth('/preferences', { method: 'PUT', body: JSON.stringify(body) }),
+    submitScoringFeedback: async (resourceId: string, comment: string) => {
+        const res = await fetchWithAuth(`/resources/${resourceId}/scoring-feedback`, {
+            method: 'POST',
+            body: JSON.stringify({ comment }),
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error((err as { message?: string }).message ?? 'Failed to save feedback');
+        }
+        return res.json();
+    },
+
+    refinePreferences: async (message: string, resourceId?: string) => {
+        const res = await fetchWithAuth('/preferences/refine', {
+            method: 'POST',
+            body: JSON.stringify({ message, resourceId: resourceId ?? null }),
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error((err as { message?: string }).message ?? 'Profile refine failed');
+        }
+        return res.json();
+    },
 
     // --- Profile ---
     getMe: () => fetchWithAuth('/auth/me'),

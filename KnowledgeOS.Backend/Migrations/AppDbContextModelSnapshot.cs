@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
+using Pgvector;
 
 #nullable disable
 
@@ -20,14 +21,52 @@ namespace KnowledgeOS.Backend.Migrations
                 .HasAnnotation("ProductVersion", "10.0.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "vector");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("KnowledgeOS.Backend.Entities.Feedback.ScoringFeedback", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("AiScoreAtFeedback")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("AiVerdictAtFeedback")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResourceId");
+
+                    b.HasIndex("UserId", "ResourceId", "CreatedAt");
+
+                    b.ToTable("ScoringFeedbacks");
+                });
 
             modelBuilder.Entity("KnowledgeOS.Backend.Entities.Resources.InboxMetadata", b =>
                 {
                     b.Property<Guid>("ResourceId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("AiScore")
+                    b.Property<int?>("AiScore")
                         .HasColumnType("integer");
 
                     b.Property<string>("AiSummary")
@@ -38,6 +77,31 @@ namespace KnowledgeOS.Backend.Migrations
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
+
+                    b.Property<string>("ContentIntent")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<bool>("MatchesAvoidance")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Relevance")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<bool>("ScoredFromMetadataOnly")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("SortPriority")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SubstanceDepth")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Takeaway")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
 
                     b.HasKey("ResourceId");
 
@@ -258,6 +322,12 @@ namespace KnowledgeOS.Backend.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
+                    b.Property<Vector>("ProfileEmbedding")
+                        .HasColumnType("vector(1536)");
+
+                    b.Property<DateTime?>("ProfileEmbeddingUpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("TopicsToAvoid")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
@@ -457,6 +527,25 @@ namespace KnowledgeOS.Backend.Migrations
                         .HasColumnType("bigint");
 
                     b.ToTable("Videos");
+                });
+
+            modelBuilder.Entity("KnowledgeOS.Backend.Entities.Feedback.ScoringFeedback", b =>
+                {
+                    b.HasOne("KnowledgeOS.Backend.Entities.Resources.Resource", "Resource")
+                        .WithMany()
+                        .HasForeignKey("ResourceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("KnowledgeOS.Backend.Entities.Users.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Resource");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("KnowledgeOS.Backend.Entities.Resources.InboxMetadata", b =>

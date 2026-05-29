@@ -1,87 +1,109 @@
 import { VaultResource } from '@/lib/types';
-import { ArrowRight } from 'lucide-react';
+import { ExternalLink, FolderOpen, PlayCircle } from 'lucide-react';
 import Image from 'next/image';
-import {getCategoryColor} from "@/lib/categoryColor";
+import Link from 'next/link';
+import { categoryBadgeClass } from '@/lib/categoryColor';
+import { getFaviconUrl, getResourceTypeConfig } from '@/lib/resourceCardUtils';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { isVaultProcessing } from '@/lib/vaultProcessing';
+import { VaultProcessingIndicator } from '@/components/VaultProcessingIndicator';
 
 interface VaultCardProps {
     resource: VaultResource;
     onClick?: () => void;
 }
 
-function getFaviconUrl(url: string) {
-    try {
-        const domain = new URL(url).hostname;
-        return `https://icons.duckduckgo.com/ip3/${domain}.ico`;
-    } catch {
-        return null;
-    }
-}
-
 export function VaultCard({ resource, onClick }: VaultCardProps) {
+    const config = getResourceTypeConfig(resource.resourceType);
+    const TypeIcon = config.icon;
     const faviconUrl = getFaviconUrl(resource.url);
+    const processing = isVaultProcessing(resource);
+
     return (
-        <div onClick={onClick} className="relative border border-tech-border bg-tech-surface hover:border-tech-primary transition-all group flex flex-row cursor-pointer">
+        <Card
+            onClick={onClick}
+            className="group cursor-pointer overflow-hidden border-tech-border transition-all hover:shadow-md"
+        >
+            {processing && config.hasBigPreview && (
+                <div className={`relative ${config.previewHeightClass} w-full bg-tech-surface-hover overflow-hidden`}>
+                    <div className="absolute inset-0 border-b border-dashed border-tech-primary/20" />
+                </div>
+            )}
 
-            <div className="absolute top-0 left-0 w-1 h-1 bg-tech-border group-hover:bg-tech-primary transition-colors"></div>
-            <div className="absolute top-0 right-0 w-1 h-1 bg-tech-border group-hover:bg-tech-primary transition-colors"></div>
-            <div className="absolute bottom-0 left-0 w-1 h-1 bg-tech-border group-hover:bg-tech-primary transition-colors"></div>
-            <div className="absolute bottom-0 right-0 w-1 h-1 bg-tech-border group-hover:bg-tech-primary transition-colors"></div>
-
-            {resource.imageUrl && (
-                <div className="relative w-24 sm:w-32 flex-shrink-0 border-r border-tech-border bg-black overflow-hidden">
+            {!processing && resource.imageUrl && config.hasBigPreview && (
+                <div className={`relative ${config.previewHeightClass} w-full bg-tech-surface-hover overflow-hidden`}>
                     <Image
                         src={resource.imageUrl}
                         alt={resource.title}
                         fill
-                        sizes="(max-width: 640px) 96px, 128px"
-                        className="object-cover opacity-90 group-hover:opacity-100 transition-all"
+                        sizes="(max-width: 1024px) 100vw, 50vw"
+                        className="object-cover transition-transform group-hover:scale-[1.02]"
                     />
+                    {resource.resourceType === 'Video' && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20">
+                            <PlayCircle className="w-10 h-10 text-white drop-shadow-lg" />
+                        </div>
+                    )}
                 </div>
             )}
 
-            <div className="p-5 flex-1 min-w-0 flex flex-col gap-2">
-                <div className="flex justify-between items-start mb-1">
-                    {resource.categoryName ? (() => {
-                        const c = getCategoryColor(resource.categoryName);
-                        return (
-                            <span className={`inline-block px-2 py-0.5 border ${c.border} ${c.bg} ${c.text} text-[10px] font-bold uppercase tracking-wider`}>
-                                {resource.categoryName}
-                            </span>
-                        );
-                    })() : (
-                        <span className="inline-block px-2 py-0.5 border border-tech-border text-gray-500 text-[10px] font-bold uppercase tracking-wider">
-                            Uncategorized
-                        </span>
+            <div className="p-4 space-y-3">
+                <div className="min-w-0">
+                    <Link
+                        href={resource.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-sm font-semibold text-tech-foreground hover:text-tech-primary transition-colors flex items-start gap-2"
+                    >
+                        {faviconUrl && (
+                            <img src={faviconUrl} alt="" width={14} height={14} className="mt-0.5 flex-shrink-0" />
+                        )}
+                        <span className="line-clamp-2">{resource.title}</span>
+                        <ExternalLink className="w-3.5 h-3.5 mt-0.5 opacity-60 flex-shrink-0" />
+                    </Link>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline" className="text-tech-foreground-muted">
+                        <TypeIcon className="w-3 h-3 mr-1.5" />
+                        {config.label}
+                    </Badge>
+                    {resource.siteName && (
+                        <span className="text-xs text-tech-foreground-muted truncate">{resource.siteName}</span>
                     )}
                 </div>
 
-                <h4 className="text-sm font-bold text-white uppercase truncate">
-                    <a href={resource.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:text-tech-green flex items-center gap-2">
-                        {faviconUrl && (
-                            <img src={faviconUrl} alt="" width={14} height={14} className="flex-shrink-0" />
-                        )}
-                        {resource.title}
-                    </a>
-                </h4>
-
-                {resource.aiSummary && (
-                    <div className="text-[11px] text-gray-400 leading-relaxed font-mono italic border-l border-tech-border/30 pl-2 line-clamp-3">
-                        <span className="text-tech-primary/50 mr-1">&gt; AI_SUMMARY:</span>
-                        {resource.aiSummary}
-                    </div>
+                {resource.categoryName ? (
+                    <span className={categoryBadgeClass(resource.categoryId, resource.categoryName)}>
+                        <FolderOpen className="w-3 h-3" aria-hidden />
+                        {resource.categoryName}
+                    </span>
+                ) : (
+                    <Badge variant="secondary" className="rounded-md text-[11px] font-medium">
+                        Bez kategorii
+                    </Badge>
                 )}
 
-                <div className="flex items-center justify-between border-t border-dashed border-tech-border pt-3 mt-auto">
-                    <div className="flex gap-2">
-                        {resource.tags?.slice(0, 2).map(tag => (
-                            <span key={tag} className="text-[10px] text-gray-500">#{tag}</span>
+                {processing ? (
+                    <VaultProcessingIndicator compact />
+                ) : resource.aiSummary ? (
+                    <p className="text-xs text-tech-foreground-muted leading-relaxed line-clamp-2 border-l-2 border-tech-border pl-2">
+                        {resource.aiSummary}
+                    </p>
+                ) : null}
+
+                {resource.tags && resource.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                        {resource.tags.slice(0, 3).map(tag => (
+                            <Badge key={tag} variant="secondary" className="rounded-md">
+                                #{tag}
+                            </Badge>
                         ))}
                     </div>
-                    <a href={resource.url} target="_blank" onClick={(e) => e.stopPropagation()} className="text-tech-green opacity-50 group-hover:opacity-100 flex items-center gap-1 text-[10px] font-bold uppercase transition-opacity cursor-pointer">
-                        ACCESS <ArrowRight className="w-3 h-3" />
-                    </a>
-                </div>
+                )}
             </div>
-        </div>
+        </Card>
     );
 }
