@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { InboxResource } from "@/lib/types";
 import { InboxCard } from "@/components/InboxCard";
@@ -11,7 +12,11 @@ import { Card } from "@/components/ui/card";
 import { useInboxAutoRefresh } from "@/lib/useInboxAutoRefresh";
 import { hasInboxAxes } from "@/lib/inboxTiers";
 
-export default function InboxPage() {
+function InboxPageContent() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const justAdded = searchParams.get("added") === "1";
+
     const [items, setItems] = useState<InboxResource[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -47,7 +52,16 @@ export default function InboxPage() {
 
     useInboxAutoRefresh(items, loadInboxData);
 
+    useEffect(() => {
+        if (justAdded && items.length > 0) {
+            router.replace("/dashboard/inbox", { scroll: false });
+        }
+    }, [justAdded, items.length, router]);
+
     const pendingCount = items.filter(item => !hasInboxAxes(item)).length;
+    const showProcessingBanner =
+        (pendingCount > 0 && !isLoading) ||
+        (justAdded && (isLoading || items.length === 0));
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -128,13 +142,15 @@ export default function InboxPage() {
                 </form>
             </div>
 
-            {pendingCount > 0 && !isLoading && (
+            {showProcessingBanner && (
                 <div className="flex items-center gap-3 rounded-lg border border-dashed border-tech-primary/35 bg-tech-primary-dim/50 px-4 py-3 text-sm text-tech-foreground-muted">
                     <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-tech-primary" />
                     <span>
-                        {pendingCount === 1
-                            ? '1 element w analizie AI — odświeżam listę automatycznie…'
-                            : `${pendingCount} elementów w analizie AI — odświeżam listę automatycznie…`}
+                        {pendingCount === 0 && justAdded
+                            ? 'Dodano link — pobieram i analizuję…'
+                            : pendingCount === 1
+                              ? '1 element w analizie AI — odświeżam listę automatycznie…'
+                              : `${pendingCount} elementów w analizie AI — odświeżam listę automatycznie…`}
                     </span>
                 </div>
             )}
@@ -231,5 +247,19 @@ export default function InboxPage() {
                 />
             )}
         </div>
+    );
+}
+
+export default function InboxPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="max-w-7xl mx-auto flex justify-center py-16">
+                    <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+                </div>
+            }
+        >
+            <InboxPageContent />
+        </Suspense>
     );
 }

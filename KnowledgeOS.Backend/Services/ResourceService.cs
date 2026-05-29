@@ -12,6 +12,14 @@ namespace KnowledgeOS.Backend.Services;
 
 public class ResourceService : IResourceService
 {
+    private static readonly ResourceStatus[] InboxPipelineStatuses =
+    [
+        ResourceStatus.New,
+        ResourceStatus.Processing,
+        ResourceStatus.AiAnalysing,
+        ResourceStatus.Inbox
+    ];
+
     private readonly AppDbContext _context;
     private readonly IBackgroundJobClient _backgroundJobClient;
 
@@ -79,9 +87,7 @@ public class ResourceService : IResourceService
             .Include(r => r.InboxMeta)
             .Where(r => r.UserId == userId
                         && !r.IsVaultTarget
-                        && (r.Status == ResourceStatus.Inbox
-                            || r.Status == ResourceStatus.Processing
-                            || r.Status == ResourceStatus.AiAnalysing));
+                        && InboxPipelineStatuses.Contains(r.Status));
         if (!string.IsNullOrWhiteSpace(search.SearchTerm))
         {
             var term = search.SearchTerm.ToLower();
@@ -275,57 +281,42 @@ public class ResourceService : IResourceService
 
     public async Task<List<InboxResourceDto>> GetSmartMixAsync(string userId)
     {
-        var baseQuery = _context.Resources
+        const int mixSize = 3;
+        const int poolSize = 15;
+
+        // Dashboard preview: only analysed inbox items (not pipeline / vault-target).
+        var randomPool = await _context.Resources
             .Include(r => r.Tags)
             .Include(r => r.InboxMeta)
-            .Where(r => r.UserId == userId && !r.IsVaultTarget && r.Status == ResourceStatus.Inbox);
-
-        // 3 items with high, mid, low relevancy
-
-        var high = await baseQuery
-            .Where(r => r.InboxMeta != null && !r.InboxMeta.MatchesAvoidance && (
-                r.InboxMeta.SortPriority >= 400 ||
-                r.InboxMeta.Relevance == "professional" || r.InboxMeta.Relevance == "hobby" ||
-                (r.InboxMeta.Relevance == "discovery" &&
-                 (r.InboxMeta.SubstanceDepth == "deep" || r.InboxMeta.SubstanceDepth == "moderate"))))
+            .Where(r => r.UserId == userId
+                        && !r.IsVaultTarget
+                        && r.Status == ResourceStatus.Inbox)
             .OrderBy(r => Guid.NewGuid())
-            .Take(1)
+            .Take(poolSize)
             .ToListAsync();
 
-        var mid = await baseQuery
-            .Where(r => r.InboxMeta != null && !r.InboxMeta.MatchesAvoidance && (
-                (r.InboxMeta.SortPriority >= 200 && r.InboxMeta.SortPriority < 400) ||
-                r.InboxMeta.Relevance == "standard" ||
-                (r.InboxMeta.Relevance == "discovery" && r.InboxMeta.SubstanceDepth == "shallow")))
-            .OrderBy(r => Guid.NewGuid())
-            .Take(1)
-            .ToListAsync();
+        if (!randomPool.Any())
+            return new List<InboxResourceDto>();
 
-        var low = await baseQuery
-            .Where(r => r.InboxMeta == null ||
-                        r.InboxMeta.MatchesAvoidance ||
-                        r.InboxMeta.Relevance == "none" ||
-                        r.InboxMeta.SubstanceDepth == "insufficient_data" ||
-                        (r.InboxMeta.SortPriority > 0 && r.InboxMeta.SortPriority < 200))
-            .OrderBy(r => Guid.NewGuid())
-            .Take(1)
-            .ToListAsync();
+        // Prefer one item per content character (learn, entertain, news, inspire, mixed).
+        var selected = randomPool
+            .Where(r => !string.IsNullOrWhiteSpace(r.InboxMeta?.ContentIntent))
+            .GroupBy(r => r.InboxMeta!.ContentIntent!)
+            .OrderBy(_ => Guid.NewGuid())
+            .Select(g => g.First())
+            .Take(mixSize)
+            .ToList();
 
-        var mixedList = high.Concat(mid).Concat(low).ToList();
-
-        // Fallback if cant find 3 items with diffrent relevancy
-        if (mixedList.Count < 3)
+        if (selected.Count < mixSize)
         {
-            var existingIds = mixedList.Select(x => x.Id).ToList();
-            var filler = await baseQuery
-                .Where(r => !existingIds.Contains(r.Id))
-                .OrderBy(r => Guid.NewGuid())
-                .Take(3 - mixedList.Count)
-                .ToListAsync();
-            mixedList.AddRange(filler);
+            var selectedIds = selected.Select(r => r.Id).ToHashSet();
+            var filler = randomPool
+                .Where(r => !selectedIds.Contains(r.Id))
+                .Take(mixSize - selected.Count);
+            selected.AddRange(filler);
         }
 
-        return mixedList.Select(MapToInboxDto).ToList();
+        return selected.Select(MapToInboxDto).ToList();
     }
 
     public async Task<InboxResourceDto?> GetInboxResourceByIdAsync(Guid id, string userId)
