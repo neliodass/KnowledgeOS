@@ -4,7 +4,6 @@ using KnowledgeOS.Backend.Entities.Resources;
 using KnowledgeOS.Backend.Entities.Resources.ConcreteResources;
 using KnowledgeOS.Backend.Entities.Tagging;
 using KnowledgeOS.Backend.Entities.Users;
-using KnowledgeOS.Backend.Extensions;
 using KnowledgeOS.Backend.Services.Abstractions;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -100,12 +99,22 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasIndex(f => new { f.UserId, f.ResourceId, f.CreatedAt });
 
         //Filters
-        
-        //main entities
-        modelBuilder.ApplyResourceOwnershipFilter<Resource>(_currentUserService);
-        modelBuilder.ApplyResourceOwnershipFilter<Category>(_currentUserService);
-        modelBuilder.ApplyResourceOwnershipFilter<ScoringFeedback>(_currentUserService);
-        
+
+        // Ownership filters must reference the DbContext instance field (_currentUserService)
+        // directly. EF Core caches the model app-wide; a filter that closes over a captured
+        // local/parameter bakes the first request's user id into the compiled query as a
+        // constant and reuses it for every user. Referencing the context member lets EF
+        // re-evaluate it per request (rendered as an @ef_filter__ parameter).
+        modelBuilder.Entity<Resource>()
+            .HasQueryFilter(r => _currentUserService.HasPermission(Permissions.BypassResourceOwnership) ||
+                                 r.UserId == _currentUserService.UserId);
+        modelBuilder.Entity<Category>()
+            .HasQueryFilter(c => _currentUserService.HasPermission(Permissions.BypassResourceOwnership) ||
+                                 c.UserId == _currentUserService.UserId);
+        modelBuilder.Entity<ScoringFeedback>()
+            .HasQueryFilter(f => _currentUserService.HasPermission(Permissions.BypassResourceOwnership) ||
+                                 f.UserId == _currentUserService.UserId);
+
         
         //dependent entities
         modelBuilder.Entity<InboxMetadata>()
