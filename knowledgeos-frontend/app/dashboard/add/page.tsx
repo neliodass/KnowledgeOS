@@ -32,7 +32,9 @@ function AddResourcePageContent() {
                 addToVault: mode === 'vault',
             });
 
-            router.push(mode === 'vault' ? '/dashboard/vault' : '/dashboard/inbox');
+            router.push(
+                mode === 'vault' ? '/dashboard/vault?added=1' : '/dashboard/inbox?added=1'
+            );
         } catch (error) {
             console.error(error);
         } finally {
